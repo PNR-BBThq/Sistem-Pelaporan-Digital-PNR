@@ -15,26 +15,35 @@
         :root { --primary: #064e3b; --accent: #10b981; --bg: #f3f4f6; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; }
         
-       #loginOverlay { 
+      #loginOverlay { 
     position: fixed; 
     inset: 0; 
+    z-index: 9999; /* Nombor besar supaya ia duduk di lapisan paling depan */
     
-    /* Gantikan 'Logo(2).png' dengan nama fail imej janaan AI anda */
-    /* Lapisan rgba(27, 79, 42, 0.6) adalah overlay hijau gelap untuk kontras */
-    background-image: linear-gradient(rgba(27, 79, 42, 0.6), rgba(27, 79, 42, 0.6)), 
-                      url(Logo(2).png); 
+    /* Gantikan 'background-ai.jpg' dengan nama imej janaan AI anda nanti */
+    background-image: linear-gradient(rgba(27, 79, 42, 0.7), rgba(27, 79, 42, 0.7)), 
+                      url('Logo(2).png'); 
     
-    /* TIGA BARIS PENTING: Memastikan imej penuh sekeping */
-    background-size: cover;      /* Tarik imej penuhi skrin secara berkadar (tidak herot) */
-    background-position: center; /* Sentiasa fokus pada tengah imej */
-    background-repeat: no-repeat; /* Jangan ulang imej */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     
-    z-index: 9999; 
     display: flex; 
     align-items: center; 
     justify-content: center; 
 }
 
+.login-box { 
+    background: white; 
+    padding: 2.5rem; 
+    border-radius: 15px; 
+    width: 90%; 
+    max-width: 380px; 
+    text-align: center; 
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); 
+}
+
+.login-logo { width: 90px; margin-bottom: 15px; }
         /* SIDEBAR */
         .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: white; border-right: 1px solid #e5e7eb; padding: 20px; z-index: 100; transition: transform 0.3s; }
         .brand { font-size: 1.2rem; font-weight: 800; color: var(--primary); margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
@@ -71,15 +80,26 @@
 <body>
 
     <div id="loginOverlay">
-        <div class="login-box">
-            <div class="brand justify-content-center mb-4"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
-            <h6 class="text-muted mb-4">Log Masuk Sistem</h6>
-            <input type="text" id="uid" class="form-control mb-3" placeholder="ID Pengguna">
-            <input type="password" id="pwd" class="form-control mb-4" placeholder="Kata Laluan">
-            <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold" id="btnLogin">MASUK</button>
-            <small id="loginMsg" class="text-danger d-block mt-3"></small>
+    <div class="login-box">
+        <img src="logo-epnr.png" alt="Logo e-PNR" class="login-logo" onerror="this.src='https://via.placeholder.com/80?text=PNR'">
+        
+        <div class="brand justify-content-center mb-1">e-PNR DIGITAL</div>
+        <p class="small text-muted mb-4">Sistem Pengawasan Perosak Tanaman<br>Jabatan Pertanian Malaysia</p>
+
+        <div class="text-start mb-3">
+            <label class="small fw-bold text-secondary mb-1">ID Pengguna</label>
+            <input type="text" id="uid" class="form-control shadow-sm" placeholder="Masukkan ID">
         </div>
+
+        <div class="text-start mb-4">
+            <label class="small fw-bold text-secondary mb-1">Kata Laluan</label>
+            <input type="password" id="pwd" class="form-control shadow-sm" placeholder="••••••••">
+        </div>
+
+        <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold py-2 shadow-sm" id="btnLogin">MASUK SISTEM</button>
+        <small id="loginMsg" class="text-danger d-block mt-3 fw-medium"></small>
     </div>
+</div>
 
     <div class="sidebar" id="sidebar">
         <div class="brand"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
