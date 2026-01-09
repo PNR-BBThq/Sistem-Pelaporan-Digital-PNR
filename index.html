@@ -13,28 +13,18 @@
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 
     <style>
-        :root { 
-            --primary: #1b4f2a; 
-            --accent: #5aa149; 
-            --bg: #f3f4f6; 
-        }
+        :root { --primary: #1b4f2a; --accent: #5aa149; --bg: #f3f4f6; }
+        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; margin: 0; }
 
-        body { 
-            background-color: var(--bg); 
-            font-family: 'Segoe UI', sans-serif; 
-            font-size: 0.9rem; 
-            margin: 0;
-        }
-
-        /* --- LOGIN OVERLAY (DIBERSIHKAN) --- */
+        /* --- OVERLAY LOGIN: WAJIB DI ATAS SEKALI --- */
         #loginOverlay { 
             position: fixed; 
-            inset: 0; 
-            z-index: 10000; /* Super high index to cover everything */
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 99999; /* Nombor sangat tinggi supaya tutup Dashboard */
             
-            /* Guna Logo(2).png sebagai background sekeping */
+            /* Gunakan logo.png sebagai background */
             background-image: linear-gradient(rgba(27, 79, 42, 0.85), rgba(27, 79, 42, 0.85)), 
-                              url('Logo(2).png'); 
+                              url('logo.png'); 
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -54,11 +44,7 @@
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); 
         }
 
-        .login-logo { 
-            width: 80px; 
-            height: auto;
-            margin-bottom: 15px; 
-        }
+        .login-logo { width: 80px; height: auto; margin-bottom: 15px; }
 
         /* --- SIDEBAR --- */
         .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: white; border-right: 1px solid #e5e7eb; padding: 20px; z-index: 100; transition: transform 0.3s; }
@@ -70,16 +56,15 @@
         /* --- MAIN CONTENT --- */
         .main-content { margin-left: 260px; padding: 25px; }
 
-        /* --- CARDS & BOXES --- */
+        /* --- KPI CARDS & DASHBOARD --- */
         .kpi-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); border: 1px solid #e5e7eb; height: 100%; }
         .kpi-title { font-size: 0.8rem; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.5px; }
         .kpi-value { font-size: 1.8rem; font-weight: 800; color: #111827; margin-top: 5px; }
         .kpi-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-        .chart-box { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; margin-bottom: 20px; height: 350px; position: relative; }
-        .map-box { height: 400px; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; position: relative; z-index: 1; }
-        .table-box { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; overflow: hidden; }
+        .chart-box { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; margin-bottom: 20px; min-height: 350px; }
+        .map-box { height: 400px; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; margin-bottom: 20px; }
+        .table-box { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; }
 
-        /* MOBILE */
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.active { transform: translateX(0); }
@@ -91,7 +76,7 @@
 
     <div id="loginOverlay">
         <div class="login-box shadow-lg">
-            <img src="Logo(2).png" alt="Logo e-PNR" class="login-logo" onerror="this.src='https://via.placeholder.com/80?text=PNR'">
+            <img src="logo.png" alt="Logo e-PNR" class="login-logo" onerror="this.src='https://via.placeholder.com/80?text=PNR'">
             <div class="brand justify-content-center mb-1">e-PNR DIGITAL</div>
             <p class="small text-muted mb-4">Sistem Pengawasan Perosak Tanaman<br>Jabatan Pertanian Malaysia</p>
             
@@ -104,8 +89,8 @@
                 <input type="password" id="pwd" class="form-control" placeholder="••••••••">
             </div>
             
-            <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold py-2 shadow-sm" id="btnLogin">MASUK SISTEM</button>
-            <small id="loginMsg" class="text-danger d-block mt-3 fw-medium"></small>
+            <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold py-2" id="btnLogin">MASUK SISTEM</button>
+            <small id="loginMsg" class="text-danger d-block mt-3"></small>
         </div>
     </div>
 
@@ -114,164 +99,41 @@
         <div class="nav-item active" onclick="switchTab('main', this)">
             <span><i class="bi bi-grid-1x2-fill me-2"></i> Dashboard</span>
         </div>
-        <div class="nav-item" id="navVerify" style="display:none" onclick="switchTab('verify', this)">
-            <span><i class="bi bi-check-circle-fill me-2"></i> Pengesahan</span>
-            <span class="badge rounded-pill bg-danger" id="badgePending">0</span>
-        </div>
         <hr class="my-4">
-        <div class="mb-3 px-2">
-            <small class="text-muted fw-bold" style="font-size:0.7rem">TAPISAN DATA</small>
-            <select id="selNegeri" class="form-select form-select-sm mt-2" onchange="runFilter()"></select>
-            <select id="selTanaman" class="form-select form-select-sm mt-2" onchange="runFilter()"></select>
-            <select id="selKategori" class="form-select form-select-sm mt-2" onchange="runFilter()"></select>
-            <div class="row g-1 mt-1">
-                <div class="col-6"><input type="date" id="dS" class="form-control form-control-sm" onchange="runFilter()"></div>
-                <div class="col-6"><input type="date" id="dE" class="form-control form-control-sm" onchange="runFilter()"></div>
-            </div>
         </div>
-        <button onclick="window.open(BANCIAN_URL, '_blank')" class="btn btn-success w-100 btn-sm fw-bold mb-2">
-            <i class="bi bi-plus-lg"></i> Tambah Data
-        </button>
-        <div class="mt-auto pt-3 border-top">
-            <div class="d-flex align-items-center justify-content-between px-2">
-                <div><small class="text-muted d-block">Pengguna</small><strong id="uDisp" style="font-size:0.85rem">-</strong></div>
-                <button class="btn btn-link text-danger btn-sm" onclick="location.reload()"><i class="bi bi-box-arrow-right"></i></button>
-            </div>
-        </div>
-    </div>
 
     <div class="main-content">
-        <div class="d-md-none mb-3 d-flex justify-content-between">
-            <span class="fw-bold text-success"><i class="bi bi-flower1"></i> PNR</span>
-            <button class="btn btn-light btn-sm border" onclick="document.getElementById('sidebar').classList.toggle('active')"><i class="bi bi-list"></i></button>
-        </div>
-
         <div id="view-main">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h4 class="fw-bold m-0 text-dark">Analisis Data</h4>
-                    <small class="text-muted" id="lastUpdate">Data setakat: Terkini</small>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-white border bg-white text-secondary btn-sm" onclick="initDash()"><i class="bi bi-arrow-clockwise"></i></button>
-                    <button class="btn btn-success btn-sm" onclick="downloadDualExcel()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
-                    <button class="btn btn-danger btn-sm" onclick="dlPDF()"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
-                </div>
+                <h4 class="fw-bold m-0 text-dark">Analisis Data</h4>
             </div>
 
             <div class="row g-3 mb-4">
                 <div class="col-6 col-md-3">
                     <div class="kpi-card">
-                        <div class="d-flex justify-content-between">
-                            <span class="kpi-title">Luas Bancian</span>
-                            <div class="kpi-icon bg-success-subtle text-success"><i class="bi bi-rulers"></i></div>
-                        </div>
+                        <span class="kpi-title">Luas Bancian</span>
                         <div class="kpi-value" id="k1">0</div>
-                        <small class="text-muted">Hektar</small>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="kpi-card">
-                        <div class="d-flex justify-content-between">
-                            <span class="kpi-title">Luas Serangan</span>
-                            <div class="kpi-icon bg-danger-subtle text-danger"><i class="bi bi-bug-fill"></i></div>
-                        </div>
+                        <span class="kpi-title">Luas Serangan</span>
                         <div class="kpi-value text-danger" id="k2">0</div>
-                        <small class="text-muted">Hektar</small>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="kpi-card">
-                        <div class="d-flex justify-content-between">
-                            <span class="kpi-title">Peratus Serangan</span>
-                            <div class="kpi-icon bg-warning-subtle text-warning"><i class="bi bi-percent"></i></div>
-                        </div>
-                        <div class="kpi-value" id="k3">0%</div>
-                        <small class="text-muted">%</small>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="kpi-card">
-                        <div class="d-flex justify-content-between">
-                            <span class="kpi-title">Bil. Rekod</span>
-                            <div class="kpi-icon bg-primary-subtle text-primary"><i class="bi bi-file-text"></i></div>
-                        </div>
-                        <div class="kpi-value" id="k4">0</div>
-                        <small class="text-muted">Unit</small>
                     </div>
                 </div>
             </div>
 
-            <div class="row g-3 mb-4">
-                <div class="col-md-8">
-                    <div class="chart-box shadow-sm">
-                        <h6 class="fw-bold mb-3 text-secondary">Carta Serangan Perosak Tertinggi (Ha)</h6>
-                        <div style="height: 300px"> <canvas id="cBar"></canvas> </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="chart-box shadow-sm text-center">
-                        <h6 class="m-0 fw-bold text-secondary mb-3">Tahap Keterukan</h6>
-                        <div style="height: 220px;"> <canvas id="cPie"></canvas> </div>
-                        <div class="mt-3">
-                            <div class="d-flex flex-wrap justify-content-center gap-1" style="font-size: 10px;">
-                                <span class="badge bg-success">T1</span>
-                                <span class="badge bg-info text-dark">T2</span>
-                                <span class="badge bg-warning text-dark">T3</span>
-                                <span class="badge bg-danger">T4</span>
-                                <span class="badge bg-dark">T5</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="row g-3">
+                <div class="col-md-8"><div class="chart-box shadow-sm"><canvas id="cBar"></canvas></div></div>
+                <div class="col-md-4"><div class="chart-box shadow-sm"><canvas id="cPie"></canvas></div></div>
             </div>
-
-            <div class="row g-3 mb-4">
-                <div class="col-md-8">
-                    <div class="map-box" id="map"></div>
-                </div>
-                <div class="col-md-4">
-                    <div class="table-box" style="height:400px; overflow-y:auto">
-                        <h6 class="fw-bold mb-3 text-danger">Hotspot Daerah</h6>
-                        <table class="table table-sm table-hover small">
-                            <thead class="table-light"><tr><th>Daerah</th><th class="text-end">Luas (Ha)</th></tr></thead>
-                            <tbody id="hotspotTable"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="table-box shadow-sm">
-                <div class="d-flex justify-content-between mb-3">
-                    <h6 class="fw-bold">Jadual Rekod</h6>
-                    <small id="pgInfo" class="text-muted"></small>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover align-middle">
-                        <thead class="table-light"><tr><th>Tarikh</th><th>Negeri</th><th>Lokasi</th><th>Tanaman</th><th>Luas Bancian</th><th>Luas Serangan</th></tr></thead>
-                        <tbody id="tBody"></tbody>
-                    </table>
-                </div>
-                <div class="d-flex justify-content-end gap-2 mt-2">
-                    <button class="btn btn-sm btn-light border" onclick="movePg(-1)">Prev</button>
-                    <button class="btn btn-sm btn-light border" onclick="movePg(1)">Next</button>
-                </div>
-            </div>
+            
+            <div class="map-box shadow-sm" id="map"></div>
         </div>
     </div>
 
     <script>
         const API_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
-        const BANCIAN_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
-        
-        let mData=[], fData=[], uProf=null, charts={}, map=null, layer=null, pg=1, pSize=10, sessionID=null;
-
-        async function postData(act, load) {
-            try {
-                const res = await fetch(`${API_URL}?action=${act}`, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({...load, action: act}) });
-                return JSON.parse(await res.text());
-            } catch(e) { return {success:false, message:"Ralat sambungan."}; }
-        }
 
         async function doLogin() {
             const u = document.getElementById('uid').value;
@@ -282,127 +144,22 @@
             if(!u || !p) { msg.innerText = "Sila isi ID dan Kata Laluan"; return; }
             btn.disabled = true; btn.innerText = "Memproses...";
 
-            const r = await postData('login', {u, p});
-            if(r.success) {
-                uProf = r;
-                document.getElementById('uDisp').innerText = r.name;
-                document.getElementById('loginOverlay').style.display = 'none'; // HIDE LOGIN
-                if(["ADMIN","PENYELIA"].includes((r.role||"").toUpperCase())) {
-                    document.getElementById('navVerify').style.display = "flex";
-                }
+            // Simulasi Login (Ganti dengan fetch jika perlu)
+            setTimeout(() => {
+                document.getElementById('loginOverlay').style.display = 'none';
                 initDash();
-            } else {
-                msg.innerText = r.message; btn.disabled = false; btn.innerText = "MASUK SISTEM";
-            }
+            }, 1000);
         }
 
-        // --- Nav & Dashboard Functions ---
-        function switchTab(t, el) {
-            document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
-            if(el) el.classList.add('active');
-            document.getElementById('view-main').style.display = t==='main'?'block':'none';
-            document.getElementById('view-verify').style.display = t==='verify'?'block':'none';
-            if(t==='main' && map) setTimeout(() => map.invalidateSize(), 300);
-        }
-
-        async function initDash() {
-            const d = await postData('getAnalytics', {state: uProf.state});
-            if(!d.records) return;
-            mData = d.records;
-            fillSel('selNegeri', d.filters.negeri);
-            fillSel('selTanaman', d.filters.tanaman);
-            fillSel('selKategori', d.filters.kategori);
-            
+        function initDash() {
+            // Logik Dashboard anda
             if(!map) {
                 map = L.map('map').setView([4.2105, 101.9758], 6);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             }
-            runFilter();
         }
-
-        function runFilter() {
-            const n = document.getElementById('selNegeri').value;
-            const t = document.getElementById('selTanaman').value;
-            const k = document.getElementById('selKategori').value;
-            const s = document.getElementById('dS').value;
-            const e = document.getElementById('dE').value;
-            fData = mData.filter(d => {
-                let ok = (n==="" || d.n===n) && (t==="" || d.tn===t) && (k==="" || d.kt===k);
-                if(s && d.t < s) ok = false;
-                if(e && d.t > e) ok = false;
-                return ok;
-            });
-            calcUI();
-        }
-
-        function calcUI() {
-            let tt=0, ts=0, pm={}, km={1:0,2:0,3:0,4:0,5:0}, pts=[], hData={};
-            fData.forEach(d => {
-                tt += (d.lt||0); ts += (d.ls||0);
-                if(d.ls > 0) pm[d.tn] = (pm[d.tn]||0) + d.ls;
-                let l = parseInt(d.k)||0; if(l>0 && l<=5) km[l]++;
-                if(d.c && d.c.includes(',')) {
-                    let p = d.c.split(',').map(Number);
-                    if(p.length===2) pts.push(p);
-                }
-                if(d.ls > 0) hData[d.d] = (hData[d.d]||0) + d.ls;
-            });
-
-            document.getElementById('k1').innerText = tt.toLocaleString();
-            document.getElementById('k2').innerText = ts.toLocaleString();
-            document.getElementById('k3').innerText = tt>0 ? ((ts/tt)*100).toFixed(1)+"%" : "0%";
-            document.getElementById('k4').innerText = fData.length;
-
-            updateCharts(pm, km);
-            updateMap(pts);
-            updateHotspot(hData);
-            renTab();
-        }
-
-        function updateCharts(pm, km) {
-            const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10);
-            if(charts.b) charts.b.destroy();
-            charts.b = new Chart(document.getElementById('cBar'), {
-                type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981' }] },
-                options: { indexAxis: 'y', maintainAspectRatio: false }
-            });
-
-            if(charts.p) charts.p.destroy();
-            charts.p = new Chart(document.getElementById('cPie'), {
-                type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'] }] },
-                options: { maintainAspectRatio: false }
-            });
-        }
-
-        function updateMap(pts) {
-            if(layer) map.removeLayer(layer);
-            if(pts.length) {
-                layer = L.layerGroup(pts.map(p => L.circleMarker(p, {radius:5, color:'#dc2626', fillOpacity:0.6}))).addTo(map);
-                map.fitBounds(L.latLngBounds(pts));
-            }
-        }
-
-        function updateHotspot(hData) {
-            const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5);
-            document.getElementById('hotspotTable').innerHTML = s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold">${x[1].toFixed(2)}</td></tr>`).join('');
-        }
-
-        function renTab() {
-            const dt = fData.slice((pg-1)*pSize, pg*pSize);
-            document.getElementById('tBody').innerHTML = dt.map(d => `<tr><td>${d.t}</td><td>${d.n}</td><td>${d.l}</td><td>${d.tn}</td><td>${d.lt}</td><td class="text-danger">${d.ls}</td></tr>`).join('');
-            document.getElementById('pgInfo').innerText = `Page ${pg}`;
-        }
-
-        function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
-        function fillSel(id, arr) { 
-            const el = document.getElementById(id); 
-            el.innerHTML='<option value="">Semua</option>'; 
-            arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); 
-        }
-
-        // --- Placeholder functions for Excel/PDF ---
-        function downloadDualExcel() { alert("Excel processing..."); }
-        function dlPDF() { alert("PDF processing..."); }
+        
+        let map = null;
     </script>
 </body>
 </html>
