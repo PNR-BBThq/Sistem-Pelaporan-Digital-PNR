@@ -13,46 +13,28 @@
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 
     <style>
-        /* --- DESIGN ASAL DASHBOARD --- */
         :root { --primary: #064e3b; --accent: #10b981; --bg: #f3f4f6; }
-        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; margin: 0; }
+        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; margin:0; }
         
-        /* --- LOGIN OVERLAY (DENGAN BACKGROUND LOGO.JPG) --- */
+        /* --- LOGIN OVERLAY (DITAMBAH BACKGROUND LOGO.JPG) --- */
         #loginOverlay { 
-            position: fixed; 
-            inset: 0; 
-            z-index: 999999; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
+            position: fixed; inset: 0; z-index: 999999; 
+            display: flex; align-items: center; justify-content: center; 
             background: linear-gradient(rgba(6, 78, 59, 0.8), rgba(6, 78, 59, 0.8)), 
                         url('logo.jpg') no-repeat center center; 
             background-size: cover; 
         }
+        .login-box { background: white; padding: 2rem; border-radius: 10px; width: 100%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
 
-        .login-box { 
-            background: white; 
-            padding: 2.5rem; 
-            border-radius: 15px; 
-            width: 90%; 
-            max-width: 380px; 
-            text-align: center; 
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); 
-        }
-        
-        .login-logo { width: 90px; margin-bottom: 15px; }
-
-        /* --- SIDEBAR ASAL --- */
+        /* --- SIDEBAR STYLE ASAL --- */
         .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: white; border-right: 1px solid #e5e7eb; padding: 20px; z-index: 100; transition: transform 0.3s; }
         .brand { font-size: 1.2rem; font-weight: 800; color: var(--primary); margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
         .nav-item { padding: 12px 15px; margin-bottom: 5px; border-radius: 8px; cursor: pointer; color: #4b5563; font-weight: 500; display: flex; align-items: center; justify-content: space-between; transition: 0.2s; }
         .nav-item:hover { background: #f9fafb; color: var(--primary); }
         .nav-item.active { background: #ecfdf5; color: var(--primary); font-weight: 700; }
         
-        /* --- MAIN CONTENT ASAL --- */
+        /* --- MAIN CONTENT STYLE ASAL --- */
         .main-content { margin-left: 260px; padding: 25px; }
-        
-        /* --- CARDS & BOXES ASAL --- */
         .kpi-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); border: 1px solid #e5e7eb; height: 100%; }
         .kpi-title { font-size: 0.8rem; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.5px; }
         .kpi-value { font-size: 1.8rem; font-weight: 800; color: #111827; margin-top: 5px; }
@@ -61,7 +43,6 @@
         .map-box { height: 400px; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; position: relative; z-index: 1; }
         .table-box { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; overflow: hidden; }
         
-        /* HELPERS */
         .text-danger { color: #dc2626 !important; }
         .badge-pending { background: #dc2626; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; display: none; }
         
@@ -76,18 +57,11 @@
 
     <div id="loginOverlay">
         <div class="login-box">
-            <img src="logo.jpg" alt="Logo" class="login-logo" onerror="this.src='https://via.placeholder.com/80?text=PNR'">
-            <div class="brand justify-content-center mb-1">e-PNR DIGITAL</div>
-            <p class="small text-muted mb-4">Sistem Pengawasan Perosak Tanaman<br>Jabatan Pertanian Malaysia</p>
-            <div class="text-start mb-3">
-                <label class="small fw-bold text-secondary mb-1">ID Pengguna</label>
-                <input type="text" id="uid" class="form-control" placeholder="Masukkan ID">
-            </div>
-            <div class="text-start mb-4">
-                <label class="small fw-bold text-secondary mb-1">Kata Laluan</label>
-                <input type="password" id="pwd" class="form-control" placeholder="••••••••">
-            </div>
-            <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold py-2 shadow-sm" id="btnLogin">MASUK SISTEM</button>
+            <div class="brand justify-content-center mb-4"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
+            <h6 class="text-muted mb-4">Log Masuk Sistem</h6>
+            <input type="text" id="uid" class="form-control mb-3" placeholder="ID Pengguna">
+            <input type="password" id="pwd" class="form-control mb-4" placeholder="Kata Laluan">
+            <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold" id="btnLogin">MASUK</button>
             <small id="loginMsg" class="text-danger d-block mt-3"></small>
         </div>
     </div>
@@ -144,9 +118,7 @@
 
             <div class="card mb-4 border-0 shadow-sm" style="background: #e0f2fe;">
                 <div class="card-body d-flex align-items-center p-3">
-                    <div class="bg-white p-2 rounded-circle text-primary me-3 shadow-sm">
-                        <i class="bi bi-robot fs-4"></i>
-                    </div>
+                    <div class="bg-white p-2 rounded-circle text-primary me-3 shadow-sm"><i class="bi bi-robot fs-4"></i></div>
                     <div>
                         <h6 class="fw-bold text-primary mb-1">Analisis Pintar</h6>
                         <div id="smartSummary" class="small text-dark">Sedang menganalisis data...</div>
@@ -157,40 +129,28 @@
             <div class="row g-3 mb-4">
                 <div class="col-6 col-md-3">
                     <div class="kpi-card">
-                        <div class="d-flex justify-content-between">
-                            <span class="kpi-title">Luas Bancian</span>
-                            <div class="kpi-icon bg-success-subtle text-success"><i class="bi bi-rulers"></i></div>
-                        </div>
+                        <div class="d-flex justify-content-between"><span class="kpi-title">Luas Bancian</span><div class="kpi-icon bg-success-subtle text-success"><i class="bi bi-rulers"></i></div></div>
                         <div class="kpi-value" id="k1">0</div>
                         <small class="text-muted">Hektar</small>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="kpi-card">
-                        <div class="d-flex justify-content-between">
-                            <span class="kpi-title">Luas Serangan</span>
-                            <div class="kpi-icon bg-danger-subtle text-danger"><i class="bi bi-bug-fill"></i></div>
-                        </div>
+                        <div class="d-flex justify-content-between"><span class="kpi-title">Luas Serangan</span><div class="kpi-icon bg-danger-subtle text-danger"><i class="bi bi-bug-fill"></i></div></div>
                         <div class="kpi-value text-danger" id="k2">0</div>
                         <small class="text-muted">Hektar</small>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="kpi-card">
-                        <div class="d-flex justify-content-between">
-                            <span class="kpi-title">Peratus Serangan</span>
-                            <div class="kpi-icon bg-warning-subtle text-warning"><i class="bi bi-percent"></i></div>
-                        </div>
+                        <div class="d-flex justify-content-between"><span class="kpi-title">Peratus Serangan</span><div class="kpi-icon bg-warning-subtle text-warning"><i class="bi bi-percent"></i></div></div>
                         <div class="kpi-value" id="k3">0%</div>
                         <small class="text-muted">%</small>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="kpi-card">
-                        <div class="d-flex justify-content-between">
-                            <span class="kpi-title">Bil. Rekod</span>
-                            <div class="kpi-icon bg-primary-subtle text-primary"><i class="bi bi-file-text"></i></div>
-                        </div>
+                        <div class="d-flex justify-content-between"><span class="kpi-title">Bil. Rekod</span><div class="kpi-icon bg-primary-subtle text-primary"><i class="bi bi-file-text"></i></div></div>
                         <div class="kpi-value" id="k4">0</div>
                         <small class="text-muted">Unit</small>
                     </div>
@@ -209,13 +169,11 @@
                 <div class="col-md-4">
                     <div class="card h-100 shadow-sm border-0">
                         <div class="card-header bg-transparent border-0 py-3 d-flex align-items-center">
-                            <div class="icon-shape bg-warning text-white rounded-3 p-2 me-2 shadow-sm">
-                                <i class="bi bi-pie-chart-fill"></i>
-                            </div>
+                            <div class="icon-shape bg-warning text-white rounded-3 p-2 me-2 shadow-sm"><i class="bi bi-pie-chart-fill"></i></div>
                             <h6 class="m-0 fw-bold text-secondary">Tahap Keterukan</h6>
                         </div>
                         <div class="card-body text-center position-relative">
-                            <div style="height: 250px;"> <canvas id="cPie"></canvas> </div>
+                            <div style="height: 250px;"><canvas id="cPie"></canvas></div>
                             <div class="mt-4 pt-3 border-top">
                                 <p class="text-uppercase text-muted fw-bold mb-2" style="font-size: 10px; letter-spacing: 1px;">Petunjuk Tahap</p>
                                 <div class="d-flex flex-wrap justify-content-center gap-2" style="font-size: 11px;">
@@ -232,9 +190,7 @@
             </div>
 
             <div class="row g-3 mb-4">
-                <div class="col-md-8">
-                    <div class="map-box" id="map"></div>
-                </div>
+                <div class="col-md-8"><div class="map-box" id="map"></div></div>
                 <div class="col-md-4">
                     <div class="table-box" style="height:400px; overflow-y:auto">
                         <h6 class="fw-bold mb-3 text-danger">Hotspot Daerah</h6>
@@ -247,10 +203,7 @@
             </div>
 
             <div class="table-box">
-                <div class="d-flex justify-content-between mb-3">
-                    <h6 class="fw-bold">Jadual Rekod</h6>
-                    <small id="pgInfo" class="text-muted"></small>
-                </div>
+                <div class="d-flex justify-content-between mb-3"><h6 class="fw-bold">Jadual Rekod</h6><small id="pgInfo" class="text-muted"></small></div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle">
                         <thead class="table-light"><tr><th>Tarikh</th><th>Negeri</th><th>Lokasi</th><th>Tanaman</th><th>Luas Bancian</th><th>Luas Serangan</th></tr></thead>
@@ -265,10 +218,7 @@
         </div>
 
         <div id="view-verify" style="display:none">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold m-0 text-dark">Pengesahan Data</h4>
-                <button class="btn btn-primary btn-sm" onclick="loadPend()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
-            </div>
+            <div class="d-flex justify-content-between align-items-center mb-4"><h4 class="fw-bold m-0 text-dark">Pengesahan Data</h4><button class="btn btn-primary btn-sm" onclick="loadPend()"><i class="bi bi-arrow-clockwise"></i> Refresh</button></div>
             <div class="table-box">
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm small align-middle" style="white-space:nowrap">
@@ -290,7 +240,7 @@
             try {
                 const res = await fetch(`${API_URL}?action=${act}`, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({...load, action: act}) });
                 return JSON.parse(await res.text());
-            } catch(e) { return {success:false, message:"Ralat sambungan."}; }
+            } catch(e) { console.error(e); return {success:false, message:"Ralat sambungan."}; }
         }
 
         async function doLogin() {
@@ -305,13 +255,9 @@
                 uProf = r;
                 document.getElementById('uDisp').innerText = r.name;
                 document.getElementById('loginOverlay').style.display = 'none';
-                if(["ADMIN","PENYELIA"].includes((r.role||"").toUpperCase())) {
-                    document.getElementById('navVerify').style.display = "flex";
-                }
+                if(["ADMIN","PENYELIA"].includes((r.role||"").toUpperCase())) { document.getElementById('navVerify').style.display = "flex"; checkPendingCount(); }
                 initDash();
-            } else {
-                msg.innerText = r.message; btn.disabled = false; btn.innerText = "MASUK SISTEM";
-            }
+            } else { msg.innerText = r.message; btn.disabled = false; btn.innerText = "MASUK"; }
         }
 
         function switchTab(t, el) {
@@ -319,110 +265,111 @@
             if(el) el.classList.add('active');
             document.getElementById('view-main').style.display = t==='main'?'block':'none';
             document.getElementById('view-verify').style.display = t==='verify'?'block':'none';
+            if(t==='verify') loadPend();
             if(t==='main' && map) setTimeout(() => map.invalidateSize(), 300);
+        }
+
+        async function checkPendingCount() {
+            try { const d = await postData('getPending', {state: uProf.state}); const b = document.getElementById('badgePending'); if(d.rows && d.rows.length > 0) { b.innerText = d.rows.length; b.style.display = "inline-block"; } else { b.style.display = "none"; } } catch(e){}
         }
 
         async function initDash() {
             const d = await postData('getAnalytics', {state: uProf.state});
-            if(!d.records) return;
+            if(!d.records) { alert("Tiada Data"); return; }
             mData = d.records;
             fillSel('selNegeri', d.filters.negeri);
             fillSel('selTanaman', d.filters.tanaman);
             fillSel('selKategori', d.filters.kategori);
-            if(!map) {
-                map = L.map('map').setView([4.2105, 101.9758], 6);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-            }
+            if(uProf.state !== "ALL") { const s = document.getElementById('selNegeri'); s.value = uProf.state; s.disabled = true; }
+            if(!map) { map = L.map('map').setView([4.2105, 101.9758], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); }
             runFilter();
         }
 
         function runFilter() {
-            const n = document.getElementById('selNegeri').value;
-            const t = document.getElementById('selTanaman').value;
-            const k = document.getElementById('selKategori').value;
-            const s = document.getElementById('dS').value;
-            const e = document.getElementById('dE').value;
-            fData = mData.filter(d => {
-                let ok = (n==="" || d.n===n) && (t==="" || d.tn===t) && (k==="" || d.kt===k);
-                if(s && d.t < s) ok = false;
-                if(e && d.t > e) ok = false;
-                return ok;
-            });
-            calcUI();
+            const n = document.getElementById('selNegeri').value, t = document.getElementById('selTanaman').value, k = document.getElementById('selKategori').value, s = document.getElementById('dS').value, e = document.getElementById('dE').value;
+            fData = mData.filter(d => { let ok = (n==="" || d.n===n) && (t==="" || d.tn===t) && (k==="" || d.kt===k); if(s && d.t < s) ok = false; if(e && d.t > e) ok = false; return ok; });
+            pg = 1; calcUI();
         }
 
         function calcUI() {
             let tt=0, ts=0, pm={}, km={1:0,2:0,3:0,4:0,5:0}, pts=[], hData={};
             fData.forEach(d => {
                 tt += (d.lt||0); ts += (d.ls||0);
-                if(d.ls > 0) pm[d.tn] = (pm[d.tn]||0) + d.ls;
+                if(d.p && Object.keys(d.p).length > 0) Object.entries(d.p).forEach(([k,v]) => pm[k] = (pm[k]||0)+parseFloat(v)); else if(d.ls > 0) pm["Umum"] = (pm["Umum"]||0) + d.ls;
                 let l = parseInt(d.k)||0; if(l>0 && l<=5) km[l]++;
-                if(d.c && d.c.includes(',')) {
-                    let p = d.c.split(',').map(Number);
-                    if(p.length===2) pts.push(p);
-                }
-                if(d.ls > 0) hData[d.d] = (hData[d.d]||0) + d.ls;
+                if(d.c && d.c.includes(',')) { let p = d.c.split(',').map(Number); if(p.length===2 && !isNaN(p[0])) pts.push(p); }
+                if(d.ls > 0 && d.d !== "-") hData[d.d] = (hData[d.d]||0) + d.ls;
             });
-            document.getElementById('k1').innerText = tt.toLocaleString();
-            document.getElementById('k2').innerText = ts.toLocaleString();
+            document.getElementById('k1').innerText = tt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('k2').innerText = ts.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             document.getElementById('k3').innerText = tt>0 ? ((ts/tt)*100).toFixed(1)+"%" : "0%";
-            document.getElementById('k4').innerText = fData.length;
-            updateCharts(pm, km);
-            updateMap(pts);
-            updateHotspot(hData);
-            genSummary(pm, tt, ts);
-            renTab();
+            document.getElementById('k4').innerText = fData.length.toLocaleString('en-US');
+            updateCharts(pm, km); updateMap(pts); updateHotspot(hData); genSummary(pm, tt, ts); renTab();
         }
 
         function genSummary(pm, tt, ts) {
-            const el = document.getElementById('smartSummary');
-            let topP="-", topV=0;
-            Object.entries(pm).forEach(([k,v])=>{if(v>topV){topP=k; topV=v}});
-            el.innerHTML = ts > 0 ? `Analisis menunjukkan serangan tertinggi adalah pada tanaman <b>${topP}</b> dengan luas <b>${ts.toFixed(2)} Ha</b>.` : "Tiada serangan kritikal dikesan.";
+            const el = document.getElementById('smartSummary'); if(!el) return;
+            let loc = document.getElementById('selNegeri').value || "Semua Negeri";
+            let cropMap = {}; fData.forEach(d => { if(d.ls > 0) cropMap[d.tn] = (cropMap[d.tn] || 0) + d.ls; });
+            let topCrop = "-", topCropVal = 0; Object.entries(cropMap).forEach(([k,v]) => { if(v > topCropVal) { topCrop = k; topCropVal = v; } });
+            let topP="-", topV=0; Object.entries(pm).forEach(([k,v])=>{if(v>topV){topP=k; topV=v}});
+            let totalScore = 0, count = 0; fData.forEach(d => { let level = parseInt(d.k) || 0; if(level > 0 && d.ls > 0){ totalScore += level; count++; } });
+            let avgIdx = count > 0 ? (totalScore / count).toFixed(1) : "0.0";
+            let tafsir = "Tiada", color = "text-success"; let idxNum = parseFloat(avgIdx);
+            if(idxNum > 0) { if(idxNum <= 2.9) tafsir = "Ringan"; else if(idxNum <= 3.9) { tafsir = "Sederhana"; color = "text-warning"; } else { tafsir = "Teruk"; color = "text-danger"; } }
+            el.innerHTML = ts === 0 ? `<span class="text-success"><i class="bi bi-check-circle"></i> Tiada rekod serangan.</span>` : `<b>${loc}</b>: <b>${topCrop}</b> terjejas akibat <b>${topP}</b>. Luas: <b>${ts.toFixed(2)} Ha</b>. Indeks: <b>${avgIdx}</b> (<span class="${color}">${tafsir}</span>)`;
         }
 
         function updateCharts(pm, km) {
             const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10);
-            if(charts.b) charts.b.destroy();
-            charts.b = new Chart(document.getElementById('cBar'), {
-                type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981' }] },
-                options: { indexAxis: 'y', maintainAspectRatio: false }
-            });
-            if(charts.p) charts.p.destroy();
-            charts.p = new Chart(document.getElementById('cPie'), {
-                type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'] }] },
-                options: { maintainAspectRatio: false }
-            });
+            if(charts.b) charts.b.destroy(); charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } });
+            if(charts.p) charts.p.destroy(); charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } });
         }
 
-        function updateMap(pts) {
-            if(layer) map.removeLayer(layer);
-            if(pts.length) {
-                layer = L.layerGroup(pts.map(p => L.circleMarker(p, {radius:5, color:'#dc2626', fillOpacity:0.6}))).addTo(map);
-                map.fitBounds(L.latLngBounds(pts));
-            }
-        }
-
-        function updateHotspot(hData) {
-            const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5);
-            document.getElementById('hotspotTable').innerHTML = s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold">${x[1].toFixed(2)}</td></tr>`).join('');
-        }
-
-        function renTab() {
-            const dt = fData.slice((pg-1)*pSize, pg*pSize);
-            document.getElementById('tBody').innerHTML = dt.map(d => `<tr><td>${d.t}</td><td>${d.n}</td><td>${d.l}</td><td>${d.tn}</td><td>${d.lt.toFixed(2)}</td><td class="text-danger fw-bold">${d.ls.toFixed(2)}</td></tr>`).join('');
-            document.getElementById('pgInfo').innerText = `Page ${pg}`;
-        }
-
+        function updateMap(pts) { if(layer) map.removeLayer(layer); if(pts.length) { layer = L.layerGroup(pts.map(p => L.circleMarker(p, {radius:5, color:'#dc2626', fillOpacity:0.6, stroke:false}))).addTo(map); map.fitBounds(L.latLngBounds(pts)); } }
+        function updateHotspot(hData) { const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; }
+        function renTab() { const st = (pg-1)*pSize; const dt = fData.slice(st, st+pSize); document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `<tr><td>${d.t}</td><td>${d.n}</td><td>${d.l}</td><td><span class="badge bg-light text-dark border">${d.tn}</span></td><td>${d.lt.toFixed(2)}</td><td class="text-danger fw-bold">${d.ls.toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="6" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; document.getElementById('pgInfo').innerText = `Page ${pg}`; }
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
-        function fillSel(id, arr) { 
-            const el = document.getElementById(id); 
-            el.innerHTML='<option value="">Semua</option>'; 
-            arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); 
+        function fillSel(id, arr) { const el = document.getElementById(id); el.innerHTML='<option value="">Semua</option>'; arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); }
+
+        /* --- FUNGSI EXCEL KOMPLEKS (DIKEKALKAN) --- */
+        async function downloadDualExcel() {
+            if (!fData.length) { alert("Tiada data!"); return; }
+            const workbook = new ExcelJS.Workbook(); const worksheet = workbook.addWorksheet('Laporan Penuh');
+            worksheet.columns = [{ header: 'ID', key: 'id', width: 6 }, { header: 'Tarikh', key: 't', width: 12 }, { header: 'Negeri', key: 'n', width: 15 }, { header: 'Daerah', key: 'd', width: 15 }, { header: 'Lokasi', key: 'l', width: 22 }, { header: 'Koordinat', key: 'c', width: 22 }, { header: 'Kategori', key: 'kt', width: 18 }, { header: 'Tanaman', key: 'tn', width: 18 }, { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, { header: 'Syor Kawalan', key: 's', width: 25 }, { header: 'Pegawai', key: 'pg', width: 20 }, { header: 'Perosak', key: 'p', width: 20 }, { header: 'Keterukan', key: 'k', width: 18 }, { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, { header: '% Serangan', key: 'pct', width: 15 }];
+            worksheet.getRow(1).font = { bold: true }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+            let rowIndex = 2;
+            fData.forEach(d => {
+                let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]];
+                let startRow = rowIndex; let luasTanam = parseFloat(d.lt) || 0;
+                pestEntries.forEach(([pName, pArea]) => {
+                    let luasSerang = parseFloat(pArea) || 0; let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%";
+                    const row = worksheet.getRow(rowIndex); row.values = { id: d.id, t: d.t, n: d.n, d: d.d, l: d.l, c: d.c || "-", kt: d.kt || "-", tn: d.tn, lt: luasTanam, s: d.s, pg: d.pg || "-", p: pName, k: d.k, ls: luasSerang, pct: pctVal };
+                    row.eachCell({ includeEmpty: true }, (cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; });
+                    rowIndex++;
+                });
+                if (pestEntries.length > 1) { for (let c = 1; c <= 11; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); } }
+                for (let r = startRow; r < rowIndex; r++) { for (let c = 1; c <= 11; c++) { worksheet.getCell(r, c).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; } }
+            });
+            const buffer = await workbook.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'PNR_Laporan_Lengkap.xlsx'; anchor.click(); window.URL.revokeObjectURL(url);
         }
 
-        function downloadDualExcel() { alert("Excel processing..."); }
-        function dlPDF() { alert("PDF processing..."); }
+        /* --- FUNGSI PDF (DIKEKALKAN) --- */
+        async function dlPDF() {
+            const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = "Jana..."; btn.disabled = true;
+            let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length-1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length-1])}`; }
+            try { const m = { user: uProf.name, negeri: document.getElementById('selNegeri').value || "Semua", dates: dateLabel }; const r = await postData('genPDF', {data: fData, meta: m}); if(r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } } catch(e) { console.error(e); }
+            btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false;
+        }
+
+        /* --- FUNGSI PENGESAHAN (DIKEKALKAN) --- */
+        async function loadPend() {
+            const tb = document.getElementById('vBody'), th = document.getElementById('vHead'); tb.innerHTML = '<tr><td colspan="100%" class="text-center p-5">Sila tunggu...</td></tr>';
+            try { const d = await postData('getPending', {state: uProf.state}); if(!d.rows || !d.rows.length) { tb.innerHTML='<tr><td colspan="100%" class="text-center p-5">Tiada data baru.</td></tr>'; return; } let h = '<th>#</th>'; d.headers.forEach(x => h+=`<th>${x}</th>`); h+='<th>Tindakan</th>'; th.innerHTML = h; tb.innerHTML = d.rows.map((r,i) => { let tds = `<td>${i+1}</td>` + r.data.map(c=>`<td>${c}</td>`).join(''); return `<tr>${tds}<td><button class="btn btn-sm btn-success me-1" onclick="subVer(${r.row},'APPROVE')">✔</button><button class="btn btn-sm btn-danger" onclick="subVer(${r.row},'REJECT')">✘</button></td></tr>`; }).join(''); } catch(e) { tb.innerHTML='<tr><td colspan="100%" class="text-danger text-center">Ralat</td></tr>'; }
+        }
+
+        async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
     </script>
 </body>
 </html>
