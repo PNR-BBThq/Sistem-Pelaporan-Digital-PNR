@@ -15,9 +15,25 @@
         :root { --primary: #064e3b; --accent: #10b981; --bg: #f3f4f6; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; }
         
-        /* LOGIN OVERLAY */
-        #loginOverlay { position: fixed; inset: 0; background: #0f172a; z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .login-box { background: white; padding: 2rem; border-radius: 10px; width: 100%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+       #loginOverlay { 
+    position: fixed; 
+    inset: 0; 
+    
+    /* Gantikan 'Logo(2).png' dengan nama fail imej janaan AI anda */
+    /* Lapisan rgba(27, 79, 42, 0.6) adalah overlay hijau gelap untuk kontras */
+    background-image: linear-gradient(rgba(27, 79, 42, 0.6), rgba(27, 79, 42, 0.6)), 
+                      url('background-epnr-full.jpg'); 
+    
+    /* TIGA BARIS PENTING: Memastikan imej penuh sekeping */
+    background-size: cover;      /* Tarik imej penuhi skrin secara berkadar (tidak herot) */
+    background-position: center; /* Sentiasa fokus pada tengah imej */
+    background-repeat: no-repeat; /* Jangan ulang imej */
+    
+    z-index: 9999; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+}
 
         /* SIDEBAR */
         .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: white; border-right: 1px solid #e5e7eb; padding: 20px; z-index: 100; transition: transform 0.3s; }
