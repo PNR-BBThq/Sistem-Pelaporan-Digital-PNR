@@ -26,36 +26,37 @@
             overflow-x: hidden;
         }
 
-        /* --- LOGIN OVERLAY (PALING PENTING) --- */
+        /* --- LOGIN OVERLAY (WAJIB DI ATAS SEKALI) --- */
         #loginOverlay { 
             position: fixed; 
             top: 0; left: 0; 
             width: 100vw; 
             height: 100vh;
-            z-index: 999999 !important; /* Memastikan ia menutup dashboard & peta */
+            z-index: 999999 !important; /* Nilai tinggi supaya tutup semua dashboard */
             display: flex; 
             align-items: center; 
             justify-content: center;
             
-            /* Guna logo.jpg dengan lapisan hijau korporat yang elegan */
-            background: linear-gradient(rgba(27, 79, 42, 0.85), rgba(27, 79, 42, 0.85)), 
+            /* Guna imej logo.jpg yang baru sebagai background penuh */
+            /* Kita letak sedikit warna hijau gelap (0.4) supaya kotak putih nampak menonjol */
+            background: linear-gradient(rgba(27, 79, 42, 0.4), rgba(27, 79, 42, 0.4)), 
                         url('logo.jpg') no-repeat center center; 
-            background-size: cover; /* Imej penuh sekeping */
+            background-size: cover; /* Imej akan tarik penuhi skrin tanpa pecah */
         }
 
         .login-box { 
-            background: white; 
+            background: rgba(255, 255, 255, 0.95); /* Putih sedikit telus untuk nampak elegan */
             padding: 2.5rem; 
             border-radius: 20px; 
             width: 90%; 
             max-width: 400px; 
             text-align: center; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            backdrop-filter: blur(5px); /* Efek blur pada background belakang kotak */
         }
 
-        .login-logo { 
+        .login-logo-img { 
             width: 100px; 
-            height: auto; 
             margin-bottom: 15px; 
         }
 
@@ -90,22 +91,22 @@
 
     <div id="loginOverlay">
         <div class="login-box">
-            <img src="logo.jpg" alt="Logo" class="login-logo" onerror="this.src='https://via.placeholder.com/100?text=PNR'">
+            <img src="logo.png" alt="Logo" class="login-logo-img" onerror="this.src='https://via.placeholder.com/100?text=PNR'">
             
             <h4 class="fw-bold text-success mb-1">e-PNR DIGITAL</h4>
             <p class="small text-muted mb-4">Sistem Pengawasan Perosak Tanaman<br>Jabatan Pertanian Malaysia</p>
             
             <div class="text-start mb-3">
-                <label class="small fw-bold">ID Pengguna</label>
-                <input type="text" id="uid" class="form-control" placeholder="Masukkan ID">
+                <label class="small fw-bold text-secondary">ID Pengguna</label>
+                <input type="text" id="uid" class="form-control" placeholder="ID Anda">
             </div>
             
             <div class="text-start mb-4">
-                <label class="small fw-bold">Kata Laluan</label>
+                <label class="small fw-bold text-secondary">Kata Laluan</label>
                 <input type="password" id="pwd" class="form-control" placeholder="••••••••">
             </div>
             
-            <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold py-2 shadow-sm" id="btnLogin">
+            <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold py-2 shadow" id="btnLogin">
                 MASUK SISTEM
             </button>
             <small id="loginMsg" class="text-danger d-block mt-3 fw-medium"></small>
@@ -141,35 +142,34 @@
             </div>
         </div>
 
-        <div class="card p-3 shadow-sm border-0 mb-4">
-            <h6 class="fw-bold text-secondary">Taburan Lokasi (Peta)</h6>
+        <div class="card p-3 shadow-sm border-0">
+            <h6 class="fw-bold text-secondary mb-3">Taburan Lokasi (Peta)</h6>
             <div id="map" style="height: 400px; border-radius: 10px;"></div>
         </div>
     </div>
 
     <script>
-        // Logik Login Utama
+        // Logik Login
         function doLogin() {
             const u = document.getElementById('uid').value;
             const p = document.getElementById('pwd').value;
             const msg = document.getElementById('loginMsg');
 
+            // Ganti logik ini mengikut semakan database anda
             if(u && p) {
-                // Sembunyikan Overlay Login dengan paksaan (important)
+                // Sembunyikan Overlay Login
                 document.getElementById('loginOverlay').style.setProperty('display', 'none', 'important');
                 initSystem();
             } else {
-                msg.innerText = "Sila masukkan ID dan Kata Laluan yang sah.";
+                msg.innerText = "Sila isi ID dan Kata Laluan.";
             }
         }
 
         function initSystem() {
-            // Inisialisasi Peta Leaflet
             if(!map) {
                 map = L.map('map').setView([4.2105, 101.9758], 6);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
             }
-            console.log("Sistem Dashboard Berjaya Dimuatkan");
         }
 
         let map = null;
