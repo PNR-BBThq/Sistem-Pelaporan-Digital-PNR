@@ -308,17 +308,78 @@
         }
 
         function genSummary(pm, tt, ts) {
-            const el = document.getElementById('smartSummary'); if(!el) return;
-            let loc = document.getElementById('selNegeri').value || "Semua Negeri";
-            let cropMap = {}; fData.forEach(d => { if(d.ls > 0) cropMap[d.tn] = (cropMap[d.tn] || 0) + d.ls; });
-            let topCrop = "-", topCropVal = 0; Object.entries(cropMap).forEach(([k,v]) => { if(v > topCropVal) { topCrop = k; topCropVal = v; } });
-            let topP="-", topV=0; Object.entries(pm).forEach(([k,v])=>{if(v>topV){topP=k; topV=v}});
-            let totalScore = 0, count = 0; fData.forEach(d => { let level = parseInt(d.k) || 0; if(level > 0 && d.ls > 0){ totalScore += level; count++; } });
-            let avgIdx = count > 0 ? (totalScore / count).toFixed(1) : "0.0";
-            let tafsir = "Tiada", color = "text-success"; let idxNum = parseFloat(avgIdx);
-            if(idxNum > 0) { if(idxNum <= 2.9) tafsir = "Ringan"; else if(idxNum <= 3.9) { tafsir = "Sederhana"; color = "text-warning"; } else { tafsir = "Teruk"; color = "text-danger"; } }
-            el.innerHTML = ts === 0 ? `<span class="text-success"><i class="bi bi-check-circle"></i> Tiada rekod serangan.</span>` : `<b>${loc}</b>: <b>${topCrop}</b> terjejas akibat <b>${topP}</b>. Luas: <b>${ts.toFixed(2)} Ha</b>. Indeks: <b>${avgIdx}</b> (<span class="${color}">${tafsir}</span>)`;
+    const el = document.getElementById('smartSummary');
+    if(!el) return;
+
+    // --- 1. CARI NEGERI DENGAN SERANGAN TERTINGGI (DYNAMIK) ---
+    let stateMap = {};
+    fData.forEach(d => {
+        if (d.ls > 0) {
+            stateMap[d.n] = (stateMap[d.n] || 0) + d.ls;
         }
+    });
+
+    let topState = "-";
+    let topStateVal = 0;
+    
+    Object.entries(stateMap).forEach(([negeri, luas]) => {
+        if (luas > topStateVal) {
+            topState = negeri;
+            topStateVal = luas;
+        }
+    });
+
+    // Jika tiada serangan, atau jika user sedang filter negeri spesifik, 
+    // kita gunakan nilai filter tersebut sebagai sandaran.
+    if (topState === "-") {
+        topState = document.getElementById('selNegeri').value || "Semua Negeri";
+    }
+
+    // --- 2. CARI TANAMAN PALING TERJEJAS ---
+    let cropMap = {};
+    fData.forEach(d => {
+        if(d.ls > 0) cropMap[d.tn] = (cropMap[d.tn] || 0) + d.ls;
+    });
+    let topCrop = "-", topCropVal = 0;
+    Object.entries(cropMap).forEach(([k,v]) => {
+        if(v > topCropVal) { topCrop = k; topCropVal = v; }
+    });
+
+    // --- 3. CARI MUSUH UTAMA ---
+    let topP="-", topV=0;
+    Object.entries(pm).forEach(([k,v])=>{ if(v > topV){ topP = k; topV = v; } });
+    if(topP === "-" && ts > 0) topP = "Serangan Umum";
+
+    // --- 4. INDEKS KETERUKAN ---
+    let totalScore = 0, count = 0;
+    fData.forEach(d => {
+        let level = parseInt(d.k) || 0;
+        if(level > 0 && d.ls > 0){ totalScore += level; count++; }
+    });
+    let avgIdx = count > 0 ? (totalScore / count).toFixed(1) : "0.0";
+    
+    let tafsir = "Tiada", color = "text-success";
+    let idxNum = parseFloat(avgIdx);
+    if(idxNum > 0) {
+        if(idxNum <= 2.9) tafsir = "Ringan";
+        else if(idxNum <= 3.9) { tafsir = "Sederhana"; color = "text-warning"; }
+        else { tafsir = "Teruk"; color = "text-danger fw-bold"; }
+    }
+
+    // Paparan Output
+    if(ts === 0) {
+        el.innerHTML = `<span class="text-success"><i class="bi bi-check-circle"></i> Tiada rekod serangan dilaporkan setakat ini.</span>`;
+    } else {
+        el.innerHTML = `
+            <div style="line-height: 1.6;">
+                <i class="bi bi-geo-alt-fill text-danger"></i> Lokasi Hotspot: <b>${topState}</b>. <br>
+                <i class="bi bi-flower1 text-success"></i> Tanaman <b>${topCrop}</b> paling terkesan akibat serangan <b>${topP}</b>.<br>
+                <i class="bi bi-exclamation-circle-fill text-warning"></i> Luas Serangan: <b>${ts.toFixed(2)} Ha</b> (${((ts/tt)*100).toFixed(2)}%)<br>
+                <i class="bi bi-bar-chart-fill text-secondary"></i> Indeks Keterukan: <b>${avgIdx}</b> (<span class="${color}">${tafsir}</span>)
+            </div>
+        `;
+    }
+}
 
         function updateCharts(pm, km) {
             const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10);
