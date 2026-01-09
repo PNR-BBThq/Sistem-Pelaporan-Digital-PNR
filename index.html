@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem PNR Digital</title>
+    <title>Sistem PNR Digital - Jabatan Pertanian</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -13,45 +13,73 @@
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 
     <style>
-        :root { --primary: #1b4f2a; --accent: #5aa149; --bg: #f3f4f6; }
-        
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg); }
+        :root { 
+            --primary: #1b4f2a; 
+            --accent: #5aa149; 
+            --bg: #f3f4f6; 
+        }
 
-        /* --- LOGIN OVERLAY (FIXED TOTAL) --- */
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', sans-serif; 
+            background-color: var(--bg); 
+            overflow-x: hidden;
+        }
+
+        /* --- LOGIN OVERLAY (PALING PENTING) --- */
         #loginOverlay { 
             position: fixed; 
             top: 0; left: 0; 
-            width: 100vw; height: 100vh;
-            z-index: 999999 !important; /* Nilai paling tinggi */
+            width: 100vw; 
+            height: 100vh;
+            z-index: 999999 !important; /* Memastikan ia menutup dashboard & peta */
             display: flex; 
             align-items: center; 
             justify-content: center;
             
-            /* Guna logo.png dengan lapisan hijau tua */
-            background: linear-gradient(rgba(27, 79, 42, 0.9), rgba(27, 79, 42, 0.9)), 
+            /* Guna logo.jpg dengan lapisan hijau korporat yang elegan */
+            background: linear-gradient(rgba(27, 79, 42, 0.85), rgba(27, 79, 42, 0.85)), 
                         url('logo.jpg') no-repeat center center; 
-            background-size: cover;
+            background-size: cover; /* Imej penuh sekeping */
         }
 
         .login-box { 
             background: white; 
-            padding: 30px; 
+            padding: 2.5rem; 
             border-radius: 20px; 
             width: 90%; 
-            max-width: 380px; 
+            max-width: 400px; 
             text-align: center; 
             box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-            position: relative;
         }
 
-        .login-logo { width: 80px; margin-bottom: 15px; }
+        .login-logo { 
+            width: 100px; 
+            height: auto; 
+            margin-bottom: 15px; 
+        }
 
-        /* --- SIDEBAR & DASHBOARD --- */
-        .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: white; border-right: 1px solid #ddd; padding: 20px; z-index: 100; }
+        /* --- SIDEBAR --- */
+        .sidebar { 
+            width: 260px; height: 100vh; position: fixed; 
+            top: 0; left: 0; background: white; 
+            border-right: 1px solid #ddd; padding: 20px; z-index: 100; 
+        }
+
+        .brand { 
+            font-size: 1.2rem; font-weight: 800; color: var(--primary); 
+            display: flex; align-items: center; gap: 10px; 
+        }
+
+        /* --- MAIN CONTENT --- */
         .main-content { margin-left: 260px; padding: 25px; }
-        .kpi-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid #ddd; margin-bottom: 20px; }
-        .chart-box { background: white; border-radius: 12px; padding: 20px; border: 1px solid #ddd; height: 350px; }
 
+        .kpi-card { 
+            background: white; border-radius: 12px; padding: 20px; 
+            border: 1px solid #ddd; margin-bottom: 20px; 
+        }
+
+        /* MOBILE RESPONSIVE */
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .main-content { margin-left: 0; }
@@ -62,76 +90,89 @@
 
     <div id="loginOverlay">
         <div class="login-box">
-            <img src="logo.jpg" alt="Logo" class="login-logo" onerror="this.src='https://via.placeholder.com/80?text=PNR'">
+            <img src="logo.jpg" alt="Logo" class="login-logo" onerror="this.src='https://via.placeholder.com/100?text=PNR'">
+            
             <h4 class="fw-bold text-success mb-1">e-PNR DIGITAL</h4>
-            <p class="small text-muted mb-4">Jabatan Pertanian Malaysia</p>
+            <p class="small text-muted mb-4">Sistem Pengawasan Perosak Tanaman<br>Jabatan Pertanian Malaysia</p>
             
             <div class="text-start mb-3">
                 <label class="small fw-bold">ID Pengguna</label>
-                <input type="text" id="uid" class="form-control" placeholder="ID">
+                <input type="text" id="uid" class="form-control" placeholder="Masukkan ID">
             </div>
+            
             <div class="text-start mb-4">
                 <label class="small fw-bold">Kata Laluan</label>
                 <input type="password" id="pwd" class="form-control" placeholder="••••••••">
             </div>
             
-            <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold py-2" id="btnLogin">MASUK SISTEM</button>
-            <small id="loginMsg" class="text-danger d-block mt-3"></small>
+            <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold py-2 shadow-sm" id="btnLogin">
+                MASUK SISTEM
+            </button>
+            <small id="loginMsg" class="text-danger d-block mt-3 fw-medium"></small>
         </div>
     </div>
 
     <div class="sidebar" id="sidebar">
-        <h5 class="fw-bold text-success mb-4"><i class="bi bi-flower1"></i> e-PNR</h5>
-        <div class="nav-item active p-2 rounded bg-light">Dashboard</div>
+        <div class="brand mb-4"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
+        <div class="nav-item active p-2 rounded bg-light fw-bold text-success mb-2">
+            <i class="bi bi-grid-1x2-fill me-2"></i> Dashboard
+        </div>
         <hr>
-        <button class="btn btn-danger btn-sm w-100 mt-5" onclick="location.reload()">LOG KELUAR</button>
+        <button class="btn btn-outline-danger btn-sm w-100 mt-5" onclick="location.reload()">
+            <i class="bi bi-box-arrow-right"></i> LOG KELUAR
+        </button>
     </div>
 
     <div class="main-content">
-        <h4 class="fw-bold mb-4">Analisis Data</h4>
-        <div class="row g-3">
-            <div class="col-md-6">
+        <h4 class="fw-bold mb-4">Analisis Data Dashboard</h4>
+        
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
                 <div class="kpi-card">
-                    <small class="text-muted">Luas Bancian</small>
+                    <small class="text-muted fw-bold">LUAS BANCIAN</small>
                     <h2 class="fw-bold" id="k1">0</h2>
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-6 col-md-3">
                 <div class="kpi-card">
-                    <small class="text-muted">Luas Serangan</small>
+                    <small class="text-muted fw-bold">LUAS SERANGAN</small>
                     <h2 class="fw-bold text-danger" id="k2">0</h2>
                 </div>
             </div>
         </div>
-        <div class="chart-box">
-            <canvas id="cBar"></canvas>
+
+        <div class="card p-3 shadow-sm border-0 mb-4">
+            <h6 class="fw-bold text-secondary">Taburan Lokasi (Peta)</h6>
+            <div id="map" style="height: 400px; border-radius: 10px;"></div>
         </div>
     </div>
 
     <script>
-        // Logik Login
+        // Logik Login Utama
         function doLogin() {
             const u = document.getElementById('uid').value;
             const p = document.getElementById('pwd').value;
+            const msg = document.getElementById('loginMsg');
+
             if(u && p) {
-                // Sembunyikan Overlay
+                // Sembunyikan Overlay Login dengan paksaan (important)
                 document.getElementById('loginOverlay').style.setProperty('display', 'none', 'important');
-                initCharts();
+                initSystem();
             } else {
-                document.getElementById('loginMsg').innerText = "Isi ID & Kata Laluan";
+                msg.innerText = "Sila masukkan ID dan Kata Laluan yang sah.";
             }
         }
 
-        function initCharts() {
-            new Chart(document.getElementById('cBar'), {
-                type: 'bar',
-                data: {
-                    labels: ['A', 'B', 'C'],
-                    datasets: [{ label: 'Data', data: [10, 20, 30], backgroundColor: '#1b4f2a' }]
-                },
-                options: { maintainAspectRatio: false }
-            });
+        function initSystem() {
+            // Inisialisasi Peta Leaflet
+            if(!map) {
+                map = L.map('map').setView([4.2105, 101.9758], 6);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+            }
+            console.log("Sistem Dashboard Berjaya Dimuatkan");
         }
+
+        let map = null;
     </script>
 </body>
 </html>
