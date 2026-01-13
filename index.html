@@ -321,7 +321,7 @@
                     const nama = getVal('Nama') || getVal('Pegawai') || r.data[1];
 
                     // Data List (Exclude Special Columns)
-                    let specialCols = ['status pengesahan', 'log semakan', 'luas serangan', 'peratus', 'keterukan', 'gambar', 'image', 'tarikh', 'date', 'nama', 'pegawai'];
+                    let specialCols = ['status pengesahan', 'log semakan', 'luas serangan', 'peratus', 'keterukan', 'gambar', 'image', 'tarikh', 'date', 'nama', 'pegawai','senarai perosak'];
                     let detailHTML = "";
                     let pestTableHTML = "";
                     let imgHTML = "";
@@ -359,7 +359,7 @@
                     
                     let cleanLinks = cleanImageLink(rawImg);
                     if (cleanLinks.length > 0) {
-                         imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Bukti Bergambar</div><div class="mb-2">`;
+                         imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Lampiran Gambar</div><div class="mb-2">`;
                          cleanLinks.forEach((lnk, i) => {
                              imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Gambar ${i+1}</a>`;
                          });
