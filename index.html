@@ -284,7 +284,7 @@
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
         function fillSel(id, arr) { const el = document.getElementById(id); el.innerHTML='<option value="">Semua</option>'; arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); }
 
-        /* --- FUNGSI PENGESAHAN DENGAN SEMUA DETAILS & IMAGE FIX --- */
+        /* --- FUNGSI PENGESAHAN: SMART IMAGE PARSER --- */
         async function loadPend() {
             const container = document.getElementById('verifyContainer');
             container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
@@ -298,42 +298,43 @@
 
                 container.innerHTML = "";
 
-                // --- HELPER UNTUK BERSIHKAN LINK GAMBAR (BUANG [" "]) ---
+                // --- 1. FUNGSI PEMBERSIH LINK POWERFUL (TERIMA SEMUA JENIS STRING) ---
                 const cleanImageLink = (raw) => {
-                    if (!raw || raw === "[]" || raw.length < 5) return [];
-                    // Buang simbol [ ] "
-                    let cleaned = raw.replace(/[\[\]"]/g, '');
-                    // Pecahkan jika ada koma
-                    let links = cleaned.split(',');
+                    if (!raw) return [];
+                    let str = String(raw).trim();
+                    if(str.length < 5) return [];
+
+                    // Buang kurungan [] dan quote " '
+                    str = str.replace(/[\[\]"']/g, '');
+                    
+                    // Pecahkan ikut koma
+                    let links = str.split(',');
                     return links.map(l => l.trim()).filter(l => l.startsWith('http'));
                 }
 
                 d.rows.forEach((r, idx) => {
-                    // Helper cari nilai ikut header
+                    // Helper cari nilai
                     const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }
 
-                    // Header Utama Kad
+                    // Header Data
                     const tarikh = getVal('Tarikh') || getVal('Date') || r.data[0];
                     const nama = getVal('Nama') || getVal('Pegawai') || r.data[1];
 
-                    // Persediaan Data Khas (untuk elak duplicate di list)
+                    // Data List (Exclude Special Columns)
                     let specialCols = ['status pengesahan', 'log semakan', 'luas serangan', 'peratus', 'keterukan', 'gambar', 'image', 'tarikh', 'date', 'nama', 'pegawai'];
                     let detailHTML = "";
                     let pestTableHTML = "";
                     let imgHTML = "";
 
-                    // 1. GENERATE SEMUA DETAILS LAIN
+                    // Generate Details (Loop semua column kecuali yang special)
                     d.headers.forEach((h, i) => {
                         let headerName = h;
                         let val = r.data[i];
-                        
-                        // Skip jika column khas atau yang nak di-exclude
                         if(specialCols.some(k => headerName.toLowerCase().includes(k))) return;
-
                         detailHTML += `<div class="v-row"><div class="v-label">${headerName}:</div><div class="v-val">${val}</div></div>`;
                     });
 
-                    // 2. GENERATE JADUAL PEROSAK
+                    // Generate Table Perosak
                     let rawLuas = getVal('Luas Serangan');
                     let rawPct = getVal('Peratus');
                     let rawSev = getVal('Keterukan');
@@ -341,24 +342,21 @@
                         const luasObj = JSON.parse(rawLuas || "{}");
                         const pctObj = JSON.parse(rawPct || "{}");
                         const sevObj = JSON.parse(rawSev || "{}");
-                        
                         if(Object.keys(luasObj).length > 0) {
                             pestTableHTML = `<div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Data Serangan</div>
-                            <table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas(Ha)</th><th class="center">%</th><th class="center">Tahap</th></tr></thead><tbody>`;
+                            <table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas Serangan(Ha)</th><th class="center">% Serangan</th><th class="center">Keterukan Serangan</th></tr></thead><tbody>`;
                             Object.keys(luasObj).forEach(key => {
-                                pestTableHTML += `<tr>
-                                    <td>${key}</td>
-                                    <td class="center fw-bold">${luasObj[key]}</td>
-                                    <td class="center">${pctObj[key]||0}%</td>
-                                    <td class="center"><span class="badge bg-secondary">T${sevObj[key]||0}</span></td>
-                                </tr>`;
+                                pestTableHTML += `<tr><td>${key}</td><td class="center fw-bold">${luasObj[key]}</td><td class="center">${pctObj[key]||0}%</td><td class="center"><span class="badge bg-secondary">T${sevObj[key]||0}</span></td></tr>`;
                             });
                             pestTableHTML += `</tbody></table>`;
                         }
                     } catch(e) {}
 
-                    // 3. GENERATE GAMBAR (FIXED 404)
-                    let rawImg = getVal('Gambar') || getVal('Image');
+                    // Generate Images (AUTO DETECT COLUMN GAMBAR)
+                    // Cari column yang ada perkataan "gambar" atau "image" atau "foto" atau "link"
+                    let imgIdx = d.headers.findIndex(h => h.match(/gambar|image|img|foto|link/i));
+                    let rawImg = (imgIdx > -1) ? r.data[imgIdx] : "";
+                    
                     let cleanLinks = cleanImageLink(rawImg);
                     if (cleanLinks.length > 0) {
                          imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Bukti Bergambar</div><div class="mb-2">`;
