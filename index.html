@@ -48,12 +48,14 @@
         .section-title:first-child { margin-top: 0; }
         
         .v-row { display: flex; margin-bottom: 6px; font-size: 0.9rem; align-items: flex-start; }
-        .v-label { width: 130px; font-weight: 600; color: #64748b; flex-shrink: 0; font-size: 0.85rem; }
+        .v-label { width: 110px; font-weight: 600; color: #64748b; flex-shrink: 0; font-size: 0.85rem; }
         .v-val { flex-grow: 1; color: #1e293b; font-weight: 500; word-break: break-word; }
         
-        /* Fix list dalam v-val */
-        .v-val ul { margin: 0; padding-left: 0; list-style: none; }
-        .v-val li { margin-bottom: 2px; }
+        /* TABLE MINI DALAM KAD */
+        .mini-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; margin-top: 5px; }
+        .mini-table th { background: #f1f5f9; text-transform: uppercase; font-size: 0.75rem; color: #475569; padding: 6px; border: 1px solid #e2e8f0; }
+        .mini-table td { padding: 6px; border: 1px solid #e2e8f0; vertical-align: middle; }
+        .mini-table td.center { text-align: center; }
 
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
@@ -282,7 +284,7 @@
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
         function fillSel(id, arr) { const el = document.getElementById(id); el.innerHTML='<option value="">Semua</option>'; arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); }
 
-        /* --- FUNGSI PENGESAHAN: CLEAN DATA (NO JSON FORMAT) --- */
+        /* --- FUNGSI PENGESAHAN DENGAN JADUAL & GAMBAR BETUL --- */
         async function loadPend() {
             const container = document.getElementById('verifyContainer');
             container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
@@ -295,51 +297,65 @@
                 }
 
                 container.innerHTML = "";
-                
-                // --- HELPER UNTUK BERSIHKAN JSON JADI TEXT BIASA ---
-                const parseJsonToHtml = (jsonStr, suffix = "") => {
-                    try {
-                        const obj = JSON.parse(jsonStr);
-                        if (!obj || Object.keys(obj).length === 0) return "-";
-                        // Tukar {"Ulat": 10} jadi <li>• Ulat: <strong>10 Ha</strong></li>
-                        return "<ul>" + Object.entries(obj).map(([k, v]) => `<li>• ${k}: <strong>${v}${suffix}</strong></li>`).join('') + "</ul>";
-                    } catch (e) { return jsonStr; } // Kalau bukan JSON, pulangkan asal
-                };
 
                 d.rows.forEach((r, idx) => {
-                    // Helper cari nilai ikut header
                     const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }
 
                     const tarikh = getVal('Tarikh') || getVal('Date') || r.data[0];
                     const nama = getVal('Nama') || getVal('Pegawai') || r.data[1];
+                    const lokasi = getVal('Lokasi') || "-";
+                    const negeri = getVal('Negeri') || "-";
+                    const daerah = getVal('Daerah') || "-";
+                    const tanaman = getVal('Tanaman') || "-";
+                    const kategori = getVal('Kategori') || "-";
+                    const luasKebun = parseFloat(getVal('Luas Bertanam') || "0").toFixed(2);
+                    const syor = getVal('Syor') || "-";
 
-                    let detailList = "";
-                    d.headers.forEach((h, i) => {
-                        let label = h;
-                        let val = r.data[i];
+                    // --- 1. URUSKAN JADUAL SERANGAN (JSON) ---
+                    let tableHTML = "";
+                    let rawLuas = getVal('Luas Serangan');
+                    let rawPct = getVal('Peratus');
+                    let rawSev = getVal('Keterukan');
 
-                        // Skip column header & tarikh/nama sebab dah ada kat atas kad
-                        if(label.match(/tarikh|date|nama|pegawai/i)) return;
+                    try {
+                        const luasObj = JSON.parse(rawLuas || "{}");
+                        const pctObj = JSON.parse(rawPct || "{}");
+                        const sevObj = JSON.parse(rawSev || "{}");
+                        
+                        if(Object.keys(luasObj).length > 0) {
+                            tableHTML = `<table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas(Ha)</th><th class="center">%</th><th class="center">Tahap</th></tr></thead><tbody>`;
+                            Object.keys(luasObj).forEach(key => {
+                                tableHTML += `<tr>
+                                    <td>${key}</td>
+                                    <td class="center fw-bold">${luasObj[key]}</td>
+                                    <td class="center">${pctObj[key]||0}%</td>
+                                    <td class="center"><span class="badge bg-secondary">T${sevObj[key]||0}</span></td>
+                                </tr>`;
+                            });
+                            tableHTML += `</tbody></table>`;
+                        } else { tableHTML = "<div class='text-muted small fst-italic'>Tiada serangan dilaporkan</div>"; }
+                    } catch(e) { tableHTML = "-"; }
 
-                        // --- LOGIC BERSIHKAN DATA ---
-                        if (label.match(/luas serangan/i)) {
-                            val = parseJsonToHtml(val, " Ha");
-                        } else if (label.match(/peratus/i)) {
-                            val = parseJsonToHtml(val, "%");
-                        } else if (label.match(/keterukan/i)) {
-                             // Special case untuk Keterukan (T1-T5)
-                             try {
-                                const obj = JSON.parse(val);
-                                if(!obj || Object.keys(obj).length === 0) val = "-";
-                                else val = "<ul>" + Object.entries(obj).map(([k, v]) => `<li>• ${k}: <span class="badge bg-secondary">T${v}</span></li>`).join('') + "</ul>";
-                             } catch(e) { val = val; }
-                        } else if (label.match(/gambar/i)) {
-                             // Sembunyikan link panjang, tunjuk icon sahaja
-                             val = (val && val !== "[]") ? '<a href="#" class="text-primary text-decoration-none"><i class="bi bi-images"></i> Lihat Gambar</a>' : "-";
+                    // --- 2. URUSKAN GAMBAR (LINK YANG BETUL) ---
+                    let imgHTML = "";
+                    let rawImg = getVal('Gambar');
+                    // Biasanya rawImg masuk sebagai string "[Link1, Link2]" atau string biasa "Link1, Link2"
+                    // Kita bersihkan dulu
+                    if(rawImg && rawImg !== "[]" && rawImg.length > 5) {
+                        // Kalau format JSON string
+                        if(rawImg.startsWith('[')) {
+                            try { 
+                                const arr = JSON.parse(rawImg); 
+                                arr.forEach((lnk, i) => imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Gambar ${i+1}</a>`);
+                            } catch(e) {}
+                        } else {
+                            // Kalau format comma separated string
+                            const arr = rawImg.split(',');
+                            arr.forEach((lnk, i) => {
+                                if(lnk.trim().length > 5) imgHTML += `<a href="${lnk.trim()}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Gambar ${i+1}</a>`;
+                            });
                         }
-
-                        detailList += `<div class="v-row"><div class="v-label">${label}:</div><div class="v-val">${val}</div></div>`;
-                    });
+                    } else { imgHTML = "<span class='text-muted small'>Tiada Gambar</span>"; }
 
                     let cardHTML = `
                     <div class="col-md-6 col-lg-4">
@@ -348,7 +364,20 @@
                                 <div><div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${tarikh}</div><div class="fw-bold text-dark text-uppercase">${nama}</div></div>
                                 <span class="badge bg-warning text-dark border">BARU</span>
                             </div>
-                            <div class="verify-body"><div class="section-title"><i class="bi bi-info-circle-fill"></i> Butiran Laporan</div>${detailList}</div>
+                            <div class="verify-body">
+                                <div class="section-title"><i class="bi bi-geo-alt-fill"></i> Info Lokasi & Tanaman</div>
+                                <div class="v-row"><div class="v-label">Negeri/Daerah:</div><div class="v-val">${negeri}, ${daerah}</div></div>
+                                <div class="v-row"><div class="v-label">Lokasi:</div><div class="v-val text-truncate">${lokasi}</div></div>
+                                <div class="v-row"><div class="v-label">Tanaman:</div><div class="v-val fw-bold text-success">${tanaman} (${kategori})</div></div>
+                                <div class="v-row"><div class="v-label">Luas Kebun:</div><div class="v-val">${luasKebun} Ha</div></div>
+
+                                <div class="section-title"><i class="bi bi-bug-fill"></i> Status Serangan</div>
+                                ${tableHTML}
+
+                                <div class="section-title mt-3"><i class="bi bi-card-image"></i> Bukti & Syor</div>
+                                <div class="mb-2">${imgHTML}</div>
+                                <div class="alert alert-light border p-2 small mb-0"><strong>Syor:</strong> ${syor}</div>
+                            </div>
                             <div class="verify-footer">
                                 <button class="btn btn-outline-danger flex-grow-1" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-circle me-1"></i> Tolak</button>
                                 <button class="btn btn-success flex-grow-1" onclick="subVer(${r.row},'APPROVE')"><i class="bi bi-check-circle-fill me-1"></i> Sahkan</button>
