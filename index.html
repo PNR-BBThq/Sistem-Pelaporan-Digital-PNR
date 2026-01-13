@@ -47,12 +47,12 @@
         .section-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--primary); margin: 15px 0 8px 0; border-bottom: 1px dashed #dee2e6; padding-bottom: 4px; }
         .section-title:first-child { margin-top: 0; }
         
-        .v-row { display: flex; margin-bottom: 6px; font-size: 0.9rem; align-items: flex-start; }
-        .v-label { width: 110px; font-weight: 600; color: #64748b; flex-shrink: 0; font-size: 0.85rem; }
+        .v-row { display: flex; margin-bottom: 6px; font-size: 0.9rem; align-items: flex-start; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;}
+        .v-label { width: 130px; font-weight: 600; color: #64748b; flex-shrink: 0; font-size: 0.85rem; }
         .v-val { flex-grow: 1; color: #1e293b; font-weight: 500; word-break: break-word; }
         
         /* TABLE MINI DALAM KAD */
-        .mini-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; margin-top: 5px; }
+        .mini-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; margin-top: 5px; margin-bottom: 15px; }
         .mini-table th { background: #f1f5f9; text-transform: uppercase; font-size: 0.75rem; color: #475569; padding: 6px; border: 1px solid #e2e8f0; }
         .mini-table td { padding: 6px; border: 1px solid #e2e8f0; vertical-align: middle; }
         .mini-table td.center { text-align: center; }
@@ -284,7 +284,7 @@
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
         function fillSel(id, arr) { const el = document.getElementById(id); el.innerHTML='<option value="">Semua</option>'; arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); }
 
-        /* --- FUNGSI PENGESAHAN DENGAN JADUAL & GAMBAR BETUL --- */
+        /* --- FUNGSI PENGESAHAN DENGAN SEMUA DETAILS & IMAGE FIX --- */
         async function loadPend() {
             const container = document.getElementById('verifyContainer');
             container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
@@ -298,64 +298,77 @@
 
                 container.innerHTML = "";
 
+                // --- HELPER UNTUK BERSIHKAN LINK GAMBAR (BUANG [" "]) ---
+                const cleanImageLink = (raw) => {
+                    if (!raw || raw === "[]" || raw.length < 5) return [];
+                    // Buang simbol [ ] "
+                    let cleaned = raw.replace(/[\[\]"]/g, '');
+                    // Pecahkan jika ada koma
+                    let links = cleaned.split(',');
+                    return links.map(l => l.trim()).filter(l => l.startsWith('http'));
+                }
+
                 d.rows.forEach((r, idx) => {
+                    // Helper cari nilai ikut header
                     const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }
 
+                    // Header Utama Kad
                     const tarikh = getVal('Tarikh') || getVal('Date') || r.data[0];
                     const nama = getVal('Nama') || getVal('Pegawai') || r.data[1];
-                    const lokasi = getVal('Lokasi') || "-";
-                    const negeri = getVal('Negeri') || "-";
-                    const daerah = getVal('Daerah') || "-";
-                    const tanaman = getVal('Tanaman') || "-";
-                    const kategori = getVal('Kategori') || "-";
-                    const luasKebun = parseFloat(getVal('Luas Bertanam') || "0").toFixed(2);
-                    const syor = getVal('Syor') || "-";
 
-                    // --- 1. URUSKAN JADUAL SERANGAN (JSON) ---
-                    let tableHTML = "";
+                    // Persediaan Data Khas (untuk elak duplicate di list)
+                    let specialCols = ['status pengesahan', 'log semakan', 'luas serangan', 'peratus', 'keterukan', 'gambar', 'image', 'tarikh', 'date', 'nama', 'pegawai'];
+                    let detailHTML = "";
+                    let pestTableHTML = "";
+                    let imgHTML = "";
+
+                    // 1. GENERATE SEMUA DETAILS LAIN
+                    d.headers.forEach((h, i) => {
+                        let headerName = h;
+                        let val = r.data[i];
+                        
+                        // Skip jika column khas atau yang nak di-exclude
+                        if(specialCols.some(k => headerName.toLowerCase().includes(k))) return;
+
+                        detailHTML += `<div class="v-row"><div class="v-label">${headerName}:</div><div class="v-val">${val}</div></div>`;
+                    });
+
+                    // 2. GENERATE JADUAL PEROSAK
                     let rawLuas = getVal('Luas Serangan');
                     let rawPct = getVal('Peratus');
                     let rawSev = getVal('Keterukan');
-
                     try {
                         const luasObj = JSON.parse(rawLuas || "{}");
                         const pctObj = JSON.parse(rawPct || "{}");
                         const sevObj = JSON.parse(rawSev || "{}");
                         
                         if(Object.keys(luasObj).length > 0) {
-                            tableHTML = `<table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas(Ha)</th><th class="center">%</th><th class="center">Tahap</th></tr></thead><tbody>`;
+                            pestTableHTML = `<div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Data Serangan</div>
+                            <table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas(Ha)</th><th class="center">%</th><th class="center">Tahap</th></tr></thead><tbody>`;
                             Object.keys(luasObj).forEach(key => {
-                                tableHTML += `<tr>
+                                pestTableHTML += `<tr>
                                     <td>${key}</td>
                                     <td class="center fw-bold">${luasObj[key]}</td>
                                     <td class="center">${pctObj[key]||0}%</td>
                                     <td class="center"><span class="badge bg-secondary">T${sevObj[key]||0}</span></td>
                                 </tr>`;
                             });
-                            tableHTML += `</tbody></table>`;
-                        } else { tableHTML = "<div class='text-muted small fst-italic'>Tiada serangan dilaporkan</div>"; }
-                    } catch(e) { tableHTML = "-"; }
-
-                    // --- 2. URUSKAN GAMBAR (LINK YANG BETUL) ---
-                    let imgHTML = "";
-                    let rawImg = getVal('Gambar');
-                    // Biasanya rawImg masuk sebagai string "[Link1, Link2]" atau string biasa "Link1, Link2"
-                    // Kita bersihkan dulu
-                    if(rawImg && rawImg !== "[]" && rawImg.length > 5) {
-                        // Kalau format JSON string
-                        if(rawImg.startsWith('[')) {
-                            try { 
-                                const arr = JSON.parse(rawImg); 
-                                arr.forEach((lnk, i) => imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Gambar ${i+1}</a>`);
-                            } catch(e) {}
-                        } else {
-                            // Kalau format comma separated string
-                            const arr = rawImg.split(',');
-                            arr.forEach((lnk, i) => {
-                                if(lnk.trim().length > 5) imgHTML += `<a href="${lnk.trim()}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Gambar ${i+1}</a>`;
-                            });
+                            pestTableHTML += `</tbody></table>`;
                         }
-                    } else { imgHTML = "<span class='text-muted small'>Tiada Gambar</span>"; }
+                    } catch(e) {}
+
+                    // 3. GENERATE GAMBAR (FIXED 404)
+                    let rawImg = getVal('Gambar') || getVal('Image');
+                    let cleanLinks = cleanImageLink(rawImg);
+                    if (cleanLinks.length > 0) {
+                         imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Bukti Bergambar</div><div class="mb-2">`;
+                         cleanLinks.forEach((lnk, i) => {
+                             imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Gambar ${i+1}</a>`;
+                         });
+                         imgHTML += `</div>`;
+                    } else {
+                        imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Gambar</div><small class="text-muted">Tiada gambar dilampirkan.</small>`;
+                    }
 
                     let cardHTML = `
                     <div class="col-md-6 col-lg-4">
@@ -365,18 +378,10 @@
                                 <span class="badge bg-warning text-dark border">BARU</span>
                             </div>
                             <div class="verify-body">
-                                <div class="section-title"><i class="bi bi-geo-alt-fill"></i> Info Lokasi & Tanaman</div>
-                                <div class="v-row"><div class="v-label">Negeri/Daerah:</div><div class="v-val">${negeri}, ${daerah}</div></div>
-                                <div class="v-row"><div class="v-label">Lokasi:</div><div class="v-val text-truncate">${lokasi}</div></div>
-                                <div class="v-row"><div class="v-label">Tanaman:</div><div class="v-val fw-bold text-success">${tanaman} (${kategori})</div></div>
-                                <div class="v-row"><div class="v-label">Luas Kebun:</div><div class="v-val">${luasKebun} Ha</div></div>
-
-                                <div class="section-title"><i class="bi bi-bug-fill"></i> Status Serangan</div>
-                                ${tableHTML}
-
-                                <div class="section-title mt-3"><i class="bi bi-card-image"></i> Bukti & Syor</div>
-                                <div class="mb-2">${imgHTML}</div>
-                                <div class="alert alert-light border p-2 small mb-0"><strong>Syor:</strong> ${syor}</div>
+                                <div class="section-title"><i class="bi bi-info-circle-fill"></i> Butiran Laporan</div>
+                                ${detailHTML}
+                                ${pestTableHTML}
+                                ${imgHTML}
                             </div>
                             <div class="verify-footer">
                                 <button class="btn btn-outline-danger flex-grow-1" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-circle me-1"></i> Tolak</button>
