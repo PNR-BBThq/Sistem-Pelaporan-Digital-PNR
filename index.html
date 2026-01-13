@@ -47,9 +47,13 @@
         .section-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--primary); margin: 15px 0 8px 0; border-bottom: 1px dashed #dee2e6; padding-bottom: 4px; }
         .section-title:first-child { margin-top: 0; }
         
-        .v-row { display: flex; margin-bottom: 6px; font-size: 0.9rem; align-items: baseline; }
-        .v-label { width: 120px; font-weight: 600; color: #64748b; flex-shrink: 0; font-size: 0.85rem; }
+        .v-row { display: flex; margin-bottom: 6px; font-size: 0.9rem; align-items: flex-start; }
+        .v-label { width: 130px; font-weight: 600; color: #64748b; flex-shrink: 0; font-size: 0.85rem; }
         .v-val { flex-grow: 1; color: #1e293b; font-weight: 500; word-break: break-word; }
+        
+        /* Fix list dalam v-val */
+        .v-val ul { margin: 0; padding-left: 0; list-style: none; }
+        .v-val li { margin-bottom: 2px; }
 
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
@@ -274,12 +278,11 @@
         function updateMap(pts) { if(layer) map.removeLayer(layer); if(pts.length) { layer = L.layerGroup(pts.map(p => L.circleMarker(p, {radius:6, color:'#dc2626', fillOpacity:0.7, stroke:true, weight:1, color:'white', fillColor:'#dc2626'}))).addTo(map); map.fitBounds(L.latLngBounds(pts)); } }
         function updateHotspot(hData) { const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; }
         
-        // --- JADUAL DASHBOARD UTAMA (DIKEKALKAN DALAM BENTUK TABLE) ---
         function renTab() { const st = (pg-1)*pSize; const dt = fData.slice(st, st+pSize); document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `<tr><td>${d.t}</td><td>${d.n}</td><td>${d.l}</td><td><span class="badge bg-light text-dark border">${d.tn}</span></td><td>${d.lt.toFixed(2)}</td><td class="text-danger fw-bold">${d.ls.toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="6" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; document.getElementById('pgInfo').innerText = `Page ${pg}`; }
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
         function fillSel(id, arr) { const el = document.getElementById(id); el.innerHTML='<option value="">Semua</option>'; arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); }
 
-        /* --- FUNGSI PENGESAHAN (KINI MENGGUNAKAN REPORT CARD) --- */
+        /* --- FUNGSI PENGESAHAN: CLEAN DATA (NO JSON FORMAT) --- */
         async function loadPend() {
             const container = document.getElementById('verifyContainer');
             container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
@@ -291,104 +294,77 @@
                     return;
                 }
 
-                container.innerHTML = ""; // Clear loader
+                container.innerHTML = "";
                 
-                // --- BINA KAD (MAPPING DARI ARRAY) ---
-                // d.headers mengandungi label, r.data mengandungi nilai
-                d.rows.forEach((r, idx) => {
-                    let infoHTML = "";
-                    
-                    // Kita akan cuba cari data spesifik untuk susun atur cantik
-                    // Fungsi Helper cari nilai berdasarkan nama header
-                    const getVal = (keyword) => {
-                        const i = d.headers.findIndex(h => h.toLowerCase().includes(keyword.toLowerCase()));
-                        return i > -1 ? r.data[i] : "-";
-                    }
+                // --- HELPER UNTUK BERSIHKAN JSON JADI TEXT BIASA ---
+                const parseJsonToHtml = (jsonStr, suffix = "") => {
+                    try {
+                        const obj = JSON.parse(jsonStr);
+                        if (!obj || Object.keys(obj).length === 0) return "-";
+                        // Tukar {"Ulat": 10} jadi <li>• Ulat: <strong>10 Ha</strong></li>
+                        return "<ul>" + Object.entries(obj).map(([k, v]) => `<li>• ${k}: <strong>${v}${suffix}</strong></li>`).join('') + "</ul>";
+                    } catch (e) { return jsonStr; } // Kalau bukan JSON, pulangkan asal
+                };
 
-                    // Susun Data Utama
+                d.rows.forEach((r, idx) => {
+                    // Helper cari nilai ikut header
+                    const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }
+
                     const tarikh = getVal('Tarikh') || getVal('Date') || r.data[0];
                     const nama = getVal('Nama') || getVal('Pegawai') || r.data[1];
-                    const lokasi = getVal('Lokasi') || "-";
-                    const negeri = getVal('Negeri') || "-";
-                    const tanaman = getVal('Tanaman') || "-";
-                    const luas = getVal('Luas') || "-";
-                    
-                    // Kita juga senaraikan semua data dalam bentuk list untuk memastikan tiada info tertinggal
+
                     let detailList = "";
                     d.headers.forEach((h, i) => {
-                        // Skip column yang dah ada di header kad (Tarikh/Nama) supaya tak redundant
-                        if(!h.toLowerCase().includes('tarikh') && !h.toLowerCase().includes('nama')) {
-                             detailList += `<div class="v-row"><div class="v-label">${h}:</div><div class="v-val">${r.data[i]}</div></div>`;
+                        let label = h;
+                        let val = r.data[i];
+
+                        // Skip column header & tarikh/nama sebab dah ada kat atas kad
+                        if(label.match(/tarikh|date|nama|pegawai/i)) return;
+
+                        // --- LOGIC BERSIHKAN DATA ---
+                        if (label.match(/luas serangan/i)) {
+                            val = parseJsonToHtml(val, " Ha");
+                        } else if (label.match(/peratus/i)) {
+                            val = parseJsonToHtml(val, "%");
+                        } else if (label.match(/keterukan/i)) {
+                             // Special case untuk Keterukan (T1-T5)
+                             try {
+                                const obj = JSON.parse(val);
+                                if(!obj || Object.keys(obj).length === 0) val = "-";
+                                else val = "<ul>" + Object.entries(obj).map(([k, v]) => `<li>• ${k}: <span class="badge bg-secondary">T${v}</span></li>`).join('') + "</ul>";
+                             } catch(e) { val = val; }
+                        } else if (label.match(/gambar/i)) {
+                             // Sembunyikan link panjang, tunjuk icon sahaja
+                             val = (val && val !== "[]") ? '<a href="#" class="text-primary text-decoration-none"><i class="bi bi-images"></i> Lihat Gambar</a>' : "-";
                         }
+
+                        detailList += `<div class="v-row"><div class="v-label">${label}:</div><div class="v-val">${val}</div></div>`;
                     });
 
                     let cardHTML = `
                     <div class="col-md-6 col-lg-4">
                         <div class="verify-card">
                             <div class="verify-header">
-                                <div>
-                                    <div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${tarikh}</div>
-                                    <div class="fw-bold text-dark text-uppercase">${nama}</div>
-                                </div>
+                                <div><div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${tarikh}</div><div class="fw-bold text-dark text-uppercase">${nama}</div></div>
                                 <span class="badge bg-warning text-dark border">BARU</span>
                             </div>
-
-                            <div class="verify-body">
-                                <div class="section-title"><i class="bi bi-info-circle-fill"></i> Butiran Laporan</div>
-                                ${detailList}
-                            </div>
-
+                            <div class="verify-body"><div class="section-title"><i class="bi bi-info-circle-fill"></i> Butiran Laporan</div>${detailList}</div>
                             <div class="verify-footer">
-                                <button class="btn btn-outline-danger flex-grow-1" onclick="subVer(${r.row},'REJECT')">
-                                    <i class="bi bi-x-circle me-1"></i> Tolak
-                                </button>
-                                <button class="btn btn-success flex-grow-1" onclick="subVer(${r.row},'APPROVE')">
-                                    <i class="bi bi-check-circle-fill me-1"></i> Sahkan
-                                </button>
+                                <button class="btn btn-outline-danger flex-grow-1" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-circle me-1"></i> Tolak</button>
+                                <button class="btn btn-success flex-grow-1" onclick="subVer(${r.row},'APPROVE')"><i class="bi bi-check-circle-fill me-1"></i> Sahkan</button>
                             </div>
                         </div>
                     </div>`;
-                    
                     container.innerHTML += cardHTML;
                 });
-
-            } catch(e) { 
-                console.error(e);
-                container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; 
-            }
+            } catch(e) { console.error(e); container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; }
         }
 
         async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
 
-        /* --- FUNGSI EXCEL & PDF (KEKAL SAMA) --- */
-        async function downloadDualExcel() {
-            if (!fData.length) { alert("Tiada data!"); return; }
-            const workbook = new ExcelJS.Workbook(); const worksheet = workbook.addWorksheet('Laporan Penuh');
-            worksheet.columns = [{ header: 'ID', key: 'id', width: 6 }, { header: 'Tarikh', key: 't', width: 12 }, { header: 'Negeri', key: 'n', width: 15 }, { header: 'Daerah', key: 'd', width: 15 }, { header: 'Lokasi', key: 'l', width: 22 }, { header: 'Koordinat', key: 'c', width: 22 }, { header: 'Kategori', key: 'kt', width: 18 }, { header: 'Tanaman', key: 'tn', width: 18 }, { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, { header: 'Syor Kawalan', key: 's', width: 25 }, { header: 'Pegawai', key: 'pg', width: 20 }, { header: 'Perosak', key: 'p', width: 20 }, { header: 'Keterukan', key: 'k', width: 18 }, { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, { header: '% Serangan', key: 'pct', width: 15 }];
-            worksheet.getRow(1).font = { bold: true }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-            let rowIndex = 2;
-            fData.forEach(d => {
-                let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]];
-                let startRow = rowIndex; let luasTanam = parseFloat(d.lt) || 0;
-                pestEntries.forEach(([pName, pArea]) => {
-                    let luasSerang = parseFloat(pArea) || 0; let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%";
-                    const row = worksheet.getRow(rowIndex); row.values = { id: d.id, t: d.t, n: d.n, d: d.d, l: d.l, c: d.c || "-", kt: d.kt || "-", tn: d.tn, lt: luasTanam, s: d.s, pg: d.pg || "-", p: pName, k: d.k, ls: luasSerang, pct: pctVal };
-                    row.eachCell({ includeEmpty: true }, (cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; });
-                    rowIndex++;
-                });
-                if (pestEntries.length > 1) { for (let c = 1; c <= 11; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); } }
-                for (let r = startRow; r < rowIndex; r++) { for (let c = 1; c <= 11; c++) { worksheet.getCell(r, c).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; } }
-            });
-            const buffer = await workbook.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'PNR_Laporan_Lengkap.xlsx'; anchor.click(); window.URL.revokeObjectURL(url);
-        }
-
-        async function dlPDF() {
-            const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = "Jana..."; btn.disabled = true;
-            let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length-1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length-1])}`; }
-            try { const m = { user: uProf.name, negeri: document.getElementById('selNegeri').value || "Semua", dates: dateLabel }; const r = await postData('genPDF', {data: fData, meta: m}); if(r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } } catch(e) { console.error(e); }
-            btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false;
-        }
+        /* --- EXCEL & PDF --- */
+        async function downloadDualExcel() { if (!fData.length) { alert("Tiada data!"); return; } const workbook = new ExcelJS.Workbook(); const worksheet = workbook.addWorksheet('Laporan Penuh'); worksheet.columns = [{ header: 'ID', key: 'id', width: 6 }, { header: 'Tarikh', key: 't', width: 12 }, { header: 'Negeri', key: 'n', width: 15 }, { header: 'Daerah', key: 'd', width: 15 }, { header: 'Lokasi', key: 'l', width: 22 }, { header: 'Koordinat', key: 'c', width: 22 }, { header: 'Kategori', key: 'kt', width: 18 }, { header: 'Tanaman', key: 'tn', width: 18 }, { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, { header: 'Syor Kawalan', key: 's', width: 25 }, { header: 'Pegawai', key: 'pg', width: 20 }, { header: 'Perosak', key: 'p', width: 20 }, { header: 'Keterukan', key: 'k', width: 18 }, { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, { header: '% Serangan', key: 'pct', width: 15 }]; worksheet.getRow(1).font = { bold: true }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }; let rowIndex = 2; fData.forEach(d => { let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]]; let startRow = rowIndex; let luasTanam = parseFloat(d.lt) || 0; pestEntries.forEach(([pName, pArea]) => { let luasSerang = parseFloat(pArea) || 0; let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%"; const row = worksheet.getRow(rowIndex); row.values = { id: d.id, t: d.t, n: d.n, d: d.d, l: d.l, c: d.c || "-", kt: d.kt || "-", tn: d.tn, lt: luasTanam, s: d.s, pg: d.pg || "-", p: pName, k: d.k, ls: luasSerang, pct: pctVal }; row.eachCell({ includeEmpty: true }, (cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; }); rowIndex++; }); if (pestEntries.length > 1) { for (let c = 1; c <= 11; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); } } for (let r = startRow; r < rowIndex; r++) { for (let c = 1; c <= 11; c++) { worksheet.getCell(r, c).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; } } }); const buffer = await workbook.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = window.URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'PNR_Laporan_Lengkap.xlsx'; anchor.click(); window.URL.revokeObjectURL(url); }
+        async function dlPDF() { const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = "Jana..."; btn.disabled = true; let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length-1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length-1])}`; } try { const m = { user: uProf.name, negeri: document.getElementById('selNegeri').value || "Semua", dates: dateLabel }; const r = await postData('genPDF', {data: fData, meta: m}); if(r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } } catch(e) { console.error(e); } btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false; }
     </script>
 </body>
 </html>
