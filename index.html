@@ -376,7 +376,7 @@ function resetFilter() {
                         const sevObj = JSON.parse(rawSev || "{}");
                         if(Object.keys(luasObj).length > 0) {
                             pestTableHTML = `<div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Data Serangan</div>
-                            <table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas(Ha)</th><th class="center">%</th><th class="center">Tahap</th></tr></thead><tbody>`;
+                            <table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas serangan(Ha)</th><th class="center">%</th><th class="center">Keterukan serangan</th></tr></thead><tbody>`;
                             Object.keys(luasObj).forEach(key => {
                                 pestTableHTML += `<tr><td>${key}</td><td class="center fw-bold">${luasObj[key]}</td><td class="center">${pctObj[key]||0}%</td><td class="center"><span class="badge bg-secondary">T${sevObj[key]||0}</span></td></tr>`;
                             });
