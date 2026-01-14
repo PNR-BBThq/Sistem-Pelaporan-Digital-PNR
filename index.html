@@ -198,7 +198,10 @@
         <div id="view-verify" style="display:none">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="fw-bold m-0 text-dark">Pengesahan Data</h4>
-                <button class="btn btn-primary btn-sm px-3 shadow-sm" onclick="loadPend()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
+                <div class="btn-group shadow-sm">
+                    <button class="btn btn-success btn-sm px-3 fw-bold" onclick="approveAll()"><i class="bi bi-check-all me-1"></i> Sahkan Semua</button>
+                    <button class="btn btn-primary btn-sm px-3" onclick="loadPend()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
+                </div>
             </div>
             
             <div id="verifyContainer" class="row g-3">
@@ -215,6 +218,7 @@
         const BANCIAN_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
         
         let mData=[], fData=[], uProf=null, charts={}, map=null, layer=null, pg=1, pSize=10, sessionID=null;
+        let currentPendingRows = []; // Variable baru untuk simpan data pending
 
         async function postData(act, load) {
             try {
@@ -284,13 +288,15 @@
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
         function fillSel(id, arr) { const el = document.getElementById(id); el.innerHTML='<option value="">Semua</option>'; arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); }
 
-        /* --- FUNGSI PENGESAHAN: FINAL FIX LOKASI & GAMBAR --- */
+        /* --- FUNGSI PENGESAHAN: SMART IMAGE PARSER + REMOVE REDUNDANT PEST LIST --- */
         async function loadPend() {
             const container = document.getElementById('verifyContainer');
             container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
             
             try {
                 const d = await postData('getPending', {state: uProf.state});
+                currentPendingRows = d.rows || []; // SIMPAN DATA PENDING DALAM GLOBAL VAR
+
                 if(!d.rows || !d.rows.length) {
                     container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>';
                     return;
@@ -298,12 +304,16 @@
 
                 container.innerHTML = "";
 
-                // --- 1. CLEANER LINK ---
+                // --- 1. FUNGSI PEMBERSIH LINK POWERFUL (TERIMA SEMUA JENIS STRING) ---
                 const cleanImageLink = (raw) => {
                     if (!raw) return [];
                     let str = String(raw).trim();
                     if(str.length < 5) return [];
-                    str = str.replace(/[\[\]"']/g, ''); // Buang simbol pelik
+
+                    // Buang kurungan [] dan quote " '
+                    str = str.replace(/[\[\]"']/g, '');
+                    
+                    // Pecahkan ikut koma
                     let links = str.split(',');
                     return links.map(l => l.trim()).filter(l => l.startsWith('http'));
                 }
@@ -315,12 +325,10 @@
                     // Header Data
                     const tarikh = getVal('Tarikh') || getVal('Date') || r.data[0];
                     const nama = getVal('Nama') || getVal('Pegawai') || r.data[1];
-                    
-                    // --- 2. TARIK LOKASI SECARA MANUAL (SUPAYA TAK HILANG) ---
-                    const lokasi = getVal('Lokasi') || getVal('Kebun') || "-"; // Cari column 'Lokasi' atau 'Kebun'
+                    const lokasi = getVal('Lokasi') || getVal('Kebun') || "-"; 
 
-                    // Data List (Exclude Special Columns)
-                    // Kita tambah 'nama', 'tarikh', 'lokasi', 'kebun' dalam filter supaya tak keluar dua kali
+                    // Data List (Exclude Special Columns + REDUNDANT PEST LIST)
+                    // Tambah 'senarai perosak', 'perosak' dan 'senarai' dalam specialCols
                     let specialCols = ['status pengesahan', 'log semakan', 'luas serangan', 'peratus', 'keterukan', 'gambar', 'image', 'tarikh', 'date', 'nama', 'pegawai', 'senarai perosak', 'perosak', 'senarai', 'lokasi', 'kebun'];
                     let detailHTML = "";
                     let pestTableHTML = "";
@@ -344,7 +352,7 @@
                         const sevObj = JSON.parse(rawSev || "{}");
                         if(Object.keys(luasObj).length > 0) {
                             pestTableHTML = `<div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Data Serangan</div>
-                            <table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas serangan(Ha)</th><th class="center">%serangan</th><th class="center">Keterukan serangan</th></tr></thead><tbody>`;
+                            <table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas(Ha)</th><th class="center">%</th><th class="center">Tahap</th></tr></thead><tbody>`;
                             Object.keys(luasObj).forEach(key => {
                                 pestTableHTML += `<tr><td>${key}</td><td class="center fw-bold">${luasObj[key]}</td><td class="center">${pctObj[key]||0}%</td><td class="center"><span class="badge bg-secondary">T${sevObj[key]||0}</span></td></tr>`;
                             });
@@ -352,12 +360,14 @@
                         }
                     } catch(e) {}
 
-                    // Generate Images
+                    // Generate Images (AUTO DETECT COLUMN GAMBAR)
+                    // Cari column yang ada perkataan "gambar" atau "image" atau "foto" atau "link"
                     let imgIdx = d.headers.findIndex(h => h.match(/gambar|image|img|foto|link/i));
                     let rawImg = (imgIdx > -1) ? r.data[imgIdx] : "";
+                    
                     let cleanLinks = cleanImageLink(rawImg);
                     if (cleanLinks.length > 0) {
-                         imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Lampiran Gambar</div><div class="mb-2">`;
+                         imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Bukti Bergambar</div><div class="mb-2">`;
                          cleanLinks.forEach((lnk, i) => {
                              imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Gambar ${i+1}</a>`;
                          });
@@ -392,6 +402,46 @@
         }
 
         async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
+
+        // --- FUNGSI BARU: SAHKAN SEMUA ---
+        async function approveAll() {
+            if(!currentPendingRows || currentPendingRows.length === 0) { alert("Tiada data untuk disahkan."); return; }
+            if(!confirm("⚠️ AMARAN: Anda pasti mahu mengesahkan SEMUA " + currentPendingRows.length + " rekod ini sekaligus?")) return;
+
+            // Tunjuk Loading Screen
+            const container = document.getElementById('verifyContainer');
+            container.innerHTML = `
+                <div class="col-12 text-center p-5 bg-white rounded shadow-sm">
+                    <h4 class="mb-3 text-primary"><i class="bi bi-gear-wide-connected fa-spin"></i> Sedang Memproses...</h4>
+                    <p class="text-muted mb-2">Sila tunggu sebentar. Jangan tutup tab ini.</p>
+                    <div class="progress" style="height: 25px;">
+                        <div id="progBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%">0%</div>
+                    </div>
+                    <div id="progText" class="mt-2 fw-bold">0 / ${currentPendingRows.length}</div>
+                </div>`;
+
+            let count = 0;
+            const total = currentPendingRows.length;
+
+            // Loop setiap row dan approve
+            for (const r of currentPendingRows) {
+                try {
+                    await postData('submitVerify', {row: r.row, act: 'APPROVE', reason: '', name: uProf.name});
+                } catch(e) {
+                    console.error("Gagal row:", r.row);
+                }
+                count++;
+                const pct = Math.round((count / total) * 100);
+                document.getElementById('progBar').style.width = pct + "%";
+                document.getElementById('progBar').innerText = pct + "%";
+                document.getElementById('progText').innerText = `${count} / ${total} Selesai`;
+            }
+
+            alert("✅ Selesai! Semua data telah disahkan.");
+            loadPend(); // Refresh senarai (patutnya kosong)
+            initDash(); // Update dashboard
+            checkPendingCount(); // Update badge
+        }
 
         /* --- EXCEL & PDF --- */
         async function downloadDualExcel() { if (!fData.length) { alert("Tiada data!"); return; } const workbook = new ExcelJS.Workbook(); const worksheet = workbook.addWorksheet('Laporan Penuh'); worksheet.columns = [{ header: 'ID', key: 'id', width: 6 }, { header: 'Tarikh', key: 't', width: 12 }, { header: 'Negeri', key: 'n', width: 15 }, { header: 'Daerah', key: 'd', width: 15 }, { header: 'Lokasi', key: 'l', width: 22 }, { header: 'Koordinat', key: 'c', width: 22 }, { header: 'Kategori', key: 'kt', width: 18 }, { header: 'Tanaman', key: 'tn', width: 18 }, { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, { header: 'Syor Kawalan', key: 's', width: 25 }, { header: 'Pegawai', key: 'pg', width: 20 }, { header: 'Perosak', key: 'p', width: 20 }, { header: 'Keterukan', key: 'k', width: 18 }, { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, { header: '% Serangan', key: 'pct', width: 15 }]; worksheet.getRow(1).font = { bold: true }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }; let rowIndex = 2; fData.forEach(d => { let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]]; let startRow = rowIndex; let luasTanam = parseFloat(d.lt) || 0; pestEntries.forEach(([pName, pArea]) => { let luasSerang = parseFloat(pArea) || 0; let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%"; const row = worksheet.getRow(rowIndex); row.values = { id: d.id, t: d.t, n: d.n, d: d.d, l: d.l, c: d.c || "-", kt: d.kt || "-", tn: d.tn, lt: luasTanam, s: d.s, pg: d.pg || "-", p: pName, k: d.k, ls: luasSerang, pct: pctVal }; row.eachCell({ includeEmpty: true }, (cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; }); rowIndex++; }); if (pestEntries.length > 1) { for (let c = 1; c <= 11; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); } } for (let r = startRow; r < rowIndex; r++) { for (let c = 1; c <= 11; c++) { worksheet.getCell(r, c).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; } } }); const buffer = await workbook.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = window.URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'PNR_Laporan_Lengkap.xlsx'; anchor.click(); window.URL.revokeObjectURL(url); }
