@@ -88,15 +88,32 @@
         </div>
         <hr class="my-4 text-muted">
         <div class="mb-3 px-2">
-            <small class="text-muted fw-bold d-block mb-2" style="font-size:0.75rem; letter-spacing: 0.5px;">TAPISAN DATA</small>
-            <select id="selNegeri" class="form-select form-select-sm mb-2" onchange="runFilter()"></select>
-            <select id="selTanaman" class="form-select form-select-sm mb-2" onchange="runFilter()"></select>
-            <select id="selKategori" class="form-select form-select-sm mb-2" onchange="runFilter()"></select>
-            <div class="row g-1">
-                <div class="col-6"><input type="date" id="dS" class="form-control form-control-sm" onchange="runFilter()"></div>
-                <div class="col-6"><input type="date" id="dE" class="form-control form-control-sm" onchange="runFilter()"></div>
-            </div>
+    <small class="text-muted fw-bold d-block mb-2" style="font-size:0.75rem; letter-spacing: 0.5px;">TAPISAN DATA</small>
+    <select id="selNegeri" class="form-select form-select-sm mb-2" onchange="runFilter()"></select>
+    <select id="selTanaman" class="form-select form-select-sm mb-2" onchange="runFilter()"></select>
+    <select id="selKategori" class="form-select form-select-sm mb-2" onchange="runFilter()"></select>
+    <div class="row g-1 mb-2">
+        <div class="col-6"><input type="date" id="dS" class="form-control form-control-sm" onchange="runFilter()"></div>
+        <div class="col-6"><input type="date" id="dE" class="form-control form-control-sm" onchange="runFilter()"></div>
+    </div>
+    
+    <button class="btn btn-outline-secondary btn-sm w-100" onclick="resetFilter()">
+        <i class="bi bi-arrow-counterclockwise"></i> Reset Tapisan
+    </button>
+
+    <hr class="my-4 text-muted">
+
+    <div class="p-3 rounded border shadow-sm" style="background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);">
+        <div class="d-flex align-items-center mb-2">
+            <div class="bg-danger text-white rounded p-1 me-2"><i class="bi bi-bug-fill"></i></div>
+            <small class="fw-bold text-dark" style="line-height:1.2">Pemantauan<br>Perangkap RPW</small>
         </div>
+        <p class="text-muted mb-2" style="font-size: 0.75rem;">Akses pantas ke data perangkap kumbang.</p>
+        <button onclick="window.open(RPW_URL, '_blank')" class="btn btn-danger btn-sm w-100 fw-bold">
+            <i class="bi bi-box-arrow-up-right"></i> Buka Sistem
+        </button>
+    </div>
+</div>
         <div class="mt-auto">
             <button onclick="window.open(BANCIAN_URL, '_blank')" class="btn btn-success w-100 btn-sm fw-bold mb-3 py-2 shadow-sm">
                 <i class="bi bi-plus-lg me-1"></i> Tambah Data
@@ -216,7 +233,7 @@
     <script>
         const API_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
         const BANCIAN_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
-        
+        const RPW_URL = "https://www.appsheet.com/start/55b088df-3ec1-469a-b5c6-1fca48052906"; // <--- Masukkan link sebenar di sini
         let mData=[], fData=[], uProf=null, charts={}, map=null, layer=null, pg=1, pSize=10, sessionID=null;
         let currentPendingRows = []; // Variable baru untuk simpan data pending
 
@@ -262,7 +279,14 @@
             fData = mData.filter(d => { let ok = (n==="" || d.n===n) && (t==="" || d.tn===t) && (k==="" || d.kt===k); if(s && d.t < s) ok = false; if(e && d.t > e) ok = false; return ok; });
             pg = 1; calcUI();
         }
-
+function resetFilter() {
+    document.getElementById('selNegeri').value = "";
+    document.getElementById('selTanaman').value = "";
+    document.getElementById('selKategori').value = "";
+    document.getElementById('dS').value = "";
+    document.getElementById('dE').value = "";
+    runFilter(); // Jalankan semula untuk reset data dashboard
+}
         function calcUI() {
             let tt=0, ts=0, pm={}, km={1:0,2:0,3:0,4:0,5:0}, pts=[], hData={};
             fData.forEach(d => {
