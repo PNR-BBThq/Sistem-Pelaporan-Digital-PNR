@@ -280,10 +280,16 @@
         let userToken = ""; // Token Sesi (Memory sahaja)
         let currentUserID = "";
 
-        async function postData(act, load) {
+       async function postData(act, load) {
             try {
-                // SUNTIK TOKEN SETIAP KALI HANTAR REQUEST
-                const payload = { ...load, action: act, token: userToken, u: currentUserID };
+                // --- PEMBAIKAN BUG: Susunan '...load' mesti di AKHIR ---
+                // Supaya data login (u, p) tidak ditimpa oleh currentUserID yang kosong
+                const payload = { 
+                    action: act, 
+                    token: userToken, 
+                    u: currentUserID, 
+                    ...load // <--- Pindah ini ke paling bawah!
+                };
                 
                 const res = await fetch(`${API_URL}?action=${act}`, { 
                     method: "POST", 
@@ -293,7 +299,6 @@
                 return JSON.parse(await res.text());
             } catch(e) { console.error(e); return {success:false, message:"Ralat sambungan."}; }
         }
-
         async function doLogin() {
             const u = document.getElementById('uid').value; const p = document.getElementById('pwd').value; const btn = document.getElementById('btnLogin'); const msg = document.getElementById('loginMsg');
             if(!u || !p) { msg.innerText = "Sila isi ID dan Kata Laluan"; return; }
