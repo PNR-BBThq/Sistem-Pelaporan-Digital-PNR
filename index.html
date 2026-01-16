@@ -20,12 +20,22 @@
         #loginOverlay { position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center; background: linear-gradient(rgba(6, 78, 59, 0.9), rgba(6, 78, 59, 0.9)), url('logo.jpg') no-repeat center center; background-size: cover; }
         .login-box { background: white; padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
         
-        /* SIDEBAR (HIJAU LEMBUT & HITAM) */
+        /* SIDEBAR (UPDATED: SCROLLABLE MIDDLE) */
         .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: #e8f5e9; border-right: 1px solid #c6e7ce; padding: 20px; z-index: 100; transition: transform 0.3s; display: flex; flex-direction: column; }
-        .brand { font-size: 1.3rem; font-weight: 900; color: #000; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; padding-left: 10px; }
+        .brand { font-size: 1.3rem; font-weight: 900; color: #000; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding-left: 10px; flex-shrink: 0; }
+        
+        /* New Wrapper for Scrollable Content */
+        .sidebar-content { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding-right: 5px; margin-bottom: 10px; }
+        /* Hide Scrollbar for cleaner look but allow scroll */
+        .sidebar-content::-webkit-scrollbar { width: 4px; }
+        .sidebar-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        
         .nav-item { padding: 12px 15px; margin-bottom: 5px; border-radius: 8px; cursor: pointer; color: #000; font-weight: 600; display: flex; align-items: center; justify-content: space-between; transition: 0.2s; }
         .nav-item:hover { background: #c8e6c9; color: #000; }
         .nav-item.active { background: #1b5e20; color: white; font-weight: 700; }
+        
+        .sidebar-footer { flex-shrink: 0; border-top: 1px solid #c6e7ce; padding-top: 15px; }
+
         .main-content { margin-left: 260px; padding: 25px; transition: margin-left 0.3s; }
         
         /* DASHBOARD CARDS */
@@ -84,80 +94,81 @@
 
     <div class="sidebar" id="sidebar">
         <div class="brand"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
-        <div class="nav-item active" onclick="switchTab('main', this)">
-            <span><i class="bi bi-grid-1x2-fill me-2"></i> Dashboard</span>
-        </div>
-        <div class="nav-item" id="navVerify" style="display:none" onclick="switchTab('verify', this)">
-            <span><i class="bi bi-check-circle-fill me-2"></i> Pengesahan</span>
-            <span class="badge-pending" id="badgePending">0</span>
-        </div>
-        <hr class="my-4" style="color: #000;">
         
-        <div class="mb-3 px-2">
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <small class="fw-bold text-dark" style="font-size:0.85rem; letter-spacing: 0.5px;"><i class="bi bi-funnel-fill me-1"></i> TAPISAN DATA</small>
+        <div class="sidebar-content">
+            <div class="nav-item active" onclick="switchTab('main', this)">
+                <span><i class="bi bi-grid-1x2-fill me-2"></i> Dashboard</span>
             </div>
+            <div class="nav-item" id="navVerify" style="display:none" onclick="switchTab('verify', this)">
+                <span><i class="bi bi-check-circle-fill me-2"></i> Pengesahan</span>
+                <span class="badge-pending" id="badgePending">0</span>
+            </div>
+            <hr class="my-4" style="color: #000;">
             
-            <div class="mb-2">
-                <label class="filter-label">Negeri</label>
-                <select id="selNegeri" class="form-select form-select-sm" onchange="runFilter('n')"></select>
-            </div>
-            
-            <div class="mb-2">
-                <label class="filter-label">Daerah</label>
-                <select id="selDaerah" class="form-select form-select-sm" onchange="runFilter('d')"></select>
-            </div>
-
-            <div class="mb-2">
-                <label class="filter-label">Tanaman</label>
-                <select id="selTanaman" class="form-select form-select-sm" onchange="runFilter('t')"></select>
-            </div>
-            
-            <div class="mb-2">
-                <label class="filter-label">Perosak</label>
-                <select id="selPerosak" class="form-select form-select-sm" onchange="runFilter('p')"></select>
-            </div>
-
-            <div class="mb-2">
-                <label class="filter-label">Kategori</label>
-                <select id="selKategori" class="form-select form-select-sm" onchange="runFilter('k')"></select>
-            </div>
-
-            <div class="mb-3">
-                <label class="filter-label">Julat Tarikh</label>
-                <div class="row g-1">
-                    <div class="col-6"><input type="date" id="dS" class="form-control form-control-sm" onchange="runFilter()"></div>
-                    <div class="col-6"><input type="date" id="dE" class="form-control form-control-sm" onchange="runFilter()"></div>
+            <div class="mb-3 px-2">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <small class="fw-bold text-dark" style="font-size:0.85rem; letter-spacing: 0.5px;"><i class="bi bi-funnel-fill me-1"></i> TAPISAN DATA</small>
                 </div>
-            </div>
-            
-            <button class="btn btn-dark btn-sm w-100" onclick="resetFilter()">
-                <i class="bi bi-arrow-counterclockwise"></i> Reset Tapisan
-            </button>
-
-            <hr class="my-4" style="color:#000">
-
-            <div class="p-3 rounded border shadow-sm bg-white">
-                <div class="d-flex align-items-center mb-2">
-                    <div class="bg-danger text-white rounded p-1 me-2"><i class="bi bi-bug-fill"></i></div>
-                    <small class="fw-bold text-dark" style="line-height:1.2">Pemantauan<br>Perangkap RPW</small>
+                
+                <div class="mb-2">
+                    <label class="filter-label">Negeri</label>
+                    <select id="selNegeri" class="form-select form-select-sm" onchange="runFilter('n')"></select>
                 </div>
-                <p class="text-muted mb-2" style="font-size: 0.75rem;">Akses pantas ke data perangkap kumbang.</p>
-                <button onclick="window.open(RPW_URL, '_blank')" class="btn btn-outline-danger btn-sm w-100 fw-bold">
-                    <i class="bi bi-box-arrow-up-right"></i> Buka Sistem
+                
+                <div class="mb-2">
+                    <label class="filter-label">Daerah</label>
+                    <select id="selDaerah" class="form-select form-select-sm" onchange="runFilter('d')"></select>
+                </div>
+
+                <div class="mb-2">
+                    <label class="filter-label">Tanaman</label>
+                    <select id="selTanaman" class="form-select form-select-sm" onchange="runFilter('t')"></select>
+                </div>
+                
+                <div class="mb-2">
+                    <label class="filter-label">Perosak</label>
+                    <select id="selPerosak" class="form-select form-select-sm" onchange="runFilter('p')"></select>
+                </div>
+
+                <div class="mb-2">
+                    <label class="filter-label">Kategori</label>
+                    <select id="selKategori" class="form-select form-select-sm" onchange="runFilter('k')"></select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="filter-label">Julat Tarikh</label>
+                    <div class="row g-1">
+                        <div class="col-6"><input type="date" id="dS" class="form-control form-control-sm" onchange="runFilter()"></div>
+                        <div class="col-6"><input type="date" id="dE" class="form-control form-control-sm" onchange="runFilter()"></div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-dark btn-sm w-100" onclick="resetFilter()">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset Tapisan
                 </button>
+
+                <hr class="my-4" style="color:#000">
+
+                <div class="p-3 rounded border shadow-sm bg-white">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="bg-danger text-white rounded p-1 me-2"><i class="bi bi-bug-fill"></i></div>
+                        <small class="fw-bold text-dark" style="line-height:1.2">Pemantauan<br>Perangkap RPW</small>
+                    </div>
+                    <p class="text-muted mb-2" style="font-size: 0.75rem;">Akses pantas ke data perangkap kumbang.</p>
+                    <button onclick="window.open(RPW_URL, '_blank')" class="btn btn-outline-danger btn-sm w-100 fw-bold">
+                        <i class="bi bi-box-arrow-up-right"></i> Buka Sistem
+                    </button>
+                </div>
             </div>
         </div>
         
-        <div class="mt-auto">
+        <div class="sidebar-footer">
             <button onclick="window.open(BANCIAN_URL, '_blank')" class="btn btn-success w-100 btn-sm fw-bold mb-3 py-2 shadow-sm">
                 <i class="bi bi-plus-lg me-1"></i> Tambah Data
             </button>
-            <div class="pt-3 border-top" style="border-color: #c6e7ce !important;">
-                <div class="d-flex align-items-center justify-content-between px-2">
-                    <div><small class="text-dark d-block" style="font-size: 0.75rem; font-weight:600;">Pengguna</small><strong id="uDisp" class="text-dark" style="font-size:0.9rem">-</strong></div>
-                    <button class="btn btn-link text-danger btn-sm p-0" onclick="location.reload()" title="Log Keluar"><i class="bi bi-box-arrow-right fs-5"></i></button>
-                </div>
+            <div class="d-flex align-items-center justify-content-between px-2">
+                <div><small class="text-dark d-block" style="font-size: 0.75rem; font-weight:600;">Pengguna</small><strong id="uDisp" class="text-dark" style="font-size:0.9rem">-</strong></div>
+                <button class="btn btn-link text-danger btn-sm p-0" onclick="location.reload()" title="Log Keluar"><i class="bi bi-box-arrow-right fs-5"></i></button>
             </div>
         </div>
     </div>
@@ -403,60 +414,48 @@
             updateCharts(pm, km); updateMap(pts); updateHotspot(hData); genSummary(pm, tt, ts); renTab();
         }
 
-       function genSummary(pm, tt, ts) { 
+        function genSummary(pm, tt, ts) { 
             const el = document.getElementById('smartSummary'); 
             if(!el) return; 
             
-            // Logic Negeri & Daerah
-            let stateMap = {}; 
-            let distMap = {}; 
-            fData.forEach(d => { 
-                if (d.ls > 0) { 
-                    stateMap[d.n] = (stateMap[d.n] || 0) + d.ls; 
-                    if(d.d) distMap[d.d] = (distMap[d.d] || 0) + d.ls;
-                } 
-            }); 
-            
+            let stateMap = {}; fData.forEach(d => { if (d.ls > 0) { stateMap[d.n] = (stateMap[d.n] || 0) + d.ls; } }); 
             let topState = "-", topStateVal = 0; 
             Object.entries(stateMap).forEach(([negeri, luas]) => { if (luas > topStateVal) { topState = negeri; topStateVal = luas; } }); 
             if (topState === "-") topState = document.getElementById('selNegeri').value || "Semua Negeri"; 
             
+            let distMap = {}; fData.forEach(d => { if (d.ls > 0 && d.d) { distMap[d.d] = (distMap[d.d] || 0) + d.ls; } });
             let topDist = "-", topDistVal = 0;
             Object.entries(distMap).forEach(([daerah, luas]) => { if (luas > topDistVal) { topDist = daerah; topDistVal = luas; } });
             let hotspotText = (topDist !== "-") ? `${topDist}, ${topState}` : topState;
 
-            // Logic Tanaman
             let cropMap = {}; fData.forEach(d => { if(d.ls > 0) cropMap[d.tn] = (cropMap[d.tn] || 0) + d.ls; }); 
             let topCrop = "-", topCropVal = 0; 
             Object.entries(cropMap).forEach(([k,v]) => { if(v > topCropVal) { topCrop = k; topCropVal = v; } }); 
             
-            // Logic Perosak
             let topP="-", topV=0; Object.entries(pm).forEach(([k,v])=>{ if(v > topV){ topP = k; topV = v; } }); if(topP === "-" && ts > 0) topP = "Serangan Umum"; 
             
-            // --- BAHAGIAN EDIT: LOGIK KETERUKAN BARU (1-5) ---
             let totalScore = 0, count = 0; 
             fData.forEach(d => { let level = parseInt(d.k) || 0; if(level > 0 && d.ls > 0){ totalScore += level; count++; } }); 
             let avgIdx = count > 0 ? (totalScore / count).toFixed(1) : "0.0"; 
+            let tafsir = "Tiada", color = "text-success"; 
             
-            let tafsir = "Tiada"; 
-            let color = "text-muted"; 
+            // --- LOGIC KETERUKAN BARU (1-5) ---
             let idxNum = parseFloat(avgIdx);
-            let scoreBulat = Math.round(idxNum); // Bundarkan 2.1 -> 2, 3.6 -> 4
+            let scoreBulat = Math.round(idxNum); // Bundarkan 2.5 -> 3
 
             if(idxNum > 0) { 
                 if (scoreBulat <= 1) { 
                     tafsir = "Sangat Rendah"; color = "text-success"; 
                 } else if (scoreBulat === 2) { 
-                    tafsir = "Rendah"; color = "text-info"; // Biru/Cyan
+                    tafsir = "Rendah"; color = "text-info"; 
                 } else if (scoreBulat === 3) { 
                     tafsir = "Sederhana"; color = "text-warning"; 
                 } else if (scoreBulat === 4) { 
                     tafsir = "Teruk"; color = "text-danger"; 
                 } else { 
-                    tafsir = "Sangat Teruk"; color = "text-danger fw-bold"; // 5 ke atas
+                    tafsir = "Sangat Teruk"; color = "text-danger fw-bold"; 
                 }
             } 
-            // -----------------------------------------------------
             
             if(ts === 0) { 
                 el.innerHTML = `<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Tiada rekod serangan dilaporkan setakat ini.</span>`; 
@@ -464,6 +463,7 @@
                 el.innerHTML = ` <div style="line-height: 1.6;"> <i class="bi bi-geo-alt-fill text-danger me-1"></i> Lokasi Hotspot: <b>${hotspotText}</b> <br> <i class="bi bi-flower1 text-success me-1"></i> Tanaman <b>${topCrop}</b> paling terkesan akibat serangan <b>${topP}</b><br> <i class="bi bi-exclamation-circle-fill text-warning me-1"></i> Luas Serangan: <b>${ts.toFixed(2)} Ha</b> (${((ts/tt)*100).toFixed(2)}%)<br> <i class="bi bi-bar-chart-fill text-secondary me-1"></i> Indeks Keterukan: <b>${avgIdx} - <span class="${color}">${tafsir}</span></b></div> `; 
             } 
         }
+
         function updateCharts(pm, km) { const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); if(charts.b) charts.b.destroy(); charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); if(charts.p) charts.p.destroy(); charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); }
         function updateMap(pts) { if(layer) map.removeLayer(layer); if(pts.length) { layer = L.layerGroup(pts.map(p => L.circleMarker(p, {radius:6, color:'#dc2626', fillOpacity:0.7, stroke:true, weight:1, color:'white', fillColor:'#dc2626'}))).addTo(map); map.fitBounds(L.latLngBounds(pts)); } }
         function updateHotspot(hData) { const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; }
