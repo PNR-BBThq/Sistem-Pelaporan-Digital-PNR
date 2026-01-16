@@ -57,6 +57,9 @@
         .mini-table td { padding: 6px; border: 1px solid #e2e8f0; vertical-align: middle; }
         .mini-table td.center { text-align: center; }
 
+        /* LABEL FILTER STYLE */
+        .filter-label { font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 2px; display: block; text-transform: uppercase; }
+
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.active { transform: translateX(0); }
@@ -88,32 +91,61 @@
         </div>
         <hr class="my-4 text-muted">
         <div class="mb-3 px-2">
-    <small class="text-muted fw-bold d-block mb-2" style="font-size:0.75rem; letter-spacing: 0.5px;">TAPISAN DATA</small>
-    <select id="selNegeri" class="form-select form-select-sm mb-2" onchange="runFilter()"></select>
-    <select id="selTanaman" class="form-select form-select-sm mb-2" onchange="runFilter()"></select>
-    <select id="selKategori" class="form-select form-select-sm mb-2" onchange="runFilter()"></select>
-    <div class="row g-1 mb-2">
-        <div class="col-6"><input type="date" id="dS" class="form-control form-control-sm" onchange="runFilter()"></div>
-        <div class="col-6"><input type="date" id="dE" class="form-control form-control-sm" onchange="runFilter()"></div>
-    </div>
-    
-    <button class="btn btn-outline-secondary btn-sm w-100" onclick="resetFilter()">
-        <i class="bi bi-arrow-counterclockwise"></i> Reset Tapisan
-    </button>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <small class="text-muted fw-bold" style="font-size:0.75rem; letter-spacing: 0.5px;">TAPISAN DATA</small>
+            </div>
+            
+            <div class="mb-2">
+                <label class="filter-label">Negeri</label>
+                <select id="selNegeri" class="form-select form-select-sm" onchange="runFilter()"></select>
+            </div>
+            
+            <div class="mb-2">
+                <label class="filter-label">Daerah</label>
+                <select id="selDaerah" class="form-select form-select-sm" onchange="runFilter()"></select>
+            </div>
 
-    <hr class="my-4 text-muted">
+            <div class="mb-2">
+                <label class="filter-label">Tanaman</label>
+                <select id="selTanaman" class="form-select form-select-sm" onchange="runFilter()"></select>
+            </div>
+            
+            <div class="mb-2">
+                <label class="filter-label">Perosak</label>
+                <select id="selPerosak" class="form-select form-select-sm" onchange="runFilter()"></select>
+            </div>
 
-    <div class="p-3 rounded border shadow-sm" style="background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);">
-        <div class="d-flex align-items-center mb-2">
-            <div class="bg-danger text-white rounded p-1 me-2"><i class="bi bi-bug-fill"></i></div>
-            <small class="fw-bold text-dark" style="line-height:1.2">Pemantauan<br>Perangkap RPW</small>
+            <div class="mb-2">
+                <label class="filter-label">Kategori</label>
+                <select id="selKategori" class="form-select form-select-sm" onchange="runFilter()"></select>
+            </div>
+
+            <div class="mb-3">
+                <label class="filter-label">Julat Tarikh</label>
+                <div class="row g-1">
+                    <div class="col-6"><input type="date" id="dS" class="form-control form-control-sm" onchange="runFilter()"></div>
+                    <div class="col-6"><input type="date" id="dE" class="form-control form-control-sm" onchange="runFilter()"></div>
+                </div>
+            </div>
+            
+            <button class="btn btn-outline-secondary btn-sm w-100" onclick="resetFilter()">
+                <i class="bi bi-arrow-counterclockwise"></i> Reset Tapisan
+            </button>
+
+            <hr class="my-4 text-muted">
+
+            <div class="p-3 rounded border shadow-sm" style="background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="bg-danger text-white rounded p-1 me-2"><i class="bi bi-bug-fill"></i></div>
+                    <small class="fw-bold text-dark" style="line-height:1.2">Pemantauan<br>Perangkap RPW</small>
+                </div>
+                <p class="text-muted mb-2" style="font-size: 0.75rem;">Akses pantas ke data perangkap kumbang.</p>
+                <button onclick="window.open(RPW_URL, '_blank')" class="btn btn-danger btn-sm w-100 fw-bold">
+                    <i class="bi bi-box-arrow-up-right"></i> Buka Sistem
+                </button>
+            </div>
         </div>
-        <p class="text-muted mb-2" style="font-size: 0.75rem;">Akses pantas ke data perangkap kumbang.</p>
-        <button onclick="window.open(RPW_URL, '_blank')" class="btn btn-danger btn-sm w-100 fw-bold">
-            <i class="bi bi-box-arrow-up-right"></i> Buka Sistem
-        </button>
-    </div>
-</div>
+        
         <div class="mt-auto">
             <button onclick="window.open(BANCIAN_URL, '_blank')" class="btn btn-success w-100 btn-sm fw-bold mb-3 py-2 shadow-sm">
                 <i class="bi bi-plus-lg me-1"></i> Tambah Data
@@ -192,7 +224,7 @@
                 <div class="col-md-4">
                     <div class="table-box h-100 shadow-sm" style="max-height:400px; overflow-y:auto">
                         <h6 class="fw-bold mb-3 text-danger d-flex align-items-center"><i class="bi bi-fire me-2"></i>Hotspot Daerah</h6>
-                        <table class="table table-hover small mb-0"><thead class="table-light sticky-top"><tr><th>Daerah</th><th class="text-end">Luas (Ha)</th></tr></thead><tbody id="hotspotTable"></tbody></table>
+                        <table class="table table-hover small mb-0"><thead class="table-light sticky-top"><tr><th>Daerah</th><th class="text-end">Luas Serangan(Ha)</th></tr></thead><tbody id="hotspotTable"></tbody></table>
                     </div>
                 </div>
             </div>
@@ -233,9 +265,9 @@
     <script>
         const API_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
         const BANCIAN_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
-        const RPW_URL = "https://www.appsheet.com/start/55b088df-3ec1-469a-b5c6-1fca48052906"; // <--- Masukkan link sebenar di sini
+        const RPW_URL = "https://www.appsheet.com/start/55b088df-3ec1-469a-b5c6-1fca48052906";
         let mData=[], fData=[], uProf=null, charts={}, map=null, layer=null, pg=1, pSize=10, sessionID=null;
-        let currentPendingRows = []; // Variable baru untuk simpan data pending
+        let currentPendingRows = [];
 
         async function postData(act, load) {
             try {
@@ -268,25 +300,58 @@
 
         async function initDash() {
             const d = await postData('getAnalytics', {state: uProf.state}); if(!d.records) { alert("Tiada Data"); return; }
-            mData = d.records; fillSel('selNegeri', d.filters.negeri); fillSel('selTanaman', d.filters.tanaman); fillSel('selKategori', d.filters.kategori);
+            mData = d.records; 
+            
+            fillSel('selNegeri', d.filters.negeri); 
+            fillSel('selTanaman', d.filters.tanaman); 
+            fillSel('selKategori', d.filters.kategori);
+
+            // JANA LIST DAERAH & PEROSAK DARI DATA
+            let allD = [...new Set(mData.map(d=>d.d).filter(x=>x))].sort();
+            fillSel('selDaerah', allD);
+
+            let allP = [...new Set(mData.flatMap(d=> d.p ? Object.keys(d.p) : []))].sort();
+            fillSel('selPerosak', allP);
+
             if(uProf.state !== "ALL") { const s = document.getElementById('selNegeri'); s.value = uProf.state; s.disabled = true; }
             if(!map) { map = L.map('map').setView([4.2105, 101.9758], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); }
             runFilter();
         }
 
         function runFilter() {
-            const n = document.getElementById('selNegeri').value, t = document.getElementById('selTanaman').value, k = document.getElementById('selKategori').value, s = document.getElementById('dS').value, e = document.getElementById('dE').value;
-            fData = mData.filter(d => { let ok = (n==="" || d.n===n) && (t==="" || d.tn===t) && (k==="" || d.kt===k); if(s && d.t < s) ok = false; if(e && d.t > e) ok = false; return ok; });
+            const n = document.getElementById('selNegeri').value;
+            const da = document.getElementById('selDaerah').value; // Daerah
+            const t = document.getElementById('selTanaman').value;
+            const pe = document.getElementById('selPerosak').value; // Perosak
+            const k = document.getElementById('selKategori').value;
+            const s = document.getElementById('dS').value;
+            const e = document.getElementById('dE').value;
+            
+            fData = mData.filter(d => { 
+                let ok = (n==="" || d.n===n) && 
+                         (da==="" || d.d===da) && // Filter Daerah
+                         (t==="" || d.tn===t) && 
+                         (pe==="" || (d.p && d.p[pe])) && // Filter Perosak
+                         (k==="" || d.kt===k); 
+                         
+                if(s && d.t < s) ok = false; 
+                if(e && d.t > e) ok = false; 
+                return ok; 
+            });
             pg = 1; calcUI();
         }
-function resetFilter() {
-    document.getElementById('selNegeri').value = "";
-    document.getElementById('selTanaman').value = "";
-    document.getElementById('selKategori').value = "";
-    document.getElementById('dS').value = "";
-    document.getElementById('dE').value = "";
-    runFilter(); // Jalankan semula untuk reset data dashboard
-}
+
+        function resetFilter() {
+            document.getElementById('selNegeri').value = "";
+            document.getElementById('selDaerah').value = "";
+            document.getElementById('selTanaman').value = "";
+            document.getElementById('selPerosak').value = "";
+            document.getElementById('selKategori').value = "";
+            document.getElementById('dS').value = "";
+            document.getElementById('dE').value = "";
+            runFilter(); 
+        }
+
         function calcUI() {
             let tt=0, ts=0, pm={}, km={1:0,2:0,3:0,4:0,5:0}, pts=[], hData={};
             fData.forEach(d => {
@@ -312,14 +377,14 @@ function resetFilter() {
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
         function fillSel(id, arr) { const el = document.getElementById(id); el.innerHTML='<option value="">Semua</option>'; arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); }
 
-        /* --- FUNGSI PENGESAHAN: SMART IMAGE PARSER + REMOVE REDUNDANT PEST LIST --- */
+        /* --- FUNGSI PENGESAHAN (UPDATED: ADA TANAMAN) --- */
         async function loadPend() {
             const container = document.getElementById('verifyContainer');
             container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
             
             try {
                 const d = await postData('getPending', {state: uProf.state});
-                currentPendingRows = d.rows || []; // SIMPAN DATA PENDING DALAM GLOBAL VAR
+                currentPendingRows = d.rows || []; 
 
                 if(!d.rows || !d.rows.length) {
                     container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>';
@@ -328,16 +393,11 @@ function resetFilter() {
 
                 container.innerHTML = "";
 
-                // --- 1. FUNGSI PEMBERSIH LINK POWERFUL (TERIMA SEMUA JENIS STRING) ---
                 const cleanImageLink = (raw) => {
                     if (!raw) return [];
                     let str = String(raw).trim();
                     if(str.length < 5) return [];
-
-                    // Buang kurungan [] dan quote " '
                     str = str.replace(/[\[\]"']/g, '');
-                    
-                    // Pecahkan ikut koma
                     let links = str.split(',');
                     return links.map(l => l.trim()).filter(l => l.startsWith('http'));
                 }
@@ -349,16 +409,19 @@ function resetFilter() {
                     // Header Data
                     const tarikh = getVal('Tarikh') || getVal('Date') || r.data[0];
                     const nama = getVal('Nama') || getVal('Pegawai') || r.data[1];
-                    const lokasi = getVal('Lokasi') || getVal('Kebun') || "-"; 
+                    const lokasi = getVal('Lokasi') || getVal('Kebun') || "-";
+                    
+                    // --- 1. AMBIL NAMA TANAMAN (UPDATED) ---
+                    const tanaman = getVal('Tanaman') || "-"; 
 
-                    // Data List (Exclude Special Columns + REDUNDANT PEST LIST)
-                    // Tambah 'senarai perosak', 'perosak' dan 'senarai' dalam specialCols
-                    let specialCols = ['status pengesahan', 'log semakan', 'luas serangan', 'peratus', 'keterukan', 'gambar', 'image', 'tarikh', 'date', 'nama', 'pegawai', 'senarai perosak', 'perosak', 'senarai', 'lokasi', 'kebun'];
+                    // --- 2. TAMBAH 'tanaman' DALAM FILTER SUPAYA TAK DUPLICATE ---
+                    let specialCols = ['status pengesahan', 'log semakan', 'luas serangan', 'peratus', 'keterukan', 'gambar', 'image', 'tarikh', 'date', 'nama', 'pegawai', 'senarai perosak', 'perosak', 'senarai', 'lokasi', 'kebun', 'tanaman'];
+                    
                     let detailHTML = "";
                     let pestTableHTML = "";
                     let imgHTML = "";
 
-                    // Generate Details (Loop semua column kecuali yang special)
+                    // Generate Details
                     d.headers.forEach((h, i) => {
                         let headerName = h;
                         let val = r.data[i];
@@ -376,7 +439,7 @@ function resetFilter() {
                         const sevObj = JSON.parse(rawSev || "{}");
                         if(Object.keys(luasObj).length > 0) {
                             pestTableHTML = `<div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Data Serangan</div>
-                            <table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas serangan(Ha)</th><th class="center">Peratus serangan</th><th class="center">Keterukan serangan</th></tr></thead><tbody>`;
+                            <table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas(Ha)</th><th class="center">%</th><th class="center">Tahap</th></tr></thead><tbody>`;
                             Object.keys(luasObj).forEach(key => {
                                 pestTableHTML += `<tr><td>${key}</td><td class="center fw-bold">${luasObj[key]}</td><td class="center">${pctObj[key]||0}%</td><td class="center"><span class="badge bg-secondary">T${sevObj[key]||0}</span></td></tr>`;
                             });
@@ -384,11 +447,9 @@ function resetFilter() {
                         }
                     } catch(e) {}
 
-                    // Generate Images (AUTO DETECT COLUMN GAMBAR)
-                    // Cari column yang ada perkataan "gambar" atau "image" atau "foto" atau "link"
+                    // Generate Images
                     let imgIdx = d.headers.findIndex(h => h.match(/gambar|image|img|foto|link/i));
                     let rawImg = (imgIdx > -1) ? r.data[imgIdx] : "";
-                    
                     let cleanLinks = cleanImageLink(rawImg);
                     if (cleanLinks.length > 0) {
                          imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Bukti Bergambar</div><div class="mb-2">`;
@@ -400,6 +461,7 @@ function resetFilter() {
                         imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Gambar</div><small class="text-muted">Tiada gambar dilampirkan.</small>`;
                     }
 
+                    // --- 3. MASUKKAN TANAMAN DALAM CARD HTML DI BAWAH ---
                     let cardHTML = `
                     <div class="col-md-6 col-lg-4">
                         <div class="verify-card">
@@ -410,6 +472,7 @@ function resetFilter() {
                             <div class="verify-body">
                                 <div class="section-title"><i class="bi bi-info-circle-fill"></i> Butiran Laporan</div>
                                 <div class="v-row"><div class="v-label">Lokasi/Kebun:</div><div class="v-val fw-bold text-dark">${lokasi}</div></div>
+                                <div class="v-row"><div class="v-label">Tanaman:</div><div class="v-val fw-bold text-success">${tanaman}</div></div>
                                 ${detailHTML}
                                 ${pestTableHTML}
                                 ${imgHTML}
@@ -427,12 +490,10 @@ function resetFilter() {
 
         async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
 
-        // --- FUNGSI BARU: SAHKAN SEMUA ---
         async function approveAll() {
             if(!currentPendingRows || currentPendingRows.length === 0) { alert("Tiada data untuk disahkan."); return; }
             if(!confirm("⚠️ AMARAN: Anda pasti mahu mengesahkan SEMUA " + currentPendingRows.length + " rekod ini sekaligus?")) return;
 
-            // Tunjuk Loading Screen
             const container = document.getElementById('verifyContainer');
             container.innerHTML = `
                 <div class="col-12 text-center p-5 bg-white rounded shadow-sm">
@@ -447,7 +508,6 @@ function resetFilter() {
             let count = 0;
             const total = currentPendingRows.length;
 
-            // Loop setiap row dan approve
             for (const r of currentPendingRows) {
                 try {
                     await postData('submitVerify', {row: r.row, act: 'APPROVE', reason: '', name: uProf.name});
@@ -462,12 +522,11 @@ function resetFilter() {
             }
 
             alert("✅ Selesai! Semua data telah disahkan.");
-            loadPend(); // Refresh senarai (patutnya kosong)
-            initDash(); // Update dashboard
-            checkPendingCount(); // Update badge
+            loadPend(); 
+            initDash();
+            checkPendingCount(); 
         }
 
-        /* --- EXCEL & PDF --- */
         async function downloadDualExcel() { if (!fData.length) { alert("Tiada data!"); return; } const workbook = new ExcelJS.Workbook(); const worksheet = workbook.addWorksheet('Laporan Penuh'); worksheet.columns = [{ header: 'ID', key: 'id', width: 6 }, { header: 'Tarikh', key: 't', width: 12 }, { header: 'Negeri', key: 'n', width: 15 }, { header: 'Daerah', key: 'd', width: 15 }, { header: 'Lokasi', key: 'l', width: 22 }, { header: 'Koordinat', key: 'c', width: 22 }, { header: 'Kategori', key: 'kt', width: 18 }, { header: 'Tanaman', key: 'tn', width: 18 }, { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, { header: 'Syor Kawalan', key: 's', width: 25 }, { header: 'Pegawai', key: 'pg', width: 20 }, { header: 'Perosak', key: 'p', width: 20 }, { header: 'Keterukan', key: 'k', width: 18 }, { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, { header: '% Serangan', key: 'pct', width: 15 }]; worksheet.getRow(1).font = { bold: true }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }; let rowIndex = 2; fData.forEach(d => { let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]]; let startRow = rowIndex; let luasTanam = parseFloat(d.lt) || 0; pestEntries.forEach(([pName, pArea]) => { let luasSerang = parseFloat(pArea) || 0; let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%"; const row = worksheet.getRow(rowIndex); row.values = { id: d.id, t: d.t, n: d.n, d: d.d, l: d.l, c: d.c || "-", kt: d.kt || "-", tn: d.tn, lt: luasTanam, s: d.s, pg: d.pg || "-", p: pName, k: d.k, ls: luasSerang, pct: pctVal }; row.eachCell({ includeEmpty: true }, (cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; }); rowIndex++; }); if (pestEntries.length > 1) { for (let c = 1; c <= 11; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); } } for (let r = startRow; r < rowIndex; r++) { for (let c = 1; c <= 11; c++) { worksheet.getCell(r, c).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; } } }); const buffer = await workbook.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = window.URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'PNR_Laporan_Lengkap.xlsx'; anchor.click(); window.URL.revokeObjectURL(url); }
         async function dlPDF() { const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = "Jana..."; btn.disabled = true; let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length-1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length-1])}`; } try { const m = { user: uProf.name, negeri: document.getElementById('selNegeri').value || "Semua", dates: dateLabel }; const r = await postData('genPDF', {data: fData, meta: m}); if(r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } } catch(e) { console.error(e); } btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false; }
     </script>
