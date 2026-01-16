@@ -708,6 +708,7 @@ async function downloadDualExcel() {
                     row.values = { 
                         id: d.id, 
                         t: d.t, 
+                        pg: d.pg || "-",
                         n: d.n, 
                         d: d.d, 
                         l: d.l, 
@@ -716,7 +717,6 @@ async function downloadDualExcel() {
                         tn: d.tn, 
                         lt: luasTanam, 
                         s: d.s, 
-                        pg: d.pg || "-", 
                         p: pName, 
                         k: d.k, 
                         ls: luasSerang, 
