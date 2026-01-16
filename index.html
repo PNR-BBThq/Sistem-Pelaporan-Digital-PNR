@@ -97,27 +97,27 @@
             
             <div class="mb-2">
                 <label class="filter-label">Negeri</label>
-                <select id="selNegeri" class="form-select form-select-sm" onchange="runFilter()"></select>
+                <select id="selNegeri" class="form-select form-select-sm" onchange="runFilter('n')"></select>
             </div>
             
             <div class="mb-2">
                 <label class="filter-label">Daerah</label>
-                <select id="selDaerah" class="form-select form-select-sm" onchange="runFilter()"></select>
+                <select id="selDaerah" class="form-select form-select-sm" onchange="runFilter('d')"></select>
             </div>
 
             <div class="mb-2">
                 <label class="filter-label">Tanaman</label>
-                <select id="selTanaman" class="form-select form-select-sm" onchange="runFilter()"></select>
+                <select id="selTanaman" class="form-select form-select-sm" onchange="runFilter('t')"></select>
             </div>
             
             <div class="mb-2">
                 <label class="filter-label">Perosak</label>
-                <select id="selPerosak" class="form-select form-select-sm" onchange="runFilter()"></select>
+                <select id="selPerosak" class="form-select form-select-sm" onchange="runFilter('p')"></select>
             </div>
 
             <div class="mb-2">
                 <label class="filter-label">Kategori</label>
-                <select id="selKategori" class="form-select form-select-sm" onchange="runFilter()"></select>
+                <select id="selKategori" class="form-select form-select-sm" onchange="runFilter('k')"></select>
             </div>
 
             <div class="mb-3">
@@ -224,7 +224,7 @@
                 <div class="col-md-4">
                     <div class="table-box h-100 shadow-sm" style="max-height:400px; overflow-y:auto">
                         <h6 class="fw-bold mb-3 text-danger d-flex align-items-center"><i class="bi bi-fire me-2"></i>Hotspot Daerah</h6>
-                        <table class="table table-hover small mb-0"><thead class="table-light sticky-top"><tr><th>Daerah</th><th class="text-end">Luas Serangan (Ha)</th></tr></thead><tbody id="hotspotTable"></tbody></table>
+                        <table class="table table-hover small mb-0"><thead class="table-light sticky-top"><tr><th>Daerah</th><th class="text-end">Luas (Ha)</th></tr></thead><tbody id="hotspotTable"></tbody></table>
                     </div>
                 </div>
             </div>
@@ -305,43 +305,99 @@
             const d = await postData('getAnalytics', {state: uProf.state}); if(!d.records) { alert("Tiada Data"); return; }
             mData = d.records; 
             
-            fillSel('selNegeri', d.filters.negeri); 
-            fillSel('selTanaman', d.filters.tanaman); 
-            fillSel('selKategori', d.filters.kategori);
-
-            // JANA LIST DAERAH & PEROSAK DARI DATA
-            let allD = [...new Set(mData.map(d=>d.d).filter(x=>x))].sort();
-            fillSel('selDaerah', allD);
-
-            let allP = [...new Set(mData.flatMap(d=> d.p ? Object.keys(d.p) : []))].sort();
-            fillSel('selPerosak', allP);
-
-            if(uProf.state !== "ALL") { const s = document.getElementById('selNegeri'); s.value = uProf.state; s.disabled = true; }
+            // Set Default Dropdowns (Unfiltered)
+            fillSel('selNegeri', mData.map(d => d.n).filter((v, i, a) => a.indexOf(v) === i).sort()); 
+            fillSel('selTanaman', mData.map(d => d.tn).filter((v, i, a) => a.indexOf(v) === i).sort()); 
+            fillSel('selKategori', mData.map(d => d.kt).filter((v, i, a) => a.indexOf(v) === i).sort());
+            
+            // Auto Select Negeri Jika User Bukan ADMIN
+            if(uProf.state !== "ALL") { 
+                const s = document.getElementById('selNegeri'); 
+                s.value = uProf.state; 
+                s.disabled = true; 
+            }
+            
             if(!map) { map = L.map('map').setView([4.2105, 101.9758], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); }
+            
+            // Initial Run (Populate Dependent Dropdowns)
             runFilter();
         }
 
-        function runFilter() {
-            const n = document.getElementById('selNegeri').value;
-            const da = document.getElementById('selDaerah').value; // Daerah
-            const t = document.getElementById('selTanaman').value;
-            const pe = document.getElementById('selPerosak').value; // Perosak
-            const k = document.getElementById('selKategori').value;
-            const s = document.getElementById('dS').value;
-            const e = document.getElementById('dE').value;
-            
+        // --- FUNGSI UTAMA: FILTER BERTINGKAT (DEPENDENT DROPDOWN) ---
+        function runFilter(source) {
+            // 1. Ambil Nilai Semasa
+            const selN = document.getElementById('selNegeri').value;
+            const selD = document.getElementById('selDaerah').value;
+            const selT = document.getElementById('selTanaman').value;
+            const selP = document.getElementById('selPerosak').value;
+            const selK = document.getElementById('selKategori').value;
+            const dS = document.getElementById('dS').value;
+            const dE = document.getElementById('dE').value;
+
+            // 2. Tapis Data Utama (fData) berdasarkan SEMUA pilihan
             fData = mData.filter(d => { 
-                let ok = (n==="" || d.n===n) && 
-                         (da==="" || d.d===da) && // Filter Daerah
-                         (t==="" || d.tn===t) && 
-                         (pe==="" || (d.p && d.p[pe])) && // Filter Perosak
-                         (k==="" || d.kt===k); 
+                let ok = (selN==="" || d.n===selN) && 
+                         (selD==="" || d.d===selD) && 
+                         (selT==="" || d.tn===selT) && 
+                         (selP==="" || (d.p && d.p[selP])) && 
+                         (selK==="" || d.kt===selK); 
                          
-                if(s && d.t < s) ok = false; 
-                if(e && d.t > e) ok = false; 
+                if(dS && d.t < dS) ok = false; 
+                if(dE && d.t > dE) ok = false; 
                 return ok; 
             });
-            pg = 1; calcUI();
+
+            // 3. LOGIC KEMASKINI DROPDOWN (DYNAMIC DEPENDENCY)
+            // Hanya kemaskini dropdown yang "lebih bawah" daripada yang diubah.
+            
+            // A. Jika Negeri berubah -> Update Daerah
+            if(source === 'n' || !source) {
+                // Cari daerah yang valid dalam negeri terpilih
+                let validDataForDaerah = mData.filter(d => selN === "" || d.n === selN);
+                let newDaerahList = [...new Set(validDataForDaerah.map(d=>d.d).filter(x=>x))].sort();
+                updateDropdownOptions('selDaerah', newDaerahList, selD);
+            }
+
+            // B. Jika Tanaman berubah -> Update Perosak
+            // (Atau jika Negeri/Daerah berubah, list perosak mungkin juga berkurang)
+            if(source === 't' || source === 'n' || source === 'd' || !source) {
+                // Cari perosak yang valid dalam data terpilih (Negeri + Daerah + Tanaman)
+                // Kita guna filter sementara yang longgar sikit untuk dropdown
+                let validDataForPerosak = mData.filter(d => 
+                    (selN==="" || d.n===selN) && 
+                    (selD==="" || d.d===selD) &&
+                    (selT==="" || d.tn===selT)
+                );
+                
+                let newPerosakList = [...new Set(validDataForPerosak.flatMap(d=> d.p ? Object.keys(d.p) : []))].sort();
+                updateDropdownOptions('selPerosak', newPerosakList, selP);
+            }
+
+            // C. Jika Kategori berubah -> Boleh update Tanaman (Optional, tapi bagus)
+            if(source === 'k') {
+                 let validDataForTanaman = mData.filter(d => selK === "" || d.kt === selK);
+                 let newTanamanList = [...new Set(validDataForTanaman.map(d=>d.tn).filter(x=>x))].sort();
+                 updateDropdownOptions('selTanaman', newTanamanList, selT);
+            }
+
+            // 4. Render UI
+            pg = 1; 
+            calcUI();
+        }
+
+        // Helper untuk update dropdown tanpa hilangkan pilihan semasa (kalau masih valid)
+        function updateDropdownOptions(id, list, currentValue) {
+            const el = document.getElementById(id);
+            el.innerHTML = '<option value="">Semua</option>';
+            list.forEach(item => {
+                let opt = document.createElement('option');
+                opt.value = item;
+                opt.innerText = item;
+                el.appendChild(opt);
+            });
+            // Cuba kekalkan value asal jika wujud dalam list baru
+            if(list.includes(currentValue)) el.value = currentValue;
+            else el.value = "";
         }
 
         function resetFilter() {
@@ -352,7 +408,9 @@
             document.getElementById('selKategori').value = "";
             document.getElementById('dS').value = "";
             document.getElementById('dE').value = "";
-            runFilter(); 
+            
+            // Reset balik dropdown kepada senarai penuh
+            initDash(); 
         }
 
         function calcUI() {
@@ -371,25 +429,18 @@
             updateCharts(pm, km); updateMap(pts); updateHotspot(hData); genSummary(pm, tt, ts); renTab();
         }
 
-        // --- UPDATED GEN SUMMARY: TAMBAH LOGIC DAERAH ---
         function genSummary(pm, tt, ts) { 
             const el = document.getElementById('smartSummary'); 
             if(!el) return; 
             
-            // Logic Negeri
-            let stateMap = {}; 
-            fData.forEach(d => { if (d.ls > 0) { stateMap[d.n] = (stateMap[d.n] || 0) + d.ls; } }); 
+            let stateMap = {}; fData.forEach(d => { if (d.ls > 0) { stateMap[d.n] = (stateMap[d.n] || 0) + d.ls; } }); 
             let topState = "-", topStateVal = 0; 
             Object.entries(stateMap).forEach(([negeri, luas]) => { if (luas > topStateVal) { topState = negeri; topStateVal = luas; } }); 
             if (topState === "-") topState = document.getElementById('selNegeri').value || "Semua Negeri"; 
             
-            // Logic Daerah (BARU)
-            let distMap = {}; 
-            fData.forEach(d => { if (d.ls > 0 && d.d) { distMap[d.d] = (distMap[d.d] || 0) + d.ls; } });
+            let distMap = {}; fData.forEach(d => { if (d.ls > 0 && d.d) { distMap[d.d] = (distMap[d.d] || 0) + d.ls; } });
             let topDist = "-", topDistVal = 0;
             Object.entries(distMap).forEach(([daerah, luas]) => { if (luas > topDistVal) { topDist = daerah; topDistVal = luas; } });
-            
-            // Format Lokasi Hotspot
             let hotspotText = (topDist !== "-") ? `${topDist}, ${topState}` : topState;
 
             let cropMap = {}; fData.forEach(d => { if(d.ls > 0) cropMap[d.tn] = (cropMap[d.tn] || 0) + d.ls; }); 
@@ -424,16 +475,21 @@
         
         function renTab() { const st = (pg-1)*pSize; const dt = fData.slice(st, st+pSize); document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `<tr><td>${d.t}</td><td>${d.n}</td><td>${d.l}</td><td><span class="badge bg-light text-dark border">${d.tn}</span></td><td>${d.lt.toFixed(2)}</td><td class="text-danger fw-bold">${d.ls.toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="6" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; document.getElementById('pgInfo').innerText = `Page ${pg}`; }
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
-        function fillSel(id, arr) { const el = document.getElementById(id); el.innerHTML='<option value="">Semua</option>'; arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); }
+        
+        // Helper function for filling dropdowns initially
+        function fillSel(id, arr) { 
+            const el = document.getElementById(id); 
+            el.innerHTML='<option value="">Semua</option>'; 
+            arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); 
+        }
 
-        /* --- FUNGSI PENGESAHAN: SMART IMAGE PARSER + REMOVE REDUNDANT PEST LIST --- */
         async function loadPend() {
             const container = document.getElementById('verifyContainer');
             container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
             
             try {
                 const d = await postData('getPending', {state: uProf.state});
-                currentPendingRows = d.rows || []; // SIMPAN DATA PENDING DALAM GLOBAL VAR
+                currentPendingRows = d.rows || []; 
 
                 if(!d.rows || !d.rows.length) {
                     container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>';
@@ -442,46 +498,33 @@
 
                 container.innerHTML = "";
 
-                // --- 1. FUNGSI PEMBERSIH LINK POWERFUL (TERIMA SEMUA JENIS STRING) ---
                 const cleanImageLink = (raw) => {
                     if (!raw) return [];
                     let str = String(raw).trim();
                     if(str.length < 5) return [];
-
-                    // Buang kurungan [] dan quote " '
                     str = str.replace(/[\[\]"']/g, '');
-                    
-                    // Pecahkan ikut koma
                     let links = str.split(',');
                     return links.map(l => l.trim()).filter(l => l.startsWith('http'));
                 }
 
                 d.rows.forEach((r, idx) => {
-                    // Helper cari nilai
                     const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }
 
-                    // Header Data
                     const tarikh = getVal('Tarikh') || getVal('Date') || r.data[0];
                     const nama = getVal('Nama') || getVal('Pegawai') || r.data[1];
                     const lokasi = getVal('Lokasi') || getVal('Kebun') || "-"; 
 
-                    // --- FIX: LOGIC CARI TANAMAN SUPAYA TAK TERAMBIL "KATEGORI" ---
-                    // 1. Cari column yang ada perkataan "Jenis Tanaman" atau "Nama Tanaman" dulu
                     let colT = d.headers.findIndex(h => h.match(/jenis tanaman|nama tanaman/i));
-                    // 2. Kalau tak jumpa, cari "Tanaman" TAPI pastikan BUKAN "Kategori"
                     if(colT === -1) {
                         colT = d.headers.findIndex(h => h.toLowerCase().includes('tanaman') && !h.toLowerCase().includes('kategori'));
                     }
                     const tanaman = (colT > -1) ? r.data[colT] : "-";
 
-                    // Data List (Exclude Special Columns + REDUNDANT PEST LIST)
-                    // Tambah 'senarai perosak', 'perosak' dan 'senarai' dalam specialCols
                     let specialCols = ['status pengesahan', 'log semakan', 'luas serangan', 'peratus', 'keterukan', 'gambar', 'image', 'tarikh', 'date', 'nama', 'pegawai', 'senarai perosak', 'perosak', 'senarai', 'lokasi', 'kebun', 'tanaman'];
                     let detailHTML = "";
                     let pestTableHTML = "";
                     let imgHTML = "";
 
-                    // Generate Details (Loop semua column kecuali yang special)
                     d.headers.forEach((h, i) => {
                         let headerName = h;
                         let val = r.data[i];
@@ -489,7 +532,6 @@
                         detailHTML += `<div class="v-row"><div class="v-label">${headerName}:</div><div class="v-val">${val}</div></div>`;
                     });
 
-                    // Generate Table Perosak
                     let rawLuas = getVal('Luas Serangan');
                     let rawPct = getVal('Peratus');
                     let rawSev = getVal('Keterukan');
@@ -499,7 +541,7 @@
                         const sevObj = JSON.parse(rawSev || "{}");
                         if(Object.keys(luasObj).length > 0) {
                             pestTableHTML = `<div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Data Serangan</div>
-                            <table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas Serangan (Ha)</th><th class="center">Peratus Serangan</th><th class="center">Keterukan Serangan</th></tr></thead><tbody>`;
+                            <table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas Serangan (Ha)</th><th class="center">Peratus Serangan</th><th class="center">Keterukan Serangan/th></tr></thead><tbody>`;
                             Object.keys(luasObj).forEach(key => {
                                 pestTableHTML += `<tr><td>${key}</td><td class="center fw-bold">${luasObj[key]}</td><td class="center">${pctObj[key]||0}%</td><td class="center"><span class="badge bg-secondary">T${sevObj[key]||0}</span></td></tr>`;
                             });
@@ -507,8 +549,6 @@
                         }
                     } catch(e) {}
 
-                    // Generate Images (AUTO DETECT COLUMN GAMBAR)
-                    // Cari column yang ada perkataan "gambar" atau "image" atau "foto" atau "link"
                     let imgIdx = d.headers.findIndex(h => h.match(/gambar|image|img|foto|link/i));
                     let rawImg = (imgIdx > -1) ? r.data[imgIdx] : "";
                     
@@ -551,12 +591,10 @@
 
         async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
 
-        // --- FUNGSI BARU: SAHKAN SEMUA ---
         async function approveAll() {
             if(!currentPendingRows || currentPendingRows.length === 0) { alert("Tiada data untuk disahkan."); return; }
             if(!confirm("⚠️ AMARAN: Anda pasti mahu mengesahkan SEMUA " + currentPendingRows.length + " rekod ini sekaligus?")) return;
 
-            // Tunjuk Loading Screen
             const container = document.getElementById('verifyContainer');
             container.innerHTML = `
                 <div class="col-12 text-center p-5 bg-white rounded shadow-sm">
@@ -571,7 +609,6 @@
             let count = 0;
             const total = currentPendingRows.length;
 
-            // Loop setiap row dan approve
             for (const r of currentPendingRows) {
                 try {
                     await postData('submitVerify', {row: r.row, act: 'APPROVE', reason: '', name: uProf.name});
@@ -586,12 +623,11 @@
             }
 
             alert("✅ Selesai! Semua data telah disahkan.");
-            loadPend(); // Refresh senarai (patutnya kosong)
-            initDash(); // Update dashboard
-            checkPendingCount(); // Update badge
+            loadPend(); 
+            initDash();
+            checkPendingCount(); 
         }
 
-        /* --- EXCEL & PDF --- */
         async function downloadDualExcel() { if (!fData.length) { alert("Tiada data!"); return; } const workbook = new ExcelJS.Workbook(); const worksheet = workbook.addWorksheet('Laporan Penuh'); worksheet.columns = [{ header: 'ID', key: 'id', width: 6 }, { header: 'Tarikh', key: 't', width: 12 }, { header: 'Negeri', key: 'n', width: 15 }, { header: 'Daerah', key: 'd', width: 15 }, { header: 'Lokasi', key: 'l', width: 22 }, { header: 'Koordinat', key: 'c', width: 22 }, { header: 'Kategori', key: 'kt', width: 18 }, { header: 'Tanaman', key: 'tn', width: 18 }, { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, { header: 'Syor Kawalan', key: 's', width: 25 }, { header: 'Pegawai', key: 'pg', width: 20 }, { header: 'Perosak', key: 'p', width: 20 }, { header: 'Keterukan', key: 'k', width: 18 }, { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, { header: '% Serangan', key: 'pct', width: 15 }]; worksheet.getRow(1).font = { bold: true }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }; let rowIndex = 2; fData.forEach(d => { let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]]; let startRow = rowIndex; let luasTanam = parseFloat(d.lt) || 0; pestEntries.forEach(([pName, pArea]) => { let luasSerang = parseFloat(pArea) || 0; let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%"; const row = worksheet.getRow(rowIndex); row.values = { id: d.id, t: d.t, n: d.n, d: d.d, l: d.l, c: d.c || "-", kt: d.kt || "-", tn: d.tn, lt: luasTanam, s: d.s, pg: d.pg || "-", p: pName, k: d.k, ls: luasSerang, pct: pctVal }; row.eachCell({ includeEmpty: true }, (cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; }); rowIndex++; }); if (pestEntries.length > 1) { for (let c = 1; c <= 11; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); } } for (let r = startRow; r < rowIndex; r++) { for (let c = 1; c <= 11; c++) { worksheet.getCell(r, c).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; } } }); const buffer = await workbook.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = window.URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'PNR_Laporan_Lengkap.xlsx'; anchor.click(); window.URL.revokeObjectURL(url); }
         async function dlPDF() { const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = "Jana..."; btn.disabled = true; let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length-1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length-1])}`; } try { const m = { user: uProf.name, negeri: document.getElementById('selNegeri').value || "Semua", dates: dateLabel }; const r = await postData('genPDF', {data: fData, meta: m}); if(r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } } catch(e) { console.error(e); } btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false; }
     </script>
