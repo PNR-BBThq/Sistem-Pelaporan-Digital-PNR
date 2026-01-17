@@ -287,12 +287,16 @@
         const BANCIAN_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
         const RPW_URL = "https://www.appsheet.com/start/55b088df-3ec1-469a-b5c6-1fca48052906";
         
+      // --- 1. VARIABLE BARU (KEMASKINI) ---
         let mData=[], fData=[], uProf=null, charts={}, map=null, layer=null, pg=1, pSize=10;
         let currentPendingRows = []; 
         let userToken = ""; 
         let currentUserID = "";
+        
+        // PENTING: Variable ini untuk simpan tajuk column Excel (supaya form edit tahu nama column)
+        let globalHeaders = []; 
 
-       async function postData(act, load) {
+        async function postData(act, load) {
             try {
                 const payload = { 
                     action: act, 
@@ -338,15 +342,22 @@
 
         async function checkPendingCount() { try { const d = await postData('getPending', {state: uProf.state}); const b = document.getElementById('badgePending'); if(d.rows && d.rows.length > 0) { b.innerText = d.rows.length; b.style.display = "inline-block"; } else { b.style.display = "none"; } } catch(e){} }
 
+       // --- 2. FUNGSI INITDASH BARU (WAJIB TUKAR INI) ---
         async function initDash() {
             const d = await postData('getAnalytics', {state: uProf.state}); 
             if(!d.records) { alert(d.message || "Tiada Data"); return; }
             
-            // MAP ROW INDEX KE ID (PENTING UNTUK EDIT!)
-            // Jika database takde column ID, kita guna turutan array + 2 (sebab row 1 header)
+            // SIMPAN HEADER EXCEL (Penting untuk Edit Mode)
+            globalHeaders = d.headers || [];
+
+            // PROSES DATA & SIMPAN RAW DATA
             mData = d.records.map((r, i) => {
-                // Pastikan ada ID. Kalau backend tak bagi ID, kita reka.
+                // Pastikan ada ID. Kalau backend tak bagi ID, kita reka guna index.
                 if(!r.id) r.id = i + 2; 
+                
+                // PENTING: Simpan data mentah asal dalam object ini
+                r.rawData = r.data; 
+                
                 return r;
             }); 
             
@@ -363,7 +374,6 @@
             if(!map) { map = L.map('map').setView([4.2105, 101.9758], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); }
             runFilter();
         }
-
         function runFilter(source) {
             const selN = document.getElementById('selNegeri').value;
             const selD = document.getElementById('selDaerah').value;
@@ -766,67 +776,176 @@
         // --- LOGIK MODAL: VIEW, EDIT, SAVE, DELETE ---
         let currentEditID = null;
 
-        function openDetailModal(id) {
-            const d = fData.find(x => x.id === id);
-            if(!d) return;
-            currentEditID = id;
+        // --- LOGIK MODAL: VIEW (REPORT CARD STYLE) & EDIT (ALL COLUMNS) ---
+    let currentEditID = null;
 
-            const modalBody = document.getElementById('modalBody');
-            const modalFooter = document.getElementById('modalFooter');
-            
-            // JANA PAPARAN DETAIL
-            let html = `
-                <div id="viewMode">
-                    <div class="row g-3">
-                        <div class="col-md-6"><label class="small text-muted fw-bold">TARIKH</label><div class="fw-bold">${d.t}</div></div>
-                        <div class="col-md-6"><label class="small text-muted fw-bold">PEGAWAI</label><div>${d.pg}</div></div>
-                        <div class="col-12"><hr class="my-2"></div>
-                        <div class="col-md-6"><label class="small text-muted fw-bold">NEGERI</label><div>${d.n}</div></div>
-                        <div class="col-md-6"><label class="small text-muted fw-bold">DAERAH</label><div>${d.d}</div></div>
-                        <div class="col-md-12"><label class="small text-muted fw-bold">LOKASI / KEBUN</label><div class="fw-bold fs-5">${d.l}</div></div>
-                        <div class="col-md-6"><label class="small text-muted fw-bold">TANAMAN</label><div class="text-success fw-bold">${d.tn}</div></div>
-                        <div class="col-md-4"><label class="small text-muted fw-bold">LUAS BANCIAN (Ha)</label><div class="fs-5">${d.lt}</div></div>
-                        <div class="col-md-4"><label class="small text-muted fw-bold">LUAS SERANGAN (Ha)</label><div class="text-danger fs-5 fw-bold">${d.ls}</div></div>
-                        <div class="col-md-4"><label class="small text-muted fw-bold">KETERUKAN</label><div><span class="badge bg-warning text-dark">T${d.k}</span></div></div>
-                        <div class="col-12"><label class="small text-muted fw-bold">SYOR KAWALAN</label><div class="p-2 bg-light border rounded fst-italic">${d.s}</div></div>
-                    </div>
-                </div>
-                
-                <div id="editMode" style="display:none">
-                    <div class="alert alert-warning small"><i class="bi bi-pencil-fill me-1"></i> Anda sedang mengemaskini data. Status akan kembali ke 'BARU'.</div>
-                    <form id="formEdit">
-                        <div class="mb-2"><label>Lokasi</label><input type="text" class="form-control" name="Lokasi" value="${d.l}"></div>
-                        <div class="row">
-                            <div class="col-6 mb-2"><label>Luas Bancian (Ha)</label><input type="number" step="0.01" class="form-control" name="Luas Bancian (Ha)" value="${d.lt}"></div>
-                            <div class="col-6 mb-2"><label>Luas Serangan (Ha)</label><input type="number" step="0.01" class="form-control" name="Luas Serangan (Ha)" value="${d.ls}"></div>
-                        </div>
-                        <div class="mb-2"><label>Syor Kawalan</label><textarea class="form-control" name="Syor Kawalan">${d.s}</textarea></div>
-                    </form>
-                </div>
-            `;
-            
-            modalBody.innerHTML = html;
+    function openDetailModal(id) {
+        const d = fData.find(x => x.id === id);
+        if(!d) return;
+        currentEditID = id;
 
-            let footerHtml = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>`;
-            
-            if (typeof uProf !== 'undefined' && (uProf.role === "ADMIN" || uProf.role === "PENYELIA")) {
-                footerHtml = `
-                    <div id="btnGroupDefault" class="d-flex gap-2 w-100 justify-content-end">
-                        <button onclick="confirmDelete(${d.id})" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Padam</button>
-                        <button onclick="enableEditMode()" class="btn btn-primary"><i class="bi bi-pencil-square"></i> Kemaskini</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                    </div>
-                    <div id="btnGroupEdit" class="d-flex gap-2 w-100 justify-content-end" style="display:none">
-                        <button onclick="saveEdit(${d.id})" class="btn btn-success fw-bold"><i class="bi bi-check-lg"></i> SIMPAN</button>
-                        <button onclick="cancelEdit()" class="btn btn-light border">Batal</button>
-                    </div>
-                `;
-            }
-
-            modalFooter.innerHTML = footerHtml;
-            new bootstrap.Modal(document.getElementById('detailModal')).show();
+        const modalBody = document.getElementById('modalBody');
+        const modalFooter = document.getElementById('modalFooter');
+        
+        // --- BAHAGIAN 1: VIEW MODE (DESIGN REPORT CARD) ---
+        // Kita guna logik sama macam loadPend() untuk paparkan data
+        
+        // Helper untuk tarik value berdasarkan nama header (Case Insensitive)
+        const getVal = (key) => { 
+            const i = globalHeaders.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); 
+            return i > -1 ? d.rawData[i] : "-"; 
         }
 
+        const tarikh = getVal('Tarikh') || getVal('Date');
+        const nama = getVal('Nama') || getVal('Pegawai');
+        const email = getVal('Email'); 
+        const lokasi = getVal('Lokasi') || getVal('Kebun');
+        
+        // Proses Gambar
+        let imgIdx = globalHeaders.findIndex(h => h.match(/gambar|image|img|foto|link/i));
+        let rawImg = (imgIdx > -1) ? d.rawData[imgIdx] : "";
+        let imgHTML = "";
+        
+        // Fungsi cuci link gambar
+        const cleanLinks = (raw) => {
+            if (!raw) return [];
+            let str = String(raw).replace(/[\[\]"']/g, '');
+            return str.split(',').map(l => l.trim()).filter(l => l.startsWith('http'));
+        }
+        
+        let links = cleanLinks(rawImg);
+        if(links.length > 0) {
+            imgHTML = `<div class="section-title mt-3"><i class="bi bi-images"></i> Lampiran Gambar</div><div class="mb-2">`;
+            links.forEach((l, i) => imgHTML += `<a href="${l}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Foto ${i+1}</a>`);
+            imgHTML += `</div>`;
+        }
+
+        // Proses Data Table (Serangan)
+        let pestTableHTML = "";
+        try {
+            const luasObj = JSON.parse(getVal('Luas Serangan') || "{}");
+            const pctObj = JSON.parse(getVal('Peratus') || "{}");
+            const sevObj = JSON.parse(getVal('Keterukan') || "{}");
+            
+            if(Object.keys(luasObj).length > 0) {
+                pestTableHTML = `<div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Perincian Serangan</div>
+                <table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas (Ha)</th><th class="center">%</th><th class="center">Tahap</th></tr></thead><tbody>`;
+                Object.keys(luasObj).forEach(k => {
+                    pestTableHTML += `<tr><td>${k}</td><td class="center fw-bold">${luasObj[k]}</td><td class="center">${pctObj[k]||0}%</td><td class="center"><span class="badge bg-secondary">T${sevObj[k]||0}</span></td></tr>`;
+                });
+                pestTableHTML += `</tbody></table>`;
+            }
+        } catch(e) {}
+
+        // Loop SEMUA Column lain untuk paparan senarai
+        let detailsHTML = "";
+        let ignoreCols = ['gambar','image','log','id','status','luas serangan','peratus','keterukan','tarikh','nama','pegawai','email','lokasi','kebun'];
+        
+        globalHeaders.forEach((h, i) => {
+            // Skip column yang dah dipaparkan di header atau special
+            if(ignoreCols.some(x => h.toLowerCase().includes(x))) return;
+            detailsHTML += `<div class="v-row"><div class="v-label">${h}:</div><div class="v-val">${d.rawData[i]}</div></div>`;
+        });
+
+        // HTML VIEW MODE
+        let viewHtml = `
+            <div id="viewMode">
+                <div class="verify-card shadow-none border">
+                    <div class="verify-header">
+                        <div>
+                            <div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${tarikh}</div>
+                            <div class="fw-bold text-dark text-uppercase">${nama}</div>
+                            <div class="small text-muted fst-italic">${email}</div>
+                        </div>
+                        <span class="badge bg-light text-dark border">READ ONLY</span>
+                    </div>
+                    <div class="verify-body">
+                        <div class="v-row"><div class="v-label">Lokasi:</div><div class="v-val fw-bold text-dark fs-6">${lokasi}</div></div>
+                        ${detailsHTML}
+                        ${pestTableHTML}
+                        ${imgHTML}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // --- BAHAGIAN 2: EDIT MODE (AUTO GENERATE ALL COLUMNS) ---
+        let formFields = "";
+        
+        // Column yang DILARANG edit
+        const forbidden = ['LOG SEMAKAN', 'LOG', 'TIMESTAMP', 'ROW_ID', 'STATUS PENGESAHAN'];
+
+        globalHeaders.forEach((h, i) => {
+            // 1. Skip column larangan
+            if(forbidden.some(x => h.toUpperCase().includes(x))) return;
+
+            let val = d.rawData[i];
+            let inputType = "text";
+            let headerUp = h.toUpperCase();
+
+            // 2. Tentukan jenis input biar user senang
+            if(headerUp.includes('TARIKH') || headerUp.includes('DATE')) {
+                // Cuba format ke YYYY-MM-DD untuk input date HTML
+                inputType = "date";
+                // Kadang format date excel pelik, kalau string biasa biar text je
+            } 
+            else if(headerUp.includes('LUAS') || headerUp.includes('PERATUS') || headerUp.includes('PERCENT')) {
+                inputType = "number";
+            }
+
+            // 3. Render Input
+            // PENTING: name="${h}" mestilah SAMA dengan header Excel supaya Backend jumpa
+            if(headerUp.includes('SYOR') || headerUp.includes('CATATAN') || headerUp.includes('ULASAN')) {
+                formFields += `
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted text-uppercase">${h}</label>
+                        <textarea class="form-control" name="${h}" rows="3">${val}</textarea>
+                    </div>`;
+            } else {
+                let step = inputType === "number" ? 'step="0.01"' : '';
+                formFields += `
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-muted text-uppercase">${h}</label>
+                        <input type="${inputType}" ${step} class="form-control" name="${h}" value="${val}">
+                    </div>`;
+            }
+        });
+
+        let editHtml = `
+            <div id="editMode" style="display:none">
+                <div class="alert alert-warning small mb-3">
+                    <i class="bi bi-pencil-fill me-2"></i><strong>Mode Suntingan:</strong> Anda boleh menyunting semua maklumat data mentah. Sila berhati-hati.
+                    <br>Log Semakan tidak boleh disunting demi integriti data.
+                </div>
+                <form id="formEdit">
+                    <div class="row">
+                        ${formFields} </div>
+                </form>
+            </div>
+        `;
+        
+        modalBody.innerHTML = viewHtml + editHtml;
+
+        // --- BAHAGIAN 3: FOOTER BUTTONS ---
+        let footerHtml = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>`;
+        
+        if (typeof uProf !== 'undefined' && (uProf.role === "ADMIN" || uProf.role === "PENYELIA")) {
+            footerHtml = `
+                <div id="btnGroupDefault" class="d-flex gap-2 w-100 justify-content-end">
+                    <button onclick="confirmDelete(${d.id})" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Padam</button>
+                    <button onclick="enableEditMode()" class="btn btn-primary"><i class="bi bi-pencil-square"></i> Kemaskini Data</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+                <div id="btnGroupEdit" class="d-flex gap-2 w-100 justify-content-end" style="display:none">
+                    <button onclick="saveEdit(${d.id})" class="btn btn-success fw-bold"><i class="bi bi-check-lg"></i> SIMPAN PERUBAHAN</button>
+                    <button onclick="cancelEdit()" class="btn btn-light border">Batal</button>
+                </div>
+            `;
+        }
+
+        modalFooter.innerHTML = footerHtml;
+        new bootstrap.Modal(document.getElementById('detailModal')).show();
+    }
         function enableEditMode() {
             document.getElementById('viewMode').style.display = 'none';
             document.getElementById('editMode').style.display = 'block';
