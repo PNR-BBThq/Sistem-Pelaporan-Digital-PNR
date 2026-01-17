@@ -519,46 +519,145 @@
         async function dlPDF() { const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = "Jana..."; btn.disabled = true; let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length-1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length-1])}`; } try { const m = { user: uProf.name, negeri: document.getElementById('selNegeri').value || "Semua", dates: dateLabel }; const r = await postData('genPDF', {data: fData, meta: m}); if(r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } } catch(e) { console.error(e); } btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false; }
 
         // --- 10. LOGIK MODAL: VIEW (REPORT CARD) & EDIT (DYNAMIC FORM) ---
+      // --- KEMASKINI: LOGIK MODAL ---
         function openDetailModal(id) {
-            const d = fData.find(x => x.id === id); if(!d) return;
+            const d = fData.find(x => x.id === id);
+            if(!d) return;
             currentEditID = id;
-            const modalBody = document.getElementById('modalBody'); const modalFooter = document.getElementById('modalFooter');
-            
-            // VIEW MODE (REPORT CARD)
-            const getVal = (key) => { const i = globalHeaders.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? d.rawData[i] : "-"; }
-            const tarikh = getVal('Tarikh') || getVal('Date'); const nama = getVal('Nama') || getVal('Pegawai'); const email = getVal('Email'); const lokasi = getVal('Lokasi') || getVal('Kebun');
-            let imgIdx = globalHeaders.findIndex(h => h.match(/gambar|image|img|foto|link/i)); let rawImg = (imgIdx > -1) ? d.rawData[imgIdx] : ""; let imgHTML = "";
-            const cleanLinks = (raw) => { if (!raw) return []; let str = String(raw).replace(/[\[\]"']/g, ''); return str.split(',').map(l => l.trim()).filter(l => l.startsWith('http')); }
-            let links = cleanLinks(rawImg); if(links.length > 0) { imgHTML = `<div class="section-title mt-3"><i class="bi bi-images"></i> Lampiran Gambar</div><div class="mb-2">`; links.forEach((l, i) => imgHTML += `<a href="${l}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Foto ${i+1}</a>`); imgHTML += `</div>`; }
-            let pestTableHTML = ""; try { const luasObj = JSON.parse(getVal('Luas Serangan') || "{}"); const pctObj = JSON.parse(getVal('Peratus') || "{}"); const sevObj = JSON.parse(getVal('Keterukan') || "{}"); if(Object.keys(luasObj).length > 0) { pestTableHTML = `<div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Perincian Serangan</div><table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas (Ha)</th><th class="center">%</th><th class="center">Tahap</th></tr></thead><tbody>`; Object.keys(luasObj).forEach(k => { pestTableHTML += `<tr><td>${k}</td><td class="center fw-bold">${luasObj[k]}</td><td class="center">${pctObj[k]||0}%</td><td class="center"><span class="badge bg-secondary">T${sevObj[k]||0}</span></td></tr>`; }); pestTableHTML += `</tbody></table>`; } } catch(e) {}
-            let detailsHTML = ""; let ignoreCols = ['gambar','image','log','id','status','luas serangan','peratus','keterukan','tarikh','nama','pegawai','email','lokasi','kebun'];
-            globalHeaders.forEach((h, i) => { if(ignoreCols.some(x => h.toLowerCase().includes(x))) return; detailsHTML += `<div class="v-row"><div class="v-label">${h}:</div><div class="v-val">${d.rawData[i]}</div></div>`; });
-            let viewHtml = `<div id="viewMode"><div class="verify-card shadow-none border"><div class="verify-header"><div><div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${tarikh}</div><div class="fw-bold text-dark text-uppercase">${nama}</div><div class="small text-muted fst-italic">${email}</div></div><span class="badge bg-light text-dark border">READ ONLY</span></div><div class="verify-body"><div class="v-row"><div class="v-label">Lokasi:</div><div class="v-val fw-bold text-dark fs-6">${lokasi}</div></div>${detailsHTML}${pestTableHTML}${imgHTML}</div></div></div>`;
 
-            // EDIT MODE (DYNAMIC FORM)
-            let formFields = ""; const forbidden = ['LOG SEMAKAN', 'LOG', 'TIMESTAMP', 'ROW_ID', 'STATUS PENGESAHAN'];
+            const modalBody = document.getElementById('modalBody');
+            const modalFooter = document.getElementById('modalFooter');
+            
+            // --- 1. VIEW MODE: DATA READING ---
+            // Helper function yang lebih bijak cari data
+            const getVal = (key) => { 
+                if(!globalHeaders || globalHeaders.length === 0) return "-"; 
+                const i = globalHeaders.findIndex(h => String(h).toUpperCase().includes(key.toUpperCase())); 
+                return (i > -1 && d.rawData[i]) ? d.rawData[i] : "-"; 
+            }
+
+            // Tarik data penting
+            const tarikh = getVal('Tarikh') !== "-" ? getVal('Tarikh') : (getVal('Date') !== "-" ? getVal('Date') : d.t);
+            const nama = getVal('Nama') !== "-" ? getVal('Nama') : (getVal('Pegawai') !== "-" ? getVal('Pegawai') : "-");
+            const email = getVal('Email'); 
+            const lokasi = getVal('Lokasi') !== "-" ? getVal('Lokasi') : (getVal('Kebun') !== "-" ? getVal('Kebun') : "-");
+            
+            // Format Tarikh View
+            let displayDate = tarikh;
+            try { displayDate = new Date(tarikh).toLocaleDateString('ms-MY'); } catch(e){}
+            if(displayDate === "Invalid Date") displayDate = tarikh;
+
+            // Proses Gambar
+            let imgIdx = globalHeaders.findIndex(h => String(h).match(/gambar|image|img|foto|link/i));
+            let rawImg = (imgIdx > -1) ? d.rawData[imgIdx] : "";
+            let imgHTML = "";
+            const cleanLinks = (raw) => { if (!raw) return []; let str = String(raw).replace(/[\[\]"']/g, ''); return str.split(',').map(l => l.trim()).filter(l => l.startsWith('http')); }
+            let links = cleanLinks(rawImg);
+            if(links.length > 0) {
+                imgHTML = `<div class="section-title mt-3"><i class="bi bi-images"></i> Lampiran Gambar</div><div class="mb-2">`;
+                links.forEach((l, i) => imgHTML += `<a href="${l}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Foto ${i+1}</a>`);
+                imgHTML += `</div>`;
+            }
+
+            // Loop Lain-lain Column
+            let detailsHTML = "";
+            let ignoreCols = ['gambar','image','log','id','status','luas serangan','peratus','keterukan','tarikh','date','nama','pegawai','email','lokasi','kebun'];
+            
+            if(globalHeaders.length > 0) {
+                globalHeaders.forEach((h, i) => {
+                    if(ignoreCols.some(x => String(h).toLowerCase().includes(x))) return;
+                    let val = d.rawData[i];
+                    if(String(h).toLowerCase().includes('tarikh') && val) { try { val = new Date(val).toLocaleDateString('ms-MY'); } catch(e){} }
+                    detailsHTML += `<div class="v-row"><div class="v-label text-secondary text-uppercase" style="font-size:0.75rem">${h}</div><div class="v-val fw-bold">${val}</div></div>`;
+                });
+            } else {
+                detailsHTML = `<div class="alert alert-warning small">Data header tidak dijumpai. Sila Deploy semula Backend Script.</div>`;
+            }
+
+            // HTML VIEW
+            let viewHtml = `
+                <div id="viewMode">
+                    <div class="verify-card shadow-none border">
+                        <div class="verify-header">
+                            <div>
+                                <div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${displayDate}</div>
+                                <div class="fw-bold text-dark text-uppercase fs-5">${nama}</div>
+                                <div class="small text-muted fst-italic">${email}</div>
+                            </div>
+                            <span class="badge bg-light text-dark border">READ ONLY</span>
+                        </div>
+                        <div class="verify-body">
+                            <div class="v-row mb-3 pb-2 border-bottom"><div class="v-label text-dark">LOKASI UTAMA</div><div class="v-val fw-bold text-primary fs-5">${lokasi}</div></div>
+                            ${detailsHTML}
+                            ${imgHTML}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // --- 2. EDIT MODE ---
+            let formFields = "";
+            const forbidden = ['LOG SEMAKAN', 'LOG', 'TIMESTAMP', 'ROW_ID', 'STATUS PENGESAHAN'];
+
             globalHeaders.forEach((h, i) => {
-                if(forbidden.some(x => h.toUpperCase().includes(x))) return;
-                let val = d.rawData[i]; let inputType = "text"; let headerUp = h.toUpperCase();
-                if(headerUp.includes('TARIKH') || headerUp.includes('DATE')) { inputType = "date"; } else if(headerUp.includes('LUAS') || headerUp.includes('PERATUS') || headerUp.includes('PERCENT')) { inputType = "number"; }
-                if(headerUp.includes('SYOR') || headerUp.includes('CATATAN') || headerUp.includes('ULASAN')) { formFields += `<div class="mb-3"><label class="form-label fw-bold small text-muted text-uppercase">${h}</label><textarea class="form-control" name="${h}" rows="3">${val}</textarea></div>`; } 
-                else { let step = inputType === "number" ? 'step="0.01"' : ''; formFields += `<div class="mb-2"><label class="form-label fw-bold small text-muted text-uppercase">${h}</label><input type="${inputType}" ${step} class="form-control" name="${h}" value="${val}"></div>`; }
+                if(forbidden.some(x => String(h).toUpperCase().includes(x))) return;
+                let val = d.rawData[i];
+                let headerUp = String(h).toUpperCase();
+                let inputType = "text";
+                
+                if(headerUp.includes('TARIKH') || headerUp.includes('DATE')) { 
+                    inputType = "date";
+                    try { let dt = new Date(val); if(!isNaN(dt)) val = dt.toISOString().split('T')[0]; } catch(e){}
+                } else if(headerUp.includes('LUAS') || headerUp.includes('PERATUS')) { inputType = "number"; }
+
+                if(headerUp.includes('SYOR') || headerUp.includes('CATATAN')) {
+                    formFields += `<div class="mb-3"><label class="form-label fw-bold small">${h}</label><textarea class="form-control" name="${h}" rows="3">${val}</textarea></div>`;
+                } else {
+                    let step = inputType === "number" ? 'step="0.01"' : '';
+                    formFields += `<div class="mb-2"><label class="form-label fw-bold small">${h}</label><input type="${inputType}" ${step} class="form-control" name="${h}" value="${val}"></div>`;
+                }
             });
-            let editHtml = `<div id="editMode" style="display:none"><div class="alert alert-warning small mb-3"><i class="bi bi-pencil-fill me-2"></i><strong>Mode Suntingan:</strong> Anda boleh menyunting semua maklumat data mentah. Sila berhati-hati.<br>Log Semakan tidak boleh disunting demi integriti data.</div><form id="formEdit"><div class="row">${formFields}</div></form></div>`;
+
+            let editHtml = `<div id="editMode" style="display:none"><div class="alert alert-warning small mb-3"><i class="bi bi-pencil-fill me-2"></i>Mode Suntingan Aktif.</div><form id="formEdit"><div class="row">${formFields}</div></form></div>`;
+            
             modalBody.innerHTML = viewHtml + editHtml;
 
-            // FOOTER
+            // --- 3. FOOTER BUTTONS (FIXED) ---
             let footerHtml = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>`;
+            
             if (typeof uProf !== 'undefined' && (uProf.role === "ADMIN" || uProf.role === "PENYELIA")) {
-                footerHtml = `<div id="btnGroupDefault" class="d-flex gap-2 w-100 justify-content-end"><button onclick="confirmDelete(${d.id})" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Padam</button><button onclick="enableEditMode()" class="btn btn-primary"><i class="bi bi-pencil-square"></i> Kemaskini Data</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button></div><div id="btnGroupEdit" class="d-flex gap-2 w-100 justify-content-end" style="display:none"><button onclick="saveEdit(${d.id})" class="btn btn-success fw-bold"><i class="bi bi-check-lg"></i> SIMPAN PERUBAHAN</button><button onclick="cancelEdit()" class="btn btn-light border">Batal</button></div>`;
+                footerHtml = `
+                    <div id="btnGroupDefault" class="d-flex gap-2 w-100 justify-content-end">
+                        <button onclick="confirmDelete(${d.id})" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Padam</button>
+                        <button onclick="enableEditMode()" class="btn btn-primary"><i class="bi bi-pencil-square"></i> Kemaskini Data</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+                    
+                    <div id="btnGroupEdit" class="d-flex gap-2 w-100 justify-content-end" style="display:none !important"> 
+                        <button onclick="saveEdit(${d.id})" class="btn btn-success fw-bold"><i class="bi bi-check-lg"></i> SIMPAN PERUBAHAN</button>
+                        <button onclick="cancelEdit()" class="btn btn-light border">Batal</button>
+                    </div>
+                `;
             }
+
             modalFooter.innerHTML = footerHtml;
             new bootstrap.Modal(document.getElementById('detailModal')).show();
         }
 
-        function enableEditMode() { document.getElementById('viewMode').style.display = 'none'; document.getElementById('editMode').style.display = 'block'; document.getElementById('btnGroupDefault').style.display = 'none'; document.getElementById('btnGroupEdit').style.display = 'flex'; }
-        function cancelEdit() { document.getElementById('viewMode').style.display = 'block'; document.getElementById('editMode').style.display = 'none'; document.getElementById('btnGroupDefault').style.display = 'flex'; document.getElementById('btnGroupEdit').style.display = 'none'; }
-        
+        // Helper tukar mode (dengan remove property !important)
+        function enableEditMode() {
+            document.getElementById('viewMode').style.display = 'none';
+            document.getElementById('editMode').style.display = 'block';
+            document.getElementById('btnGroupDefault').style.setProperty('display', 'none', 'important');
+            document.getElementById('btnGroupEdit').style.display = 'flex';
+        }
+
+        function cancelEdit() {
+            document.getElementById('viewMode').style.display = 'block';
+            document.getElementById('editMode').style.display = 'none';
+            document.getElementById('btnGroupDefault').style.display = 'flex';
+            document.getElementById('btnGroupEdit').style.setProperty('display', 'none', 'important');
+        }
         async function saveEdit(id) {
             const form = document.getElementById('formEdit'); const inputs = form.querySelectorAll('input, textarea'); let updates = {};
             inputs.forEach(input => { updates[input.name] = input.value; });
