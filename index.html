@@ -4,457 +4,264 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem PNR Digital</title>
-    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
-
     <style>
-        :root { --primary: #064e3b; --bg: #f3f4f6; }
-        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; margin:0; }
-        
-        /* LOGIN */
-        #loginOverlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background: #064e3b; }
-        .login-box { background: white; padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; }
-        
-        /* LAYOUT */
-        .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: #e8f5e9; border-right: 1px solid #c6e7ce; padding: 20px; display: flex; flex-direction: column; z-index: 100; transition: 0.3s; }
+        body { background-color: #f3f4f6; font-family: sans-serif; font-size: 0.9rem; }
+        .sidebar { width: 260px; height: 100vh; position: fixed; background: #e8f5e9; padding: 20px; z-index: 100; transition: 0.3s; }
         .sidebar.hide { transform: translateX(-100%); }
         .main-content { margin-left: 260px; padding: 25px; transition: 0.3s; }
-        .main-content.expand { margin-left: 0; }
-        
-        .nav-item { padding: 12px; margin-bottom: 5px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; }
-        .nav-item:hover { background: #c8e6c9; }
-        .nav-item.active { background: #1b5e20; color: white; }
-        
-        /* CARDS */
         .kpi-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); height: 100%; }
         .kpi-value { font-size: 1.8rem; font-weight: 800; color: #111827; }
         .map-box { height: 400px; border-radius: 12px; overflow: hidden; border: 1px solid #ddd; }
-        
-        /* VERIFY CARD */
-        .verify-card { background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #e9ecef; }
-        .verify-header { background: #f8f9fa; padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
-        .verify-body { padding: 20px; }
-        .v-row { display: flex; margin-bottom: 5px; border-bottom: 1px solid #f8f9fa; padding-bottom: 5px; }
-        .v-label { width: 130px; font-weight: 700; font-size: 0.8rem; color: #555; }
-        .v-val { flex: 1; font-weight: 500; word-break: break-word; }
-        
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.active { transform: translateX(0); }
-            .main-content { margin-left: 0; }
-        }
+        #loginOverlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background: #064e3b; }
+        .login-box { background: white; padding: 2.5rem; border-radius: 16px; width: 350px; text-align: center; }
+        @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .main-content { margin-left: 0; } }
     </style>
 </head>
 <body>
 
-    <div id="loginOverlay">
-        <div class="login-box">
-            <h4 class="fw-bold mb-4 text-success"><i class="bi bi-flower1"></i> PNR DIGITAL</h4>
-            <input type="text" id="uid" class="form-control mb-3 p-3" placeholder="ID Pengguna">
-            <input type="password" id="pwd" class="form-control mb-4 p-3" placeholder="Kata Laluan">
-            <button onclick="doLogin()" class="btn btn-success w-100 fw-bold p-3" id="btnLogin">MASUK</button>
-            <small id="loginMsg" class="text-danger d-block mt-3"></small>
-        </div>
+<div id="loginOverlay">
+    <div class="login-box">
+        <h4 class="fw-bold mb-4 text-success">PNR DIGITAL</h4>
+        <input type="text" id="uid" class="form-control mb-3" placeholder="ID">
+        <input type="password" id="pwd" class="form-control mb-4" placeholder="Password">
+        <button onclick="doLogin()" class="btn btn-success w-100" id="btnLogin">MASUK</button>
+        <small id="loginMsg" class="text-danger d-block mt-3"></small>
+    </div>
+</div>
+
+<div class="sidebar" id="sidebar">
+    <h5 class="fw-bold mb-4">PNR DIGITAL</h5>
+    <div class="mb-3"><label>Negeri</label><select id="selNegeri" class="form-select form-select-sm" onchange="runFilter('n')"></select></div>
+    <div class="mb-3"><label>Tanaman</label><select id="selTanaman" class="form-select form-select-sm" onchange="runFilter('t')"></select></div>
+    <button class="btn btn-dark btn-sm w-100" onclick="location.reload()">Reset / Logout</button>
+</div>
+
+<div class="main-content">
+    <div class="d-flex justify-content-between mb-4">
+        <h4 class="fw-bold">Dashboard Analisis</h4>
+        <button class="btn btn-light d-md-none" onclick="document.getElementById('sidebar').classList.toggle('hide')">Menu</button>
     </div>
 
-    <div class="sidebar" id="sidebar">
-        <div class="h5 fw-bold mb-4"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
-        <div style="flex:1; overflow-y:auto">
-            <div class="nav-item active" onclick="switchTab('main', this)">
-                <span><i class="bi bi-grid-fill me-2"></i> Dashboard</span>
-            </div>
-            <div class="nav-item" id="navVerify" style="display:none" onclick="switchTab('verify', this)">
-                <span><i class="bi bi-check-circle-fill me-2"></i> Pengesahan</span>
-                <span class="badge bg-danger rounded-pill" id="badgePending" style="display:none">0</span>
-            </div>
-            <hr>
-            <div class="small fw-bold text-muted mb-2">TAPISAN</div>
-            <select id="selNegeri" class="form-select form-select-sm mb-2" onchange="runFilter('n')"></select>
-            <select id="selDaerah" class="form-select form-select-sm mb-2" onchange="runFilter('d')"></select>
-            <select id="selTanaman" class="form-select form-select-sm mb-2" onchange="runFilter('t')"></select>
-            <select id="selPerosak" class="form-select form-select-sm mb-2" onchange="runFilter('p')"></select>
-            <div class="row g-1 mb-2">
-                <div class="col-6"><input type="date" id="dS" class="form-control form-control-sm" onchange="runFilter()"></div>
-                <div class="col-6"><input type="date" id="dE" class="form-control form-control-sm" onchange="runFilter()"></div>
-            </div>
-            <button class="btn btn-dark btn-sm w-100" onclick="resetFilter()">Reset</button>
-        </div>
-        <div class="border-top pt-3">
-            <small class="d-block fw-bold" id="uDisp">-</small>
-            <button class="btn btn-link text-danger btn-sm p-0" onclick="location.reload()">Log Keluar</button>
-        </div>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="kpi-card"><div>Luas Bancian</div><div class="kpi-value text-success" id="k1">0</div></div></div>
+        <div class="col-md-3"><div class="kpi-card"><div>Luas Serangan</div><div class="kpi-value text-danger" id="k2">0</div></div></div>
+        <div class="col-md-3"><div class="kpi-card"><div>% Serangan</div><div class="kpi-value text-warning" id="k3">0%</div></div></div>
+        <div class="col-md-3"><div class="kpi-card"><div>Bil. Rekod</div><div class="kpi-value" id="k4">0</div></div></div>
     </div>
 
-    <div class="main-content">
-        <div class="d-md-none mb-3 bg-white p-2 rounded shadow-sm d-flex justify-content-between">
-            <span class="fw-bold">PNR Digital</span>
-            <button class="btn btn-light btn-sm" onclick="document.getElementById('sidebar').classList.toggle('active')"><i class="bi bi-list"></i></button>
-        </div>
-
-        <div id="view-main">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold m-0">Analisis Data</h4>
-                <div>
-                    <button class="btn btn-success btn-sm" onclick="downloadDualExcel()"><i class="bi bi-file-excel"></i> Excel</button>
-                    <button class="btn btn-danger btn-sm" onclick="dlPDF()"><i class="bi bi-file-pdf"></i> PDF</button>
-                </div>
-            </div>
-
-            <div class="card mb-4 border-0 shadow-sm bg-white">
-                <div class="card-body d-flex align-items-center">
-                    <div class="bg-light p-3 rounded-circle me-3"><i class="bi bi-robot fs-3 text-primary"></i></div>
-                    <div id="smartSummary">Loading...</div>
-                </div>
-            </div>
-
-            <div class="row g-3 mb-4">
-                <div class="col-6 col-md-3"><div class="kpi-card"><small class="text-muted fw-bold">LUAS BANCIAN</small><div class="kpi-value text-success" id="k1">0</div></div></div>
-                <div class="col-6 col-md-3"><div class="kpi-card"><small class="text-muted fw-bold">LUAS SERANGAN</small><div class="kpi-value text-danger" id="k2">0</div></div></div>
-                <div class="col-6 col-md-3"><div class="kpi-card"><small class="text-muted fw-bold">% SERANGAN</small><div class="kpi-value text-warning" id="k3">0%</div></div></div>
-                <div class="col-6 col-md-3"><div class="kpi-card"><small class="text-muted fw-bold">BIL. REKOD</small><div class="kpi-value text-primary" id="k4">0</div></div></div>
-            </div>
-
-            <div class="row g-3 mb-4">
-                <div class="col-md-8"><div class="kpi-card"><h6 class="fw-bold mb-3">Carta Perosak</h6><div style="height:300px"><canvas id="cBar"></canvas></div></div></div>
-                <div class="col-md-4"><div class="kpi-card"><h6 class="fw-bold mb-3">Tahap Keterukan</h6><div style="height:250px"><canvas id="cPie"></canvas></div></div></div>
-            </div>
-
-            <div class="row g-3 mb-4">
-                <div class="col-md-8"><div class="map-box" id="map"></div></div>
-                <div class="col-md-4"><div class="kpi-card" style="overflow-y:auto; max-height:400px"><h6 class="fw-bold text-danger">Hotspot Daerah</h6><table class="table table-sm"><tbody id="hotspotTable"></tbody></table></div></div>
-            </div>
-
-            <div class="kpi-card">
-                <div class="d-flex justify-content-between mb-3"><h6 class="fw-bold">Jadual Data</h6><small id="pgInfo">-</small></div>
-                <div class="table-responsive">
-                    <table class="table table-hover table-sm align-middle">
-                        <thead class="table-light"><tr><th>Tarikh</th><th>Lokasi</th><th>Tanaman</th><th>Luas (Ha)</th><th>Serangan (Ha)</th><th>Tindakan</th></tr></thead>
-                        <tbody id="tBody"></tbody>
-                    </table>
-                </div>
-                <div class="d-flex justify-content-end gap-2 mt-2">
-                    <button class="btn btn-sm btn-light border" onclick="movePg(-1)">Prev</button>
-                    <button class="btn btn-sm btn-light border" onclick="movePg(1)">Next</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="view-verify" style="display:none">
-            <div class="d-flex justify-content-between mb-4">
-                <h4 class="fw-bold">Pengesahan Data</h4>
-                <button class="btn btn-primary btn-sm" onclick="loadPend()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
-            </div>
-            <div id="verifyContainer" class="row g-3"></div>
-        </div>
+    <div class="row g-3 mb-4">
+        <div class="col-md-8"><div class="kpi-card"><canvas id="cBar" height="100"></canvas></div></div>
+        <div class="col-md-4"><div class="kpi-card"><canvas id="cPie" height="200"></canvas></div></div>
     </div>
 
-    <div class="modal fade" id="detailModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title fw-bold">Butiran Rekod</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body bg-light" id="modalBody"></div>
-                <div class="modal-footer" id="modalFooter"></div>
-            </div>
-        </div>
+    <div class="row g-3 mb-4">
+        <div class="col-md-8"><div class="map-box" id="map"></div></div>
+        <div class="col-md-4"><div class="kpi-card" style="overflow-y:auto;max-height:400px"><table class="table table-sm"><tbody id="hotspotTable"></tbody></table></div></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // --- SETUP ---
-        const API_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
+    <div class="kpi-card">
+        <div class="d-flex justify-content-between mb-3"><h6 class="fw-bold">Senarai Data</h6><small id="pgInfo"></small></div>
+        <table class="table table-hover table-sm">
+            <thead class="table-light"><tr><th>Tarikh</th><th>Lokasi</th><th>Tanaman</th><th>Luas (Ha)</th><th>Serang (Ha)</th><th>Aksi</th></tr></thead>
+            <tbody id="tBody"></tbody>
+        </table>
+        <div class="text-end"><button class="btn btn-sm btn-light border" onclick="movePg(-1)">Prev</button><button class="btn btn-sm btn-light border" onclick="movePg(1)">Next</button></div>
+    </div>
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white"><h5 class="modal-title">Perincian</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer" id="modalFooter"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // GANTIKAN URL DI SINI
+    const API_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
+    
+    let mData=[], fData=[], uProf=null, charts={}, map=null, layer=null, pg=1, pSize=10;
+
+    async function postData(act, load) {
+        try {
+            const res = await fetch(`${API_URL}?action=${act}`, { 
+                method: "POST", body: JSON.stringify({ action:act, u:uProf?.u, ...load }) 
+            });
+            return JSON.parse(await res.text());
+        } catch(e) { return {success:false, message:"Ralat"}; }
+    }
+
+    async function doLogin() {
+        const u = document.getElementById('uid').value, p = document.getElementById('pwd').value;
+        const r = await postData('login', {u, p});
+        if(r.success) {
+            uProf = { ...r, u }; // Simpan ID
+            document.getElementById('loginOverlay').style.display = 'none';
+            initDash();
+        } else { document.getElementById('loginMsg').innerText = r.message; }
+    }
+
+    async function initDash() {
+        const r = await postData('getAnalytics', {state:uProf.state});
+        if(!r.records) return alert("Tiada data.");
+        mData = r.records;
         
-        let mData=[], fData=[], uProf=null, charts={}, map=null, layer=null, pg=1, pSize=10;
-        let globalHeaders = [], currentEditID = null, userToken = "", currentUserID = "";
+        // Setup Filter
+        const u = (k) => [...new Set(mData.map(d=>d[k]).filter(x=>x))].sort();
+        fill('selNegeri', u('n')); fill('selTanaman', u('tn'));
+        
+        if(uProf.state !== "ALL") { document.getElementById('selNegeri').value = uProf.state; document.getElementById('selNegeri').disabled = true; }
+        if(!map) { map = L.map('map').setView([4.21, 101.97], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); }
+        
+        runFilter();
+    }
 
-        async function postData(act, load) {
-            try {
-                const res = await fetch(`${API_URL}?action=${act}`, { 
-                    method: "POST", body: JSON.stringify({ action:act, token:userToken, u:currentUserID, ...load }) 
-                });
-                return JSON.parse(await res.text());
-            } catch(e) { return {success:false, message:"Ralat Server"}; }
-        }
+    function fill(id, arr) { const e=document.getElementById(id); e.innerHTML='<option value="">Semua</option>'; arr.forEach(x=>e.innerHTML+=`<option value="${x}">${x}</option>`); }
 
-        async function doLogin() {
-            const u = document.getElementById('uid').value, p = document.getElementById('pwd').value;
-            if(!u || !p) return alert("Sila isi ID dan Password");
+    function runFilter(s) {
+        const n=v('selNegeri'), t=v('selTanaman');
+        fData = mData.filter(d => (n===""||d.n===n) && (t===""||d.tn===t));
+        pg=1; calcUI();
+    }
+    function v(id) { return document.getElementById(id).value; }
+
+    function calcUI() {
+        let lt=0, ls=0, pm={}, km={1:0,2:0,3:0,4:0,5:0}, pts=[], hData={};
+        
+        fData.forEach(d => {
+            lt += (d.lt||0); ls += (d.ls||0);
             
-            document.getElementById('btnLogin').innerText = "Loading...";
-            const r = await postData('login', {u, p});
+            // Fix Chart: Parse JSON or use generic
+            let pObj = {};
+            if(typeof d.p === 'string') { try{pObj=JSON.parse(d.p)}catch(e){} } else { pObj=d.p||{} }
             
-            if(r.success) {
-                uProf = r; userToken = r.token; currentUserID = u;
-                document.getElementById('uDisp').innerText = r.name;
-                document.getElementById('loginOverlay').style.display = 'none';
-                if(["ADMIN","PENYELIA"].includes(r.role)) { document.getElementById('navVerify').style.display = "flex"; checkPending(); }
-                initDash();
-            } else {
-                document.getElementById('loginMsg').innerText = r.message;
-                document.getElementById('btnLogin').innerText = "MASUK";
-            }
-        }
+            if(Object.keys(pObj).length) Object.entries(pObj).forEach(([k,v])=> pm[k]=(pm[k]||0)+(Number(v)||0));
+            else if(d.ls>0) pm["Umum"]=(pm["Umum"]||0)+d.ls;
 
-        function switchTab(t, el) {
-            document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); el.classList.add('active');
-            document.getElementById('view-main').style.display = t==='main'?'block':'none';
-            document.getElementById('view-verify').style.display = t==='verify'?'block':'none';
-            if(t==='verify') loadPend();
-            if(t==='main' && map) setTimeout(()=>map.invalidateSize(), 300);
-        }
+            let k = parseInt(d.k)||0; if(k>0 && k<6) km[k]++;
+            if(d.c && d.c.includes(',')) { const [a,b]=d.c.split(',').map(Number); if(!isNaN(a)) pts.push([a,b]); }
+            if(d.ls>0) hData[d.d] = (hData[d.d]||0)+d.ls;
+        });
 
-        async function checkPending() {
-            const r = await postData('getPending', {state:uProf.state});
-            if(r.rows && r.rows.length) {
-                const b = document.getElementById('badgePending');
-                b.innerText = r.rows.length; b.style.display = 'inline-block';
-            }
-        }
+        document.getElementById('k1').innerText = lt.toFixed(2);
+        document.getElementById('k2').innerText = ls.toFixed(2);
+        document.getElementById('k3').innerText = lt>0 ? ((ls/lt)*100).toFixed(1)+"%" : "0%";
+        document.getElementById('k4').innerText = fData.length;
 
-        // --- DASHBOARD ---
-        async function initDash() {
-            const r = await postData('getAnalytics', {state:uProf.state});
-            if(!r.records) return alert("Tiada Data");
-            
-            globalHeaders = r.headers || [];
-            mData = r.records.map((x,i) => ({ ...x, id: x.id || i+2, rawData: x.data }));
-            
-            const getU = (k) => [...new Set(mData.map(d=>d[k]).filter(x=>x))].sort();
-            fillSel('selNegeri', getU('n')); fillSel('selTanaman', getU('tn')); fillSel('selKategori', getU('kt'));
-            
-            if(uProf.state !== "ALL") { document.getElementById('selNegeri').value = uProf.state; document.getElementById('selNegeri').disabled = true; }
-            if(!map) { map = L.map('map').setView([4.21, 101.97], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); }
-            
-            runFilter();
-        }
+        // Render Charts
+        if(charts.b) charts.b.destroy();
+        charts.b = new Chart(document.getElementById('cBar'), {type:'bar', data:{labels:Object.keys(pm), datasets:[{label:'Ha', data:Object.values(pm), backgroundColor:'green'}]}});
+        
+        if(charts.p) charts.p.destroy();
+        charts.p = new Chart(document.getElementById('cPie'), {type:'doughnut', data:{labels:['T1','T2','T3','T4','T5'], datasets:[{data:Object.values(km), backgroundColor:['green','lime','yellow','orange','red']}]}});
 
-        function fillSel(id, arr) { 
-            const el = document.getElementById(id); el.innerHTML='<option value="">Semua</option>';
-            arr.forEach(x=> el.innerHTML+=`<option value="${x}">${x}</option>`);
-        }
+        // Map & Hotspot
+        if(layer) map.removeLayer(layer);
+        if(pts.length) { layer = L.layerGroup(pts.map(p=>L.circleMarker(p,{color:'red',radius:5}))).addTo(map); map.fitBounds(pts); }
+        document.getElementById('hotspotTable').innerHTML = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v])=>`<tr><td>${k}</td><td class="text-end fw-bold">${v.toFixed(2)}</td></tr>`).join('');
 
-        function runFilter() {
-            const n=v('selNegeri'), d=v('selDaerah'), t=v('selTanaman'), p=v('selPerosak'), s=v('dS'), e=v('dE');
-            
-            fData = mData.filter(r => {
-                let pestOk = true;
-                if(p) {
-                    try { pestOk = JSON.parse(r.p)[p] ? true : false; } catch(err) { pestOk = false; }
-                }
-                return (n===""||r.n===n) && (d===""||r.d===d) && (t===""||r.tn===t) && pestOk &&
-                       (!s||r.t>=s) && (!e||r.t<=e);
-            });
-            
-            // Update dependent dropdowns
-            const sub = mData.filter(r => n===""||r.n===n);
-            if(!d) fillSel('selDaerah', [...new Set(sub.map(x=>x.d))].sort());
-            
-            const allPests = new Set();
-            fData.forEach(r => { try { Object.keys(JSON.parse(r.p)).forEach(k=>allPests.add(k)) } catch(e){} });
-            if(!p) fillSel('selPerosak', [...allPests].sort());
+        renderTable();
+    }
 
-            pg=1; calcUI();
-        }
-        function v(id){ return document.getElementById(id).value; }
-        function resetFilter(){ document.querySelectorAll('select:not(:disabled), input[type=date]').forEach(e=>e.value=""); runFilter(); }
+    function renderTable() {
+        const st=(pg-1)*pSize, dt=fData.slice(st, st+pSize);
+        document.getElementById('tBody').innerHTML = dt.map(d => `
+            <tr>
+                <td>${d.t}</td><td>${d.l}</td><td>${d.tn}</td>
+                <td>${(Number(d.lt)||0).toFixed(2)}</td>
+                <td class="text-danger fw-bold">${(Number(d.ls)||0).toFixed(2)}</td>
+                <td><button onclick="openModal(${d.id})" class="btn btn-sm btn-primary">Lihat</button></td>
+            </tr>`).join('');
+        document.getElementById('pgInfo').innerText = `Page ${pg}`;
+    }
+    function movePg(v){ pg+=v; if(pg<1)pg=1; renderTable(); }
 
-        function calcUI() {
-            let lt=0, ls=0, pm={}, km={1:0,2:0,3:0,4:0,5:0}, pts=[], hData={};
-            
-            fData.forEach(r => {
-                const a1 = Number(r.lt)||0, a2 = Number(r.ls)||0;
-                lt+=a1; ls+=a2;
-                
-                try { 
-                    const pObj = typeof r.p === 'string' ? JSON.parse(r.p) : r.p;
-                    Object.entries(pObj||{}).forEach(([k,v]) => pm[k]=(pm[k]||0)+Number(v));
-                } catch(e) { if(a2>0) pm["Umum"] = (pm["Umum"]||0)+a2; }
-                
-                let k = parseInt(r.k)||0; if(k>0 && k<6) km[k]++;
-                
-                if(r.c && r.c.includes(',')) {
-                    const [lat, lng] = r.c.split(',').map(Number);
-                    if(!isNaN(lat)) pts.push([lat, lng]);
-                }
-                if(a2>0) hData[r.d] = (hData[r.d]||0)+a2;
-            });
+    // --- MODAL STABIL (MANUAL EDIT) ---
+    function openModal(id) {
+        const d = fData.find(x => x.id === id);
+        
+        // VIEW HTML
+        const viewHtml = `
+            <div id="viewMode">
+                <table class="table table-bordered">
+                    <tr><th>Tarikh</th><td>${d.t}</td></tr>
+                    <tr><th>Pegawai</th><td>${d.pg}</td></tr>
+                    <tr><th>Lokasi</th><td>${d.l}</td></tr>
+                    <tr><th>Tanaman</th><td>${d.tn}</td></tr>
+                    <tr><th>Luas (Ha)</th><td>${d.lt}</td></tr>
+                    <tr><th>Serangan (Ha)</th><td class="text-danger fw-bold">${d.ls}</td></tr>
+                    <tr><th>Syor</th><td>${d.s}</td></tr>
+                </table>
+            </div>`;
 
-            document.getElementById('k1').innerText = lt.toFixed(2);
-            document.getElementById('k2').innerText = ls.toFixed(2);
-            document.getElementById('k3').innerText = lt>0 ? ((ls/lt)*100).toFixed(1)+"%" : "0%";
-            document.getElementById('k4').innerText = fData.length;
+        // EDIT HTML (MANUAL & STABIL)
+        const editHtml = `
+            <div id="editMode" style="display:none">
+                <div class="mb-2"><label>Lokasi</label><input id="eLoc" class="form-control" value="${d.l}"></div>
+                <div class="row">
+                    <div class="col-6 mb-2"><label>Luas (Ha)</label><input type="number" id="eLuas" class="form-control" value="${d.lt}"></div>
+                    <div class="col-6 mb-2"><label>Serangan (Ha)</label><input type="number" id="eSerang" class="form-control" value="${d.ls}"></div>
+                </div>
+                <div class="mb-2"><label>Syor Kawalan</label><textarea id="eSyor" class="form-control" rows="3">${d.s}</textarea></div>
+            </div>`;
 
-            renderCharts(pm, km); renderMap(pts); renderHotspot(hData); renderTable();
-            
-            // Smart Summary
-            const top = fData.sort((a,b)=> (Number(b.ls)||0) - (Number(a.ls)||0))[0];
-            const sumEl = document.getElementById('smartSummary');
-            if(top) {
-                sumEl.innerHTML = `<div><b>Hotspot:</b> ${top.l}, ${top.d}<br><b>Isu:</b> ${top.tn} (Luas: ${Number(top.ls).toFixed(2)} Ha)</div>`;
-            } else { sumEl.innerHTML = "Tiada Data."; }
-        }
+        document.getElementById('modalBody').innerHTML = viewHtml + editHtml;
 
-        function renderCharts(pm, km) {
-            const keys = Object.keys(pm).sort((a,b)=>pm[b]-pm[a]).slice(0,10);
-            if(charts.b) charts.b.destroy();
-            charts.b = new Chart(document.getElementById('cBar'), {
-                type:'bar', data:{labels:keys, datasets:[{label:'Ha', data:keys.map(k=>pm[k]), backgroundColor:'#198754'}]}
-            });
-            
-            if(charts.p) charts.p.destroy();
-            charts.p = new Chart(document.getElementById('cPie'), {
-                type:'doughnut', data:{labels:['T1','T2','T3','T4','T5'], datasets:[{data:Object.values(km), backgroundColor:['green','lime','yellow','orange','red']}]}
-            });
-        }
-
-        function renderMap(pts) {
-            if(layer) map.removeLayer(layer);
-            if(pts.length) {
-                layer = L.layerGroup(pts.map(p=>L.circleMarker(p, {color:'red', radius:5}))).addTo(map);
-                map.fitBounds(pts);
-            }
-        }
-
-        function renderHotspot(h) {
-            const s = Object.entries(h).sort((a,b)=>b[1]-a[1]).slice(0,5);
-            document.getElementById('hotspotTable').innerHTML = s.map(([k,v])=>`<tr><td>${k}</td><td class="text-end fw-bold">${v.toFixed(2)}</td></tr>`).join('');
-        }
-
-        function renderTable() {
-            const start = (pg-1)*pSize;
-            const rows = fData.slice(start, start+pSize);
-            document.getElementById('tBody').innerHTML = rows.map(r => `
-                <tr>
-                    <td>${r.t}</td><td>${r.l}</td><td>${r.tn}</td>
-                    <td>${(Number(r.lt)||0).toFixed(2)}</td>
-                    <td class="text-danger fw-bold">${(Number(r.ls)||0).toFixed(2)}</td>
-                    <td><button onclick="openModal(${r.id})" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button></td>
-                </tr>`).join('');
-            document.getElementById('pgInfo').innerText = `Page ${pg}`;
-        }
-        function movePg(d) { pg += d; if(pg<1) pg=1; renderTable(); }
-
-        // --- MODAL & EDIT ---
-        function openModal(id) {
-            currentEditID = id;
-            const d = fData.find(x => x.id === id);
-            const raw = d.rawData || [];
-            
-            // VIEW HTML
-            let viewHtml = `<div id="viewMode"><div class="verify-card"><div class="verify-body">`;
-            globalHeaders.forEach((h, i) => {
-                if(!['ID','LOG','TIMESTAMP'].some(x=>h.toUpperCase().includes(x))) {
-                    viewHtml += `<div class="v-row"><div class="v-label">${h}</div><div class="v-val">${raw[i]||'-'}</div></div>`;
-                }
-            });
-            viewHtml += `</div></div></div>`;
-
-            // EDIT HTML
-            let editHtml = `<div id="editMode" style="display:none"><form id="formEdit"><div class="row">`;
-            globalHeaders.forEach((h, i) => {
-                if(!['ID','LOG','TIMESTAMP','STATUS PENGESAHAN'].some(x=>h.toUpperCase().includes(x))) {
-                    let val = raw[i];
-                    if(typeof val === 'object') val = JSON.stringify(val);
-                    val = String(val||"").replace(/"/g, '&quot;'); // Escape Quotes
-                    editHtml += `<div class="col-12 mb-2"><label class="small fw-bold">${h}</label><input class="form-control" name="${h}" value="${val}"></div>`;
-                }
-            });
-            editHtml += `</div></form></div>`;
-
-            document.getElementById('modalBody').innerHTML = viewHtml + editHtml;
-            
-            // FOOTER BUTTONS
-            let btns = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>`;
-            if(uProf.role !== "USER") {
-                btns = `
+        // BUTTONS
+        let footer = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>`;
+        if(uProf.role !== "USER") {
+            footer = `
                 <div id="btnMain">
-                    <button onclick="delRec(${id})" class="btn btn-outline-danger me-2">Padam</button>
-                    <button onclick="toggleEdit(true)" class="btn btn-primary me-2">Edit</button>
+                    <button onclick="delRec(${d.id})" class="btn btn-outline-danger">Padam</button>
+                    <button onclick="toggle(true)" class="btn btn-primary">Edit</button>
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                 </div>
                 <div id="btnSave" style="display:none">
-                    <button onclick="saveRec(${id})" class="btn btn-success me-2">Simpan</button>
-                    <button onclick="toggleEdit(false)" class="btn btn-light border">Batal</button>
+                    <button onclick="saveRec(${d.id})" class="btn btn-success">Simpan</button>
+                    <button onclick="toggle(false)" class="btn btn-light border">Batal</button>
                 </div>`;
-            }
-            document.getElementById('modalFooter').innerHTML = btns;
-            new bootstrap.Modal(document.getElementById('detailModal')).show();
         }
+        document.getElementById('modalFooter').innerHTML = footer;
+        new bootstrap.Modal(document.getElementById('detailModal')).show();
+    }
 
-        function toggleEdit(on) {
-            document.getElementById('viewMode').style.display = on ? 'none' : 'block';
-            document.getElementById('editMode').style.display = on ? 'block' : 'none';
-            document.getElementById('btnMain').style.display = on ? 'none' : 'block';
-            document.getElementById('btnSave').style.display = on ? 'block' : 'none';
-        }
+    function toggle(edit) {
+        document.getElementById('viewMode').style.display = edit ? 'none' : 'block';
+        document.getElementById('editMode').style.display = edit ? 'block' : 'none';
+        document.getElementById('btnMain').style.display = edit ? 'none' : 'block';
+        document.getElementById('btnSave').style.display = edit ? 'block' : 'none';
+    }
 
-        async function saveRec(id) {
-            const inputs = document.querySelectorAll('#formEdit input');
-            let updates = {};
-            inputs.forEach(i => updates[i.name] = i.value);
-            
-            if(!confirm("Simpan perubahan?")) return;
-            const r = await postData('updateData', {id, updates});
-            alert(r.message);
-            if(r.success) { bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide(); initDash(); }
-        }
+    async function saveRec(id) {
+        const updates = {
+            "LOKASI": document.getElementById('eLoc').value,
+            "LUAS BANCIAN": document.getElementById('eLuas').value,
+            "LUAS SERANGAN": document.getElementById('eSerang').value,
+            "SYOR": document.getElementById('eSyor').value
+        };
+        const btn = document.querySelector('#btnSave .btn-success'); btn.innerText = "Saving...";
+        const r = await postData('updateData', {id, updates});
+        alert(r.message);
+        if(r.success) { bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide(); initDash(); }
+        else { btn.innerText = "Simpan"; }
+    }
 
-        async function delRec(id) {
-            if(!confirm("Padam rekod ini?")) return;
-            const r = await postData('deleteData', {id});
-            alert(r.message);
-            if(r.success) { bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide(); initDash(); }
-        }
-
-        // --- VERIFY & EXPORT ---
-        async function loadPend() {
-            const c = document.getElementById('verifyContainer');
-            c.innerHTML = "Loading...";
-            const r = await postData('getPending', {state:uProf.state});
-            if(!r.rows || !r.rows.length) { c.innerHTML = "<div class='p-4 text-center'>Tiada data.</div>"; return; }
-            
-            c.innerHTML = r.rows.map(x => {
-                // Cari column penting guna header
-                const find = (k) => { const i = r.headers.findIndex(h=>h.toUpperCase().includes(k)); return i>-1 ? x.data[i] : '-'; }
-                return `
-                <div class="col-md-6">
-                    <div class="verify-card p-3">
-                        <h6>${find('TARIKH')} - ${find('NAMA')}</h6>
-                        <div class="small mb-3">Lokasi: ${find('LOKASI')}<br>Tanaman: ${find('TANAMAN')}</div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-outline-danger flex-grow-1" onclick="doVer(${x.row},'REJECT')">Tolak</button>
-                            <button class="btn btn-sm btn-success flex-grow-1" onclick="doVer(${x.row},'APPROVE')">Sahkan</button>
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        async function doVer(row, act) {
-            let re = ""; if(act==='REJECT') re=prompt("Sebab:");
-            const r = await postData('submitVerify', {row, act, reason:re, name:uProf.name});
-            alert(r.message); if(r.success) { loadPend(); checkPending(); initDash(); }
-        }
-
-        async function downloadDualExcel() {
-            if(!fData.length) return alert("Tiada data");
-            const wb = new ExcelJS.Workbook();
-            const ws = wb.addWorksheet('Laporan');
-            ws.columns = globalHeaders.map(h => ({header:h, key:h, width:15}));
-            fData.forEach(d => ws.addRow(d.rawData));
-            const buf = await wb.xlsx.writeBuffer();
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([buf]));
-            a.download = 'Laporan_PNR.xlsx';
-            a.click();
-        }
-    </script>
+    async function delRec(id) {
+        if(!confirm("Padam?")) return;
+        const r = await postData('deleteData', {id});
+        alert(r.message);
+        if(r.success) { bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide(); initDash(); }
+    }
+</script>
 </body>
 </html>
