@@ -16,28 +16,20 @@
         :root { --primary: #064e3b; --bg: #f3f4f6; }
         body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; margin:0; }
         
+        /* LOGIN */
         #loginOverlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background: #064e3b; }
-        .login-box { background: white; padding: 2.5rem; border-radius: 16px; width: 350px; text-align: center; }
+        .login-box { background: white; padding: 2.5rem; border-radius: 16px; width: 350px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
         
+        /* LAYOUT */
         .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: #e8f5e9; border-right: 1px solid #c6e7ce; padding: 20px; display: flex; flex-direction: column; z-index: 100; transition: 0.3s; }
         .sidebar.hide { transform: translateX(-100%); }
         .main-content { margin-left: 260px; padding: 25px; transition: 0.3s; }
-        
-        .nav-item { padding: 12px; margin-bottom: 5px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; }
-        .nav-item:hover { background: #c8e6c9; }
-        .nav-item.active { background: #1b5e20; color: white; }
-        
         .kpi-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); height: 100%; }
         .kpi-value { font-size: 1.8rem; font-weight: 800; color: #111827; }
         .map-box { height: 400px; border-radius: 12px; overflow: hidden; border: 1px solid #ddd; }
-        
-        /* DESIGN MODAL CANTIK */
-        .verify-card { background: #fff; border-radius: 12px; border: 1px solid #e9ecef; overflow: hidden; }
-        .verify-header { background: #f8f9fa; padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
-        .verify-body { padding: 20px; }
-        .v-row { display: flex; margin-bottom: 5px; border-bottom: 1px solid #f8f9fa; padding-bottom: 5px; }
-        .v-label { width: 140px; font-weight: 700; font-size: 0.8rem; color: #555; text-transform: uppercase; }
-        .v-val { flex: 1; font-weight: 500; word-break: break-word; }
+        .nav-item { padding: 12px; margin-bottom: 5px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; }
+        .nav-item:hover { background: #c8e6c9; }
+        .nav-item.active { background: #1b5e20; color: white; }
         
         @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .main-content { margin-left: 0; } }
     </style>
@@ -46,77 +38,89 @@
 
     <div id="loginOverlay">
         <div class="login-box">
-            <h4 class="fw-bold mb-4 text-success">PNR DIGITAL</h4>
-            <input type="text" id="uid" class="form-control mb-3" placeholder="ID">
-            <input type="password" id="pwd" class="form-control mb-4" placeholder="Password">
-            <button onclick="doLogin()" class="btn btn-success w-100" id="btnLogin">MASUK</button>
+            <h4 class="fw-bold mb-4 text-success"><i class="bi bi-flower1"></i> PNR DIGITAL</h4>
+            <input type="text" id="uid" class="form-control mb-3 p-3" placeholder="ID Pengguna">
+            <input type="password" id="pwd" class="form-control mb-4 p-3" placeholder="Kata Laluan">
+            <button onclick="doLogin()" class="btn btn-success w-100 fw-bold p-3" id="btnLogin">MASUK</button>
             <small id="loginMsg" class="text-danger d-block mt-3"></small>
         </div>
     </div>
 
     <div class="sidebar" id="sidebar">
-        <h5 class="fw-bold mb-4">PNR DIGITAL</h5>
+        <h5 class="fw-bold mb-4 ps-2">PNR DIGITAL</h5>
         <div style="flex:1; overflow-y:auto">
-            <div class="nav-item active" onclick="switchTab('main', this)"><span>Dashboard</span></div>
-            <div class="nav-item" id="navVerify" style="display:none" onclick="switchTab('verify', this)"><span>Pengesahan</span><span class="badge bg-danger" id="badgePending">0</span></div>
+            <div class="nav-item active" onclick="switchTab('main', this)">
+                <span><i class="bi bi-grid-fill me-2"></i> Dashboard</span>
+            </div>
+            <div class="nav-item" id="navVerify" style="display:none" onclick="switchTab('verify', this)">
+                <span><i class="bi bi-check-circle-fill me-2"></i> Pengesahan</span>
+                <span class="badge bg-danger rounded-pill" id="badgePending" style="display:none">0</span>
+            </div>
             <hr>
-            <div class="mb-3"><label>Negeri</label><select id="selNegeri" class="form-select form-select-sm" onchange="runFilter('n')"></select></div>
-            <div class="mb-3"><label>Tanaman</label><select id="selTanaman" class="form-select form-select-sm" onchange="runFilter('t')"></select></div>
-            <div class="mb-3"><label>Perosak</label><select id="selPerosak" class="form-select form-select-sm" onchange="runFilter('p')"></select></div>
-            <button class="btn btn-dark btn-sm w-100" onclick="resetFilter()">Reset</button>
+            <div class="mb-2"><small class="fw-bold text-muted">NEGERI</small><select id="selNegeri" class="form-select form-select-sm" onchange="runFilter('n')"></select></div>
+            <div class="mb-2"><small class="fw-bold text-muted">TANAMAN</small><select id="selTanaman" class="form-select form-select-sm" onchange="runFilter('t')"></select></div>
+            <div class="mb-2"><small class="fw-bold text-muted">PEROSAK</small><select id="selPerosak" class="form-select form-select-sm" onchange="runFilter('p')"></select></div>
+            <button class="btn btn-dark btn-sm w-100 mt-3" onclick="resetFilter()">Reset Filter</button>
         </div>
-        <div class="border-top pt-3">
+        <div class="border-top pt-3 mt-2">
             <small class="d-block fw-bold" id="uDisp">-</small>
             <button class="btn btn-link text-danger btn-sm p-0" onclick="location.reload()">Log Keluar</button>
         </div>
     </div>
 
     <div class="main-content">
-        <div class="d-md-none mb-3 bg-white p-2 rounded shadow-sm d-flex justify-content-between">
-            <span class="fw-bold">PNR Digital</span>
-            <button class="btn btn-light btn-sm" onclick="document.getElementById('sidebar').classList.toggle('hide')">Menu</button>
-        </div>
-
+        <button class="btn btn-light d-md-none mb-3 border shadow-sm" onclick="document.getElementById('sidebar').classList.toggle('hide')"><i class="bi bi-list"></i> Menu</button>
+        
         <div id="view-main">
-            <div class="d-flex justify-content-between mb-4">
-                <h4 class="fw-bold">Analisis Data</h4>
+            <div class="d-flex justify-content-between mb-4 align-items-center">
+                <h4 class="fw-bold m-0">Analisis Data</h4>
                 <div>
-                    <button class="btn btn-success btn-sm" onclick="downloadDualExcel()">Excel</button>
-                    <button class="btn btn-danger btn-sm" onclick="dlPDF()">PDF</button>
+                    <button class="btn btn-success btn-sm" onclick="downloadDualExcel()"><i class="bi bi-file-excel"></i> Excel</button>
+                    <button class="btn btn-danger btn-sm" onclick="dlPDF()"><i class="bi bi-file-pdf"></i> PDF</button>
                 </div>
             </div>
 
-            <div class="card mb-4 border-0 shadow-sm bg-white"><div class="card-body" id="smartSummary">Loading...</div></div>
-
-            <div class="row g-3 mb-4">
-                <div class="col-6 col-md-3"><div class="kpi-card"><div>Luas Bancian</div><div class="kpi-value text-success" id="k1">0</div></div></div>
-                <div class="col-6 col-md-3"><div class="kpi-card"><div>Luas Serangan</div><div class="kpi-value text-danger" id="k2">0</div></div></div>
-                <div class="col-6 col-md-3"><div class="kpi-card"><div>% Serangan</div><div class="kpi-value text-warning" id="k3">0%</div></div></div>
-                <div class="col-6 col-md-3"><div class="kpi-card"><div>Bil. Rekod</div><div class="kpi-value" id="k4">0</div></div></div>
+            <div class="card mb-4 border-0 shadow-sm bg-white">
+                <div class="card-body d-flex align-items-center">
+                    <div class="bg-light p-3 rounded-circle me-3"><i class="bi bi-robot fs-3 text-primary"></i></div>
+                    <div id="smartSummary" class="lh-sm">Memuatkan analisis...</div>
+                </div>
             </div>
 
             <div class="row g-3 mb-4">
-                <div class="col-md-8"><div class="kpi-card"><canvas id="cBar" height="100"></canvas></div></div>
-                <div class="col-md-4"><div class="kpi-card"><canvas id="cPie" height="200"></canvas></div></div>
+                <div class="col-6 col-md-3"><div class="kpi-card"><small class="text-muted fw-bold">LUAS BANCIAN</small><div class="kpi-value text-success" id="k1">0</div></div></div>
+                <div class="col-6 col-md-3"><div class="kpi-card"><small class="text-muted fw-bold">LUAS SERANGAN</small><div class="kpi-value text-danger" id="k2">0</div></div></div>
+                <div class="col-6 col-md-3"><div class="kpi-card"><small class="text-muted fw-bold">% SERANGAN</small><div class="kpi-value text-warning" id="k3">0%</div></div></div>
+                <div class="col-6 col-md-3"><div class="kpi-card"><small class="text-muted fw-bold">BIL. REKOD</small><div class="kpi-value text-primary" id="k4">0</div></div></div>
             </div>
 
             <div class="row g-3 mb-4">
-                <div class="col-md-8"><div class="map-box" id="map"></div></div>
-                <div class="col-md-4"><div class="kpi-card" style="overflow-y:auto;max-height:400px"><table class="table table-sm"><tbody id="hotspotTable"></tbody></table></div></div>
+                <div class="col-md-8"><div class="kpi-card"><h6 class="fw-bold mb-3">Carta Perosak Utama</h6><div style="height:300px"><canvas id="cBar"></canvas></div></div></div>
+                <div class="col-md-4"><div class="kpi-card"><h6 class="fw-bold mb-3">Tahap Keterukan</h6><div style="height:250px"><canvas id="cPie"></canvas></div></div></div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-8"><div class="map-box shadow-sm" id="map"></div></div>
+                <div class="col-md-4"><div class="kpi-card" style="overflow-y:auto;max-height:400px"><h6 class="fw-bold text-danger mb-3">Hotspot Daerah</h6><table class="table table-sm table-hover"><tbody id="hotspotTable"></tbody></table></div></div>
             </div>
 
             <div class="kpi-card">
                 <div class="d-flex justify-content-between mb-3"><h6 class="fw-bold">Jadual Data</h6><small id="pgInfo">-</small></div>
-                <table class="table table-hover table-sm">
-                    <thead class="table-light"><tr><th>Tarikh</th><th>Lokasi</th><th>Tanaman</th><th>Luas (Ha)</th><th>Serang (Ha)</th><th>Aksi</th></tr></thead>
-                    <tbody id="tBody"></tbody>
-                </table>
-                <div class="text-end"><button class="btn btn-sm btn-light border" onclick="movePg(-1)">Prev</button><button class="btn btn-sm btn-light border" onclick="movePg(1)">Next</button></div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead class="table-light"><tr><th>Tarikh</th><th>Lokasi</th><th>Tanaman</th><th>Luas (Ha)</th><th>Serang (Ha)</th><th>Tindakan</th></tr></thead>
+                        <tbody id="tBody"></tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-2">
+                    <button class="btn btn-sm btn-light border" onclick="movePg(-1)">Prev</button>
+                    <button class="btn btn-sm btn-light border" onclick="movePg(1)">Next</button>
+                </div>
             </div>
         </div>
 
         <div id="view-verify" style="display:none">
-            <div class="d-flex justify-content-between mb-4"><h4 class="fw-bold">Pengesahan</h4><button class="btn btn-primary btn-sm" onclick="loadPend()">Refresh</button></div>
+            <div class="d-flex justify-content-between mb-4"><h4 class="fw-bold">Pengesahan Data</h4><button class="btn btn-primary btn-sm" onclick="loadPend()"><i class="bi bi-arrow-clockwise"></i> Refresh</button></div>
             <div id="verifyContainer" class="row g-3"></div>
         </div>
     </div>
@@ -126,31 +130,32 @@
             <div class="modal-content">
                 <div class="modal-header bg-success text-white"><h5 class="modal-title">Butiran Rekod</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body bg-light" id="modalBody"></div>
-                <div class="modal-footer bg-white" id="modalFooter"></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button></div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // GANTIKAN URL DI SINI
+        // --- TETAPAN ---
         const API_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
         
         let mData=[], fData=[], uProf=null, charts={}, map=null, layer=null, pg=1, pSize=10;
-        let globalHeaders = [], currentEditID = null, userToken = "", currentUserID = "";
+        let userToken="", currentUserID="";
 
+        // --- CORE FUNCTIONS ---
         async function postData(act, load) {
             try {
                 const res = await fetch(`${API_URL}?action=${act}`, { 
                     method: "POST", body: JSON.stringify({ action:act, token:userToken, u:currentUserID, ...load }) 
                 });
                 return JSON.parse(await res.text());
-            } catch(e) { return {success:false, message:"Ralat"}; }
+            } catch(e) { return {success:false, message:"Ralat Sambungan"}; }
         }
 
         async function doLogin() {
             const u = document.getElementById('uid').value, p = document.getElementById('pwd').value;
-            if(!u || !p) return alert("Sila isi ID dan Password");
+            if(!u || !p) return alert("Sila isi maklumat login.");
             
             document.getElementById('btnLogin').innerText = "Loading...";
             const r = await postData('login', {u, p});
@@ -183,16 +188,14 @@
             }
         }
 
-        // --- DASHBOARD ---
+        // --- DASHBOARD LOGIC ---
         async function initDash() {
             const r = await postData('getAnalytics', {state:uProf.state});
             if(!r.records) return alert("Tiada Data");
+            mData = r.records;
             
-            globalHeaders = r.headers || [];
-            mData = r.records.map((x,i) => ({ ...x, id: x.id || i+2, rawData: x.data }));
-            
-            const getU = (k) => [...new Set(mData.map(d=>d[k]).filter(x=>x))].sort();
-            fillSel('selNegeri', getU('n')); fillSel('selTanaman', getU('tn'));
+            const u = (k) => [...new Set(mData.map(d=>d[k]).filter(x=>x))].sort();
+            fillSel('selNegeri', u('n')); fillSel('selTanaman', u('tn')); fillSel('selPerosak', []); // Init empty
             
             if(uProf.state !== "ALL") { document.getElementById('selNegeri').value = uProf.state; document.getElementById('selNegeri').disabled = true; }
             if(!map) { map = L.map('map').setView([4.21, 101.97], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); }
@@ -200,20 +203,16 @@
             runFilter();
         }
 
-        function fillSel(id, arr) { 
-            const el = document.getElementById(id); el.innerHTML='<option value="">Semua</option>';
-            arr.forEach(x=> el.innerHTML+=`<option value="${x}">${x}</option>`);
-        }
-
         function runFilter() {
-            const n=v('selNegeri'), t=v('selTanaman'), p=v('selPerosak');
+            const n=v('selNegeri'), t=v('selTanaman'), p=v('selPerosak'), s=v('dS'), e=v('dE');
             
             fData = mData.filter(r => {
                 let pestOk = true;
                 if(p) { try { pestOk = JSON.parse(r.p)[p] ? true : false; } catch(err) { pestOk = false; } }
-                return (n===""||r.n===n) && (t===""||r.tn===t) && pestOk;
+                return (n===""||r.n===n) && (t===""||r.tn===t) && pestOk && (!s||r.t>=s) && (!e||r.t<=e);
             });
             
+            // Logic Dynamic Dropdown Perosak
             const allPests = new Set();
             fData.forEach(r => { try { Object.keys(JSON.parse(r.p)).forEach(k=>allPests.add(k)) } catch(e){} });
             if(!p) fillSel('selPerosak', [...allPests].sort());
@@ -221,7 +220,8 @@
             pg=1; calcUI();
         }
         function v(id){ return document.getElementById(id).value; }
-        function resetFilter(){ document.querySelectorAll('select:not(:disabled)').forEach(e=>e.value=""); runFilter(); }
+        function fillSel(id, arr) { const el = document.getElementById(id); let old=el.value; el.innerHTML='<option value="">Semua</option>'; arr.forEach(x=> el.innerHTML+=`<option value="${x}">${x}</option>`); if(arr.includes(old)) el.value=old; }
+        function resetFilter(){ document.querySelectorAll('select:not(:disabled), input[type=date]').forEach(e=>e.value=""); runFilter(); }
 
         function calcUI() {
             let lt=0, ls=0, pm={}, km={1:0,2:0,3:0,4:0,5:0}, pts=[], hData={};
@@ -229,34 +229,42 @@
             fData.forEach(r => {
                 const a1 = Number(r.lt)||0, a2 = Number(r.ls)||0;
                 lt+=a1; ls+=a2;
+                
                 try { 
                     const pObj = typeof r.p === 'string' ? JSON.parse(r.p) : r.p;
                     Object.entries(pObj||{}).forEach(([k,v]) => pm[k]=(pm[k]||0)+Number(v));
                 } catch(e) { if(a2>0) pm["Umum"] = (pm["Umum"]||0)+a2; }
+                
                 let k = parseInt(r.k)||0; if(k>0 && k<6) km[k]++;
-                if(r.c && r.c.includes(',')) { const [a,b] = r.c.split(',').map(Number); if(!isNaN(a)) pts.push([a,b]); }
+                
+                if(r.c && r.c.includes(',')) { const [lat, lng] = r.c.split(',').map(Number); if(!isNaN(lat)) pts.push([lat, lng]); }
                 if(a2>0) hData[r.d] = (hData[r.d]||0)+a2;
             });
 
-            document.getElementById('k1').innerText = lt.toFixed(2);
-            document.getElementById('k2').innerText = ls.toFixed(2);
+            document.getElementById('k1').innerText = lt.toLocaleString(undefined,{minimumFractionDigits:2});
+            document.getElementById('k2').innerText = ls.toLocaleString(undefined,{minimumFractionDigits:2});
             document.getElementById('k3').innerText = lt>0 ? ((ls/lt)*100).toFixed(1)+"%" : "0%";
             document.getElementById('k4').innerText = fData.length;
 
             renderCharts(pm, km); renderMap(pts); renderHotspot(hData); renderTable();
             
+            // Smart Summary
             const top = fData.sort((a,b)=> (Number(b.ls)||0) - (Number(a.ls)||0))[0];
             const sumEl = document.getElementById('smartSummary');
-            if(top) { sumEl.innerHTML = `<div><b>Hotspot:</b> ${top.l}, ${top.d}<br><b>Isu:</b> ${top.tn} (Luas: ${Number(top.ls).toFixed(2)} Ha)</div>`; } 
-            else { sumEl.innerHTML = "Tiada Data."; }
+            if(top) { sumEl.innerHTML = `<div><b>Fokus Utama:</b> ${top.l}, ${top.d}<br><b>Masalah:</b> ${top.tn} (Luas Terjejas: ${Number(top.ls).toFixed(2)} Ha)</div>`; } 
+            else { sumEl.innerHTML = "Tiada data serangan direkodkan."; }
         }
 
         function renderCharts(pm, km) {
             const keys = Object.keys(pm).sort((a,b)=>pm[b]-pm[a]).slice(0,10);
             if(charts.b) charts.b.destroy();
-            charts.b = new Chart(document.getElementById('cBar'), {type:'bar', data:{labels:keys, datasets:[{label:'Ha', data:keys.map(k=>pm[k]), backgroundColor:'#198754'}]}});
+            charts.b = new Chart(document.getElementById('cBar'), {
+                type:'bar', data:{labels:keys, datasets:[{label:'Ha', data:keys.map(k=>pm[k]), backgroundColor:'#198754'}]}
+            });
             if(charts.p) charts.p.destroy();
-            charts.p = new Chart(document.getElementById('cPie'), {type:'doughnut', data:{labels:['T1','T2','T3','T4','T5'], datasets:[{data:Object.values(km), backgroundColor:['green','lime','yellow','orange','red']}]}});
+            charts.p = new Chart(document.getElementById('cPie'), {
+                type:'doughnut', data:{labels:['T1','T2','T3','T4','T5'], datasets:[{data:Object.values(km), backgroundColor:['green','lime','yellow','orange','red']}]}
+            });
         }
 
         function renderMap(pts) {
@@ -278,140 +286,57 @@
                     <td class="text-danger fw-bold">${(Number(d.ls)||0).toFixed(2)}</td>
                     <td><button onclick="openModal(${d.id})" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button></td>
                 </tr>`).join('');
-            document.getElementById('pgInfo').innerText = `Page ${pg}`;
+            document.getElementById('pgInfo').innerText = `Halaman ${pg}`;
         }
-        function movePg(d) { pg += d; if(pg<1) pg=1; renderTable(); }
+        function movePg(v) { pg += v; if(pg<1) pg=1; renderTable(); }
 
-        // --- MODAL: VIEW (CARD STYLE) & EDIT (ALL COLUMNS) ---
+        // --- MODAL SIMPLE (VIEW ONLY) ---
         function openModal(id) {
-            currentEditID = id;
             const d = fData.find(x => x.id === id);
-            const raw = d.rawData || [];
+            let pestHTML = "";
+            try { 
+               let p = typeof d.p === 'string' ? JSON.parse(d.p) : d.p;
+               Object.keys(p).forEach(k => pestHTML += `<tr><td>${k}</td><td>${p[k]}</td></tr>`);
+            } catch(e){}
             
-            // 1. VIEW MODE
-            const getVal = (k) => { const i=globalHeaders.findIndex(h=>h.toUpperCase().includes(k.toUpperCase())); return i>-1 ? raw[i] : "-"; }
-            const tarikh = getVal('TARIKH') || getVal('DATE');
-            const nama = getVal('NAMA') || getVal('PEGAWAI');
-            const lokasi = getVal('LOKASI') || getVal('KEBUN');
-            
-            let details = "";
-            globalHeaders.forEach((h, i) => {
-                if(!['ID','LOG','IMAGE','GAMBAR','TARIKH','DATE','NAMA','PEGAWAI','LOKASI','KEBUN'].some(x=>h.toUpperCase().includes(x))) {
-                    details += `<div class="v-row"><div class="v-label">${h}</div><div class="v-val">${raw[i]||"-"}</div></div>`;
-                }
-            });
-
-            const viewHtml = `
-            <div id="viewMode">
-                <div class="verify-card shadow-none border">
-                    <div class="verify-header">
-                        <div><small class="text-muted fw-bold">${tarikh}</small><div class="fw-bold">${nama}</div></div>
-                        <span class="badge bg-secondary">READ ONLY</span>
-                    </div>
-                    <div class="verify-body">
-                        <div class="v-row mb-3"><div class="v-label">LOKASI</div><div class="v-val fw-bold text-primary">${lokasi}</div></div>
-                        ${details}
-                    </div>
-                </div>
-            </div>`;
-
-            // 2. EDIT MODE (DYNAMIC - SEMUA COLUMN)
-            let inputs = "";
-            globalHeaders.forEach((h, i) => {
-                if(!['LOG','TIMESTAMP','ID','STATUS'].some(x=>h.toUpperCase().includes(x))) {
-                    let val = raw[i];
-                    if(typeof val === 'object') val = JSON.stringify(val);
-                    val = String(val||"").replace(/"/g, '&quot;');
-                    inputs += `<div class="col-md-6 mb-2"><label class="small fw-bold">${h}</label><input class="form-control" name="${h}" value="${val}"></div>`;
-                }
-            });
-            const editHtml = `<div id="editMode" style="display:none"><form id="formEdit"><div class="row">${inputs}</div></form></div>`;
-
-            document.getElementById('modalBody').innerHTML = viewHtml + editHtml;
-
-            // FOOTER & BUTTONS
-            let footer = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>`;
-            if(uProf.role !== "USER") {
-                footer = `
-                <div id="btnDefault" class="d-flex gap-2 w-100 justify-content-end">
-                    <button onclick="delRec(${id})" class="btn btn-outline-danger">Padam</button>
-                    <button onclick="toggle(true)" class="btn btn-primary">Kemaskini</button>
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                </div>
-                <div id="btnEdit" class="d-flex gap-2 w-100 justify-content-end" style="display:none">
-                    <button onclick="saveRec(${id})" class="btn btn-success fw-bold">SIMPAN</button>
-                    <button onclick="toggle(false)" class="btn btn-light border">Batal</button>
-                </div>`;
-            }
-            document.getElementById('modalFooter').innerHTML = footer;
+            document.getElementById('modalBody').innerHTML = `
+                <table class="table table-bordered">
+                    <tr><th class="bg-light w-25">Tarikh</th><td>${d.t}</td></tr>
+                    <tr><th class="bg-light">Pegawai</th><td>${d.pg}</td></tr>
+                    <tr><th class="bg-light">Negeri/Daerah</th><td>${d.n}, ${d.d}</td></tr>
+                    <tr><th class="bg-light">Lokasi</th><td class="fw-bold">${d.l}</td></tr>
+                    <tr><th class="bg-light">Tanaman</th><td>${d.tn}</td></tr>
+                    <tr><th class="bg-light">Luas Bancian</th><td>${d.lt} Ha</td></tr>
+                    <tr><th class="bg-light">Luas Serangan</th><td class="text-danger fw-bold">${d.ls} Ha</td></tr>
+                    <tr><th class="bg-light">Syor Kawalan</th><td>${d.s}</td></tr>
+                </table>
+                <h6 class="fw-bold mt-3">Perincian Perosak</h6>
+                <table class="table table-sm table-striped"><thead><tr><th>Nama</th><th>Luas (Ha)</th></tr></thead><tbody>${pestHTML || '<tr><td colspan="2">Tiada data</td></tr>'}</tbody></table>
+            `;
             new bootstrap.Modal(document.getElementById('detailModal')).show();
         }
 
-        function toggle(edit) {
-            document.getElementById('viewMode').style.display = edit ? 'none' : 'block';
-            document.getElementById('editMode').style.display = edit ? 'block' : 'none';
-            document.getElementById('btnDefault').style.display = edit ? 'none' : 'flex';
-            document.getElementById('btnEdit').style.display = edit ? 'flex' : 'none';
+        // --- FUNGSI ASAL LAIN ---
+        async function loadPend() { 
+            const c=document.getElementById('verifyContainer'); c.innerHTML="Loading...";
+            const r=await postData('getPending',{state:uProf.state});
+            if(!r.rows || !r.rows.length) { c.innerHTML="<div class='col-12 text-center p-5 text-muted'>Tiada Data Baru</div>"; return; }
+            c.innerHTML = r.rows.map(x=> `<div class="col-md-6"><div class="card p-3 mb-3 border shadow-sm">
+                <h6>${x.data[0]} - ${x.data[1]}</h6>
+                <small>${x.data[3]}, ${x.data[4]}</small>
+                <div class="d-flex gap-2 mt-3"><button class="btn btn-sm btn-outline-danger flex-grow-1" onclick="doVer(${x.row},'REJECT')">Tolak</button><button class="btn btn-sm btn-success flex-grow-1" onclick="doVer(${x.row},'APPROVE')">Sahkan</button></div>
+            </div></div>`).join('');
         }
-
-        async function saveRec(id) {
-            const inputs = document.querySelectorAll('#formEdit input');
-            let updates = {};
-            inputs.forEach(i => updates[i.name] = i.value);
-            
-            if(!confirm("Simpan perubahan?")) return;
-            const r = await postData('updateData', {id, updates});
-            alert(r.message);
-            if(r.success) { bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide(); initDash(); }
-        }
-
-        async function delRec(id) {
-            if(!confirm("Padam rekod ini?")) return;
-            const r = await postData('deleteData', {id});
-            alert(r.message);
-            if(r.success) { bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide(); initDash(); }
-        }
-
-        // --- VERIFY & EXPORT ---
-        async function loadPend() {
-            const c = document.getElementById('verifyContainer');
-            c.innerHTML = "Loading...";
-            const r = await postData('getPending', {state:uProf.state});
-            if(!r.rows || !r.rows.length) { c.innerHTML = "<div class='p-4 text-center'>Tiada data.</div>"; return; }
-            
-            c.innerHTML = r.rows.map(x => {
-                const find = (k) => { const i = r.headers.findIndex(h=>h.toUpperCase().includes(k)); return i>-1 ? x.data[i] : '-'; }
-                return `
-                <div class="col-md-6">
-                    <div class="verify-card p-3">
-                        <h6>${find('TARIKH')} - ${find('NAMA')}</h6>
-                        <div class="small mb-3">Lokasi: ${find('LOKASI')}<br>Tanaman: ${find('TANAMAN')}</div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-outline-danger flex-grow-1" onclick="doVer(${x.row},'REJECT')">Tolak</button>
-                            <button class="btn btn-sm btn-success flex-grow-1" onclick="doVer(${x.row},'APPROVE')">Sahkan</button>
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        async function doVer(row, act) {
-            let re = ""; if(act==='REJECT') re=prompt("Sebab:");
-            const r = await postData('submitVerify', {row, act, reason:re, name:uProf.name});
-            alert(r.message); if(r.success) { loadPend(); checkPending(); initDash(); }
-        }
-
+        async function doVer(row, act) { let re=""; if(act==='REJECT') re=prompt("Sebab:"); const r=await postData('submitVerify',{row,act,reason:re,name:uProf.name}); alert(r.message); if(r.success) loadPend(); }
+        
         async function downloadDualExcel() {
-            if(!fData.length) return alert("Tiada data");
+            if(!fData.length) return alert("Tiada Data");
             const wb = new ExcelJS.Workbook();
-            const ws = wb.addWorksheet('Laporan');
-            ws.columns = globalHeaders.map(h => ({header:h, key:h, width:15}));
-            fData.forEach(d => ws.addRow(d.rawData));
+            const ws = wb.addWorksheet('Data');
+            ws.columns = [{header:'Tarikh',key:'t'},{header:'Lokasi',key:'l'},{header:'Tanaman',key:'tn'},{header:'Luas',key:'lt'},{header:'Serangan',key:'ls'}];
+            fData.forEach(d=>ws.addRow(d));
             const buf = await wb.xlsx.writeBuffer();
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([buf]));
-            a.download = 'Laporan_PNR.xlsx';
-            a.click();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf])); a.download = 'Laporan.xlsx'; a.click();
         }
     </script>
 </body>
