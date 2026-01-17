@@ -18,19 +18,25 @@
         
         /* LOGIN */
         #loginOverlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background: #064e3b; }
-        .login-box { background: white; padding: 2.5rem; border-radius: 16px; width: 350px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .login-box { background: white; padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
         
         /* LAYOUT */
         .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: #e8f5e9; border-right: 1px solid #c6e7ce; padding: 20px; display: flex; flex-direction: column; z-index: 100; transition: 0.3s; }
         .sidebar.hide { transform: translateX(-100%); }
         .main-content { margin-left: 260px; padding: 25px; transition: 0.3s; }
-        .kpi-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); height: 100%; }
-        .kpi-value { font-size: 1.8rem; font-weight: 800; color: #111827; }
-        .map-box { height: 400px; border-radius: 12px; overflow: hidden; border: 1px solid #ddd; }
+        
         .nav-item { padding: 12px; margin-bottom: 5px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; }
         .nav-item:hover { background: #c8e6c9; }
         .nav-item.active { background: #1b5e20; color: white; }
         
+        /* CARDS */
+        .kpi-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); height: 100%; }
+        .kpi-value { font-size: 1.8rem; font-weight: 800; color: #111827; }
+        .map-box { height: 400px; border-radius: 12px; overflow: hidden; border: 1px solid #ddd; }
+        
+        /* VERIFY CARD (Simple Version) */
+        .verify-card { background: #fff; border-radius: 12px; border: 1px solid #e9ecef; padding: 15px; margin-bottom: 15px; }
+
         @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .main-content { margin-left: 0; } }
     </style>
 </head>
@@ -77,13 +83,6 @@
                 <div>
                     <button class="btn btn-success btn-sm" onclick="downloadDualExcel()"><i class="bi bi-file-excel"></i> Excel</button>
                     <button class="btn btn-danger btn-sm" onclick="dlPDF()"><i class="bi bi-file-pdf"></i> PDF</button>
-                </div>
-            </div>
-
-            <div class="card mb-4 border-0 shadow-sm bg-white">
-                <div class="card-body d-flex align-items-center">
-                    <div class="bg-light p-3 rounded-circle me-3"><i class="bi bi-robot fs-3 text-primary"></i></div>
-                    <div id="smartSummary" class="lh-sm">Memuatkan analisis...</div>
                 </div>
             </div>
 
@@ -137,13 +136,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // --- TETAPAN ---
+        // --- TETAPAN API ---
         const API_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
         
         let mData=[], fData=[], uProf=null, charts={}, map=null, layer=null, pg=1, pSize=10;
         let userToken="", currentUserID="";
 
-        // --- CORE FUNCTIONS ---
+        // --- FUNGSI UTAMA (POST DATA DENGAN TOKEN) ---
         async function postData(act, load) {
             try {
                 const res = await fetch(`${API_URL}?action=${act}`, { 
@@ -155,7 +154,7 @@
 
         async function doLogin() {
             const u = document.getElementById('uid').value, p = document.getElementById('pwd').value;
-            if(!u || !p) return alert("Sila isi maklumat login.");
+            if(!u || !p) return alert("Sila isi ID dan Password");
             
             document.getElementById('btnLogin').innerText = "Loading...";
             const r = await postData('login', {u, p});
@@ -192,10 +191,19 @@
         async function initDash() {
             const r = await postData('getAnalytics', {state:uProf.state});
             if(!r.records) return alert("Tiada Data");
-            mData = r.records;
             
-            const u = (k) => [...new Set(mData.map(d=>d[k]).filter(x=>x))].sort();
-            fillSel('selNegeri', u('n')); fillSel('selTanaman', u('tn')); fillSel('selPerosak', []); // Init empty
+            // MAP DATA MENTAH DARI BACKEND KE FRONTEND
+            // Kita guna 'id' dari index backend, selebihnya data standard
+            mData = r.records.map((x,i) => ({ 
+                ...x, 
+                id: x.id || i+2, 
+                // Pastikan nombor adalah nombor (Safety Check)
+                lt: parseFloat(x.lt) || 0,
+                ls: parseFloat(x.ls) || 0
+            }));
+            
+            const getU = (k) => [...new Set(mData.map(d=>d[k]).filter(x=>x))].sort();
+            fillSel('selNegeri', getU('n')); fillSel('selTanaman', getU('tn')); fillSel('selPerosak', []);
             
             if(uProf.state !== "ALL") { document.getElementById('selNegeri').value = uProf.state; document.getElementById('selNegeri').disabled = true; }
             if(!map) { map = L.map('map').setView([4.21, 101.97], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); }
@@ -236,7 +244,6 @@
                 } catch(e) { if(a2>0) pm["Umum"] = (pm["Umum"]||0)+a2; }
                 
                 let k = parseInt(r.k)||0; if(k>0 && k<6) km[k]++;
-                
                 if(r.c && r.c.includes(',')) { const [lat, lng] = r.c.split(',').map(Number); if(!isNaN(lat)) pts.push([lat, lng]); }
                 if(a2>0) hData[r.d] = (hData[r.d]||0)+a2;
             });
@@ -247,12 +254,6 @@
             document.getElementById('k4').innerText = fData.length;
 
             renderCharts(pm, km); renderMap(pts); renderHotspot(hData); renderTable();
-            
-            // Smart Summary
-            const top = fData.sort((a,b)=> (Number(b.ls)||0) - (Number(a.ls)||0))[0];
-            const sumEl = document.getElementById('smartSummary');
-            if(top) { sumEl.innerHTML = `<div><b>Fokus Utama:</b> ${top.l}, ${top.d}<br><b>Masalah:</b> ${top.tn} (Luas Terjejas: ${Number(top.ls).toFixed(2)} Ha)</div>`; } 
-            else { sumEl.innerHTML = "Tiada data serangan direkodkan."; }
         }
 
         function renderCharts(pm, km) {
@@ -284,48 +285,53 @@
                     <td>${d.t}</td><td>${d.l}</td><td>${d.tn}</td>
                     <td>${(Number(d.lt)||0).toFixed(2)}</td>
                     <td class="text-danger fw-bold">${(Number(d.ls)||0).toFixed(2)}</td>
-                    <td><button onclick="openModal(${d.id})" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button></td>
+                    <td class="text-center"><button onclick="openModal(${d.id})" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button></td>
                 </tr>`).join('');
-            document.getElementById('pgInfo').innerText = `Halaman ${pg}`;
+            document.getElementById('pgInfo').innerText = `Page ${pg}`;
         }
-        function movePg(v) { pg += v; if(pg<1) pg=1; renderTable(); }
+        function movePg(d) { pg += d; if(pg<1) pg=1; renderTable(); }
 
-        // --- MODAL SIMPLE (VIEW ONLY) ---
+        // --- SIMPLE MODAL VIEW (NO EDIT) ---
         function openModal(id) {
             const d = fData.find(x => x.id === id);
+            if(!d) return;
+
+            // Bina senarai perosak
             let pestHTML = "";
             try { 
                let p = typeof d.p === 'string' ? JSON.parse(d.p) : d.p;
-               Object.keys(p).forEach(k => pestHTML += `<tr><td>${k}</td><td>${p[k]}</td></tr>`);
+               Object.keys(p).forEach(k => pestHTML += `<tr><td>${k}</td><td class="text-end fw-bold">${p[k]} Ha</td></tr>`);
             } catch(e){}
             
             document.getElementById('modalBody').innerHTML = `
-                <table class="table table-bordered">
+                <table class="table table-bordered mb-3">
                     <tr><th class="bg-light w-25">Tarikh</th><td>${d.t}</td></tr>
                     <tr><th class="bg-light">Pegawai</th><td>${d.pg}</td></tr>
-                    <tr><th class="bg-light">Negeri/Daerah</th><td>${d.n}, ${d.d}</td></tr>
-                    <tr><th class="bg-light">Lokasi</th><td class="fw-bold">${d.l}</td></tr>
+                    <tr><th class="bg-light">Lokasi</th><td>${d.l}, ${d.d}, ${d.n}</td></tr>
                     <tr><th class="bg-light">Tanaman</th><td>${d.tn}</td></tr>
                     <tr><th class="bg-light">Luas Bancian</th><td>${d.lt} Ha</td></tr>
                     <tr><th class="bg-light">Luas Serangan</th><td class="text-danger fw-bold">${d.ls} Ha</td></tr>
-                    <tr><th class="bg-light">Syor Kawalan</th><td>${d.s}</td></tr>
+                    <tr><th class="bg-light">Syor</th><td class="fst-italic">${d.s}</td></tr>
                 </table>
-                <h6 class="fw-bold mt-3">Perincian Perosak</h6>
-                <table class="table table-sm table-striped"><thead><tr><th>Nama</th><th>Luas (Ha)</th></tr></thead><tbody>${pestHTML || '<tr><td colspan="2">Tiada data</td></tr>'}</tbody></table>
+                <h6 class="fw-bold"><i class="bi bi-bug-fill"></i> Perincian Serangan</h6>
+                <table class="table table-sm table-striped border">
+                    <thead class="table-light"><tr><th>Nama Perosak</th><th class="text-end">Luas</th></tr></thead>
+                    <tbody>${pestHTML || '<tr><td colspan="2" class="text-center">Tiada data terperinci</td></tr>'}</tbody>
+                </table>
             `;
             new bootstrap.Modal(document.getElementById('detailModal')).show();
         }
 
-        // --- FUNGSI ASAL LAIN ---
+        // --- VERIFY & EXPORT ---
         async function loadPend() { 
             const c=document.getElementById('verifyContainer'); c.innerHTML="Loading...";
             const r=await postData('getPending',{state:uProf.state});
             if(!r.rows || !r.rows.length) { c.innerHTML="<div class='col-12 text-center p-5 text-muted'>Tiada Data Baru</div>"; return; }
-            c.innerHTML = r.rows.map(x=> `<div class="col-md-6"><div class="card p-3 mb-3 border shadow-sm">
-                <h6>${x.data[0]} - ${x.data[1]}</h6>
-                <small>${x.data[3]}, ${x.data[4]}</small>
-                <div class="d-flex gap-2 mt-3"><button class="btn btn-sm btn-outline-danger flex-grow-1" onclick="doVer(${x.row},'REJECT')">Tolak</button><button class="btn btn-sm btn-success flex-grow-1" onclick="doVer(${x.row},'APPROVE')">Sahkan</button></div>
-            </div></div>`).join('');
+            c.innerHTML = r.rows.map(x=> `<div class="col-md-6"><div class="verify-card shadow-sm"><div class="p-3">
+                <h6 class="fw-bold">${x.data[0]} - ${x.data[1]}</h6>
+                <small class="d-block text-muted mb-2">${x.data[3]}, ${x.data[4]}</small>
+                <div class="d-flex gap-2"><button class="btn btn-sm btn-outline-danger flex-grow-1" onclick="doVer(${x.row},'REJECT')">Tolak</button><button class="btn btn-sm btn-success flex-grow-1" onclick="doVer(${x.row},'APPROVE')">Sahkan</button></div>
+            </div></div></div>`).join('');
         }
         async function doVer(row, act) { let re=""; if(act==='REJECT') re=prompt("Sebab:"); const r=await postData('submitVerify',{row,act,reason:re,name:uProf.name}); alert(r.message); if(r.success) loadPend(); }
         
@@ -333,11 +339,13 @@
             if(!fData.length) return alert("Tiada Data");
             const wb = new ExcelJS.Workbook();
             const ws = wb.addWorksheet('Data');
-            ws.columns = [{header:'Tarikh',key:'t'},{header:'Lokasi',key:'l'},{header:'Tanaman',key:'tn'},{header:'Luas',key:'lt'},{header:'Serangan',key:'ls'}];
-            fData.forEach(d=>ws.addRow(d));
+            // Header Simple
+            ws.addRow(['Tarikh','Negeri','Daerah','Lokasi','Tanaman','Luas Bancian','Luas Serangan','Syor']);
+            fData.forEach(d=>ws.addRow([d.t,d.n,d.d,d.l,d.tn,d.lt,d.ls,d.s]));
             const buf = await wb.xlsx.writeBuffer();
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf])); a.download = 'Laporan.xlsx'; a.click();
         }
+        async function dlPDF() { alert("Fungsi PDF sedia untuk diaktifkan."); }
     </script>
 </body>
 </html>
