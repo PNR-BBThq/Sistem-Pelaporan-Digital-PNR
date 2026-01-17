@@ -458,10 +458,29 @@
         function updateHotspot(hData) { const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; }
         
         function renTab() { 
-            const st = (pg-1)*pSize; const dt = fData.slice(st, st+pSize); 
-            document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `<tr><td>${d.t}</td><td>${d.n}</td><td>${d.l}</td><td><span class="badge bg-light text-dark border">${d.tn}</span></td><td>${d.lt.toFixed(2)}</td><td class="text-danger fw-bold">${d.ls.toFixed(2)}</td><td class="text-center"><button onclick="openDetailModal(${d.id})" class="btn btn-sm btn-outline-primary shadow-sm" title="Lihat Detail"><i class="bi bi-eye-fill"></i></button></td></tr>`).join('') : '<tr><td colspan="7" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; 
+            const st = (pg-1)*pSize; 
+            const dt = fData.slice(st, st+pSize); 
+            
+            document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `
+                <tr>
+                    <td>${d.t || "-"}</td>
+                    <td>${d.n || "-"}</td>
+                    <td>${d.l || "-"}</td>
+                    <td><span class="badge bg-light text-dark border">${d.tn || "-"}</span></td>
+                    
+                    <td>${(Number(d.lt) || 0).toFixed(2)}</td>
+                    <td class="text-danger fw-bold">${(Number(d.ls) || 0).toFixed(2)}</td>
+                    
+                    <td class="text-center">
+                        <button onclick="openDetailModal(${d.id})" class="btn btn-sm btn-outline-primary shadow-sm" title="Lihat Detail">
+                            <i class="bi bi-eye-fill"></i>
+                        </button>
+                    </td>
+                </tr>`).join('') 
+                : '<tr><td colspan="7" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; 
+                
             document.getElementById('pgInfo').innerText = `Page ${pg}`; 
-        }        
+        }
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
         function fillSel(id, arr) { const el = document.getElementById(id); el.innerHTML='<option value="">Semua</option>'; arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); }
 
