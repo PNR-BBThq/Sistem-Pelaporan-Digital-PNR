@@ -282,20 +282,20 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // --- TETAPAN API ---
+ <script>
+        // --- 1. TETAPAN API & VARIABLE UTAMA ---
         const API_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
         const BANCIAN_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
         const RPW_URL = "https://www.appsheet.com/start/55b088df-3ec1-469a-b5c6-1fca48052906";
         
-      // --- 1. VARIABLE BARU (KEMASKINI) ---
         let mData=[], fData=[], uProf=null, charts={}, map=null, layer=null, pg=1, pSize=10;
         let currentPendingRows = []; 
         let userToken = ""; 
         let currentUserID = "";
-        
-        // PENTING: Variable ini untuk simpan tajuk column Excel (supaya form edit tahu nama column)
-        let globalHeaders = []; 
+        let globalHeaders = []; // Simpan header excel untuk edit mode
+        let currentEditID = null; // Simpan ID yang sedang diedit
 
+        // --- 2. FUNGSI KOMUNIKASI SERVER (POSTDATA) ---
         async function postData(act, load) {
             try {
                 const payload = { 
@@ -311,9 +311,10 @@
                     body: JSON.stringify(payload) 
                 });
                 return JSON.parse(await res.text());
-            } catch(e) { console.error(e); return {success:false, message:"Ralat sambungan."}; }
+            } catch(e) { console.error(e); return {success:false, message:"Ralat sambungan server."}; }
         }
 
+        // --- 3. FUNGSI LOGIN ---
         async function doLogin() {
             const u = document.getElementById('uid').value; const p = document.getElementById('pwd').value; const btn = document.getElementById('btnLogin'); const msg = document.getElementById('loginMsg');
             if(!u || !p) { msg.innerText = "Sila isi ID dan Kata Laluan"; return; }
@@ -332,6 +333,7 @@
             } else { msg.innerText = r.message; btn.disabled = false; btn.innerText = "MASUK"; }
         }
 
+        // --- 4. FUNGSI NAVIGATION (TAB) ---
         function switchTab(t, el) {
             document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active')); if(el) el.classList.add('active');
             document.getElementById('view-main').style.display = t==='main'?'block':'none';
@@ -342,7 +344,7 @@
 
         async function checkPendingCount() { try { const d = await postData('getPending', {state: uProf.state}); const b = document.getElementById('badgePending'); if(d.rows && d.rows.length > 0) { b.innerText = d.rows.length; b.style.display = "inline-block"; } else { b.style.display = "none"; } } catch(e){} }
 
-       // --- 2. FUNGSI INITDASH BARU (WAJIB TUKAR INI) ---
+        // --- 5. FUNGSI UTAMA DASHBOARD (INIT) ---
         async function initDash() {
             const d = await postData('getAnalytics', {state: uProf.state}); 
             if(!d.records) { alert(d.message || "Tiada Data"); return; }
@@ -352,12 +354,8 @@
 
             // PROSES DATA & SIMPAN RAW DATA
             mData = d.records.map((r, i) => {
-                // Pastikan ada ID. Kalau backend tak bagi ID, kita reka guna index.
                 if(!r.id) r.id = i + 2; 
-                
-                // PENTING: Simpan data mentah asal dalam object ini
-                r.rawData = r.data; 
-                
+                r.rawData = r.data; // Simpan data mentah
                 return r;
             }); 
             
@@ -367,13 +365,14 @@
             
             if(uProf.state !== "ALL") { 
                 const s = document.getElementById('selNegeri'); 
-                s.value = uProf.state; 
-                s.disabled = true; 
+                s.value = uProf.state; s.disabled = true; 
             }
             
             if(!map) { map = L.map('map').setView([4.2105, 101.9758], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); }
             runFilter();
         }
+
+        // --- 6. LOGIK FILTER & CALCULATE ---
         function runFilter(source) {
             const selN = document.getElementById('selNegeri').value;
             const selD = document.getElementById('selDaerah').value;
@@ -384,11 +383,7 @@
             const dE = document.getElementById('dE').value;
 
             fData = mData.filter(d => { 
-                let ok = (selN==="" || d.n===selN) && 
-                         (selD==="" || d.d===selD) && 
-                         (selT==="" || d.tn===selT) && 
-                         (selP==="" || (d.p && d.p[selP])) && 
-                         (selK==="" || d.kt===selK); 
+                let ok = (selN==="" || d.n===selN) && (selD==="" || d.d===selD) && (selT==="" || d.tn===selT) && (selP==="" || (d.p && d.p[selP])) && (selK==="" || d.kt===selK); 
                 if(dS && d.t < dS) ok = false; 
                 if(dE && d.t > dE) ok = false; 
                 return ok; 
@@ -409,30 +404,18 @@
                 let newList = [...new Set(validData.flatMap(d=> d.p ? Object.keys(d.p) : []))].sort();
                 updateDropdownOptions('selPerosak', newList, selP);
             }
-
             pg = 1; calcUI();
         }
 
         function updateDropdownOptions(id, list, currentValue) {
-            const el = document.getElementById(id);
-            el.innerHTML = '<option value="">Semua</option>';
-            list.forEach(item => {
-                let opt = document.createElement('option');
-                opt.value = item;
-                opt.innerText = item;
-                el.appendChild(opt);
-            });
+            const el = document.getElementById(id); el.innerHTML = '<option value="">Semua</option>';
+            list.forEach(item => { let opt = document.createElement('option'); opt.value = item; opt.innerText = item; el.appendChild(opt); });
             if(list.includes(currentValue)) el.value = currentValue; else el.value = "";
         }
 
         function resetFilter() {
-            document.getElementById('selNegeri').value = "";
-            document.getElementById('selDaerah').value = "";
-            document.getElementById('selTanaman').value = "";
-            document.getElementById('selPerosak').value = "";
-            document.getElementById('selKategori').value = "";
-            document.getElementById('dS').value = "";
-            document.getElementById('dE').value = "";
+            document.getElementById('selNegeri').value = ""; document.getElementById('selDaerah').value = ""; document.getElementById('selTanaman').value = "";
+            document.getElementById('selPerosak').value = ""; document.getElementById('selKategori').value = ""; document.getElementById('dS').value = ""; document.getElementById('dE').value = "";
             initDash(); 
         }
 
@@ -452,554 +435,145 @@
             updateCharts(pm, km); updateMap(pts); updateHotspot(hData); genSummary(pm, tt, ts); renTab();
         }
 
-        // --- SMART ANALYSIS (HOTSPOT + KETERUKAN 1-5 + ROUNDING) ---
+        // --- 7. SMART SUMMARY & VISUALIZATION ---
         function genSummary(pm, tt, ts) { 
-            const el = document.getElementById('smartSummary'); 
-            if(!el) return; 
-            
-            if(ts === 0 || fData.length === 0) { 
-                el.innerHTML = `<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Tiada rekod serangan dilaporkan setakat ini.</span>`; 
-                return;
-            }
-
-            let champion = fData[0];
-            fData.forEach(d => { if ((d.ls || 0) > (champion.ls || 0)) { champion = d; } });
-
+            const el = document.getElementById('smartSummary'); if(!el) return; 
+            if(ts === 0 || fData.length === 0) { el.innerHTML = `<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Tiada rekod serangan dilaporkan setakat ini.</span>`; return; }
+            let champion = fData[0]; fData.forEach(d => { if ((d.ls || 0) > (champion.ls || 0)) { champion = d; } });
             let locName = champion.l || "Lokasi Tidak Dinyatakan";
             let districtText = `${champion.d}, ${champion.n}`;
             let cropName = champion.tn || "-";
             let attackArea = parseFloat(champion.ls) || 0;
             let totalArea = parseFloat(champion.lt) || 0;
-            let pestName = "-";
-            let maxPestVal = 0;
-
-            if (champion.p && Object.keys(champion.p).length > 0) {
-                Object.entries(champion.p).forEach(([k, v]) => {
-                    let val = parseFloat(v) || 0;
-                    if (val > maxPestVal) { maxPestVal = val; pestName = k; }
-                });
-            } else { pestName = "Tiada Maklumat"; }
-
+            let pestName = "-"; let maxPestVal = 0;
+            if (champion.p && Object.keys(champion.p).length > 0) { Object.entries(champion.p).forEach(([k, v]) => { let val = parseFloat(v) || 0; if (val > maxPestVal) { maxPestVal = val; pestName = k; } }); } else { pestName = "Tiada Maklumat"; }
             let level = parseInt(champion.k) || 0;
             let tafsir = "Tiada"; let color = "text-success"; 
-            if (level === 1) { tafsir = "Sangat Rendah"; color = "text-success"; } 
-            else if (level === 2) { tafsir = "Rendah"; color = "text-info"; } 
-            else if (level === 3) { tafsir = "Sederhana"; color = "text-warning"; } 
-            else if (level === 4) { tafsir = "Teruk"; color = "text-danger"; } 
-            else if (level === 5) { tafsir = "Sangat Teruk"; color = "text-danger fw-bold"; }
-            
+            if (level === 1) { tafsir = "Sangat Rendah"; color = "text-success"; } else if (level === 2) { tafsir = "Rendah"; color = "text-info"; } else if (level === 3) { tafsir = "Sederhana"; color = "text-warning"; } else if (level === 4) { tafsir = "Teruk"; color = "text-danger"; } else if (level === 5) { tafsir = "Sangat Teruk"; color = "text-danger fw-bold"; }
             let percentage = totalArea > 0 ? ((attackArea/totalArea)*100).toFixed(2) : "0.00";
-
-            el.innerHTML = ` 
-            <div style="line-height: 1.6;"> 
-                <i class="bi bi-geo-alt-fill text-danger me-1"></i> Hotspot Tertinggi: <b>${locName}</b> (${districtText}) <br> 
-                <i class="bi bi-flower1 text-success me-1"></i> Tanaman: <b>${cropName}</b> (Perosak Utama: <b>${pestName}</b>)<br> 
-                <i class="bi bi-exclamation-circle-fill text-warning me-1"></i> Luas Serangan: <b>${attackArea.toFixed(2)} Ha</b> daripada ${totalArea.toFixed(2)} Ha (${percentage}%)<br> 
-                <i class="bi bi-bar-chart-fill text-secondary me-1"></i> Tahap Keterukan: <b>T${level} - <span class="${color}">${tafsir}</span></b>
-            </div> `; 
+            el.innerHTML = `<div style="line-height: 1.6;"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Hotspot Tertinggi: <b>${locName}</b> (${districtText}) <br><i class="bi bi-flower1 text-success me-1"></i> Tanaman: <b>${cropName}</b> (Perosak Utama: <b>${pestName}</b>)<br><i class="bi bi-exclamation-circle-fill text-warning me-1"></i> Luas Serangan: <b>${attackArea.toFixed(2)} Ha</b> daripada ${totalArea.toFixed(2)} Ha (${percentage}%)<br><i class="bi bi-bar-chart-fill text-secondary me-1"></i> Tahap Keterukan: <b>T${level} - <span class="${color}">${tafsir}</span></b></div>`; 
         }
-
         function updateCharts(pm, km) { const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); if(charts.b) charts.b.destroy(); charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); if(charts.p) charts.p.destroy(); charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); }
         function updateMap(pts) { if(layer) map.removeLayer(layer); if(pts.length) { layer = L.layerGroup(pts.map(p => L.circleMarker(p, {radius:6, color:'#dc2626', fillOpacity:0.7, stroke:true, weight:1, color:'white', fillColor:'#dc2626'}))).addTo(map); map.fitBounds(L.latLngBounds(pts)); } }
         function updateHotspot(hData) { const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; }
         
         function renTab() { 
-            const st = (pg-1)*pSize; 
-            const dt = fData.slice(st, st+pSize); 
-            
-            document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `
-                <tr>
-                    <td>${d.t}</td>
-                    <td>${d.n}</td>
-                    <td>${d.l}</td>
-                    <td><span class="badge bg-light text-dark border">${d.tn}</span></td>
-                    <td>${d.lt.toFixed(2)}</td>
-                    <td class="text-danger fw-bold">${d.ls.toFixed(2)}</td>
-                    <td class="text-center">
-                        <button onclick="openDetailModal(${d.id})" class="btn btn-sm btn-outline-primary shadow-sm" title="Lihat Detail">
-                            <i class="bi bi-eye-fill"></i>
-                        </button>
-                    </td>
-                </tr>`).join('') 
-                : '<tr><td colspan="7" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; 
-                
+            const st = (pg-1)*pSize; const dt = fData.slice(st, st+pSize); 
+            document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `<tr><td>${d.t}</td><td>${d.n}</td><td>${d.l}</td><td><span class="badge bg-light text-dark border">${d.tn}</span></td><td>${d.lt.toFixed(2)}</td><td class="text-danger fw-bold">${d.ls.toFixed(2)}</td><td class="text-center"><button onclick="openDetailModal(${d.id})" class="btn btn-sm btn-outline-primary shadow-sm" title="Lihat Detail"><i class="bi bi-eye-fill"></i></button></td></tr>`).join('') : '<tr><td colspan="7" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; 
             document.getElementById('pgInfo').innerText = `Page ${pg}`; 
-        }       
+        }        
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
         function fillSel(id, arr) { const el = document.getElementById(id); el.innerHTML='<option value="">Semua</option>'; arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); }
 
-        // --- PENGESAHAN DATA ---
+        // --- 8. FUNGSI PENGESAHAN (VERIFY) ---
         async function loadPend() {
             const container = document.getElementById('verifyContainer');
             container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
-            
             try {
                 const d = await postData('getPending', {state: uProf.state});
                 currentPendingRows = d.rows || []; 
-
-                if(!d.rows || !d.rows.length) {
-                    container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>';
-                    return;
-                }
-
+                if(!d.rows || !d.rows.length) { container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>'; return; }
                 container.innerHTML = "";
-                const cleanImageLink = (raw) => {
-                    if (!raw) return [];
-                    let str = String(raw).trim();
-                    if(str.length < 5) return [];
-                    str = str.replace(/[\[\]"']/g, '');
-                    let links = str.split(',');
-                    return links.map(l => l.trim()).filter(l => l.startsWith('http'));
-                }
-
+                const cleanImageLink = (raw) => { if (!raw) return []; let str = String(raw).trim(); if(str.length < 5) return []; str = str.replace(/[\[\]"']/g, ''); let links = str.split(','); return links.map(l => l.trim()).filter(l => l.startsWith('http')); }
                 d.rows.forEach((r, idx) => {
                     const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }
-
                     const tarikh = getVal('Tarikh') || getVal('Date') || r.data[0];
                     const nama = getVal('Nama') || getVal('Pegawai') || r.data[1];
-                    const email = getVal('Email') || "-"; 
-
-                    const negeri = getVal('Negeri') || "-";
-                    const daerah = getVal('Daerah') || "-";
-                    const lokasi = getVal('Lokasi') || getVal('Kebun') || "-";
-                    const koordinat = getVal('Koordinat') || "-";
-                    const varieti = getVal('Varieti') || "-";
-                    const luasBertanam = getVal('Luas Bertanam') || getVal('Luas Bancian') || "-";
-                    const syor = getVal('Syor') || "-";
-
-                    let colT = d.headers.findIndex(h => h.match(/jenis tanaman|nama tanaman/i));
-                    if(colT === -1) colT = d.headers.findIndex(h => h.toLowerCase().includes('tanaman') && !h.toLowerCase().includes('kategori'));
-                    const tanaman = (colT > -1) ? r.data[colT] : "-";
-
+                    const email = getVal('Email') || "-"; const negeri = getVal('Negeri') || "-"; const daerah = getVal('Daerah') || "-"; const lokasi = getVal('Lokasi') || getVal('Kebun') || "-"; const koordinat = getVal('Koordinat') || "-"; const varieti = getVal('Varieti') || "-"; const luasBertanam = getVal('Luas Bertanam') || getVal('Luas Bancian') || "-"; const syor = getVal('Syor') || "-";
+                    let colT = d.headers.findIndex(h => h.match(/jenis tanaman|nama tanaman/i)); if(colT === -1) colT = d.headers.findIndex(h => h.toLowerCase().includes('tanaman') && !h.toLowerCase().includes('kategori')); const tanaman = (colT > -1) ? r.data[colT] : "-";
                     let specialCols = ['status pengesahan', 'log semakan', 'luas serangan', 'peratus', 'keterukan', 'gambar', 'image', 'tarikh', 'date', 'nama', 'pegawai', 'email', 'negeri', 'daerah', 'lokasi', 'kebun', 'koordinat', 'tanaman', 'varieti', 'luas bertanam', 'luas bancian', 'syor', 'senarai perosak', 'perosak', 'senarai'];
-                    let detailHTML = "";
-                    let pestTableHTML = "";
-                    let syorHTML = "";
-                    let imgHTML = "";
-
-                    d.headers.forEach((h, i) => {
-                        let headerName = h;
-                        let val = r.data[i];
-                        if(specialCols.some(k => headerName.toLowerCase().includes(k))) return;
-                        detailHTML += `<div class="v-row"><div class="v-label">${headerName}:</div><div class="v-val">${val}</div></div>`;
-                    });
-
-                    let rawLuas = getVal('Luas Serangan');
-                    let rawPct = getVal('Peratus');
-                    let rawSev = getVal('Keterukan');
-                    try {
-                        const luasObj = JSON.parse(rawLuas || "{}");
-                        const pctObj = JSON.parse(rawPct || "{}");
-                        const sevObj = JSON.parse(rawSev || "{}");
-                        if(Object.keys(luasObj).length > 0) {
-                            pestTableHTML = `<div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Data Serangan</div>
-                            <table class="mini-table"><thead><tr>
-                                <th>Nama Perosak</th>
-                                <th class="center">Luas Serangan (Ha)</th>
-                                <th class="center">Peratus Serangan</th>
-                                <th class="center">Keterukan Serangan</th>
-                            </tr></thead><tbody>`;
-                            Object.keys(luasObj).forEach(key => {
-                                pestTableHTML += `<tr><td>${key}</td><td class="center fw-bold">${luasObj[key]}</td><td class="center">${pctObj[key]||0}%</td><td class="center"><span class="badge bg-secondary">T${sevObj[key]||0}</span></td></tr>`;
-                            });
-                            pestTableHTML += `</tbody></table>`;
-                        }
-                    } catch(e) {}
-
+                    let detailHTML = ""; let pestTableHTML = ""; let syorHTML = ""; let imgHTML = "";
+                    d.headers.forEach((h, i) => { let headerName = h; let val = r.data[i]; if(specialCols.some(k => headerName.toLowerCase().includes(k))) return; detailHTML += `<div class="v-row"><div class="v-label">${headerName}:</div><div class="v-val">${val}</div></div>`; });
+                    let rawLuas = getVal('Luas Serangan'); let rawPct = getVal('Peratus'); let rawSev = getVal('Keterukan');
+                    try { const luasObj = JSON.parse(rawLuas || "{}"); const pctObj = JSON.parse(rawPct || "{}"); const sevObj = JSON.parse(rawSev || "{}"); if(Object.keys(luasObj).length > 0) { pestTableHTML = `<div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Data Serangan</div><table class="mini-table"><thead><tr><th>Nama Perosak</th><th class="center">Luas Serangan (Ha)</th><th class="center">Peratus Serangan</th><th class="center">Keterukan Serangan</th></tr></thead><tbody>`; Object.keys(luasObj).forEach(key => { pestTableHTML += `<tr><td>${key}</td><td class="center fw-bold">${luasObj[key]}</td><td class="center">${pctObj[key]||0}%</td><td class="center"><span class="badge bg-secondary">T${sevObj[key]||0}</span></td></tr>`; }); pestTableHTML += `</tbody></table>`; } } catch(e) {}
                     if(syor !== "-" && syor !== "") { syorHTML = `<div class="alert alert-warning border p-2 small mb-3"><i class="bi bi-lightbulb-fill me-1"></i> <strong>Syor Kawalan:</strong> ${syor}</div>`; }
-
-                    let imgIdx = d.headers.findIndex(h => h.match(/gambar|image|img|foto|link/i));
-                    let rawImg = (imgIdx > -1) ? r.data[imgIdx] : "";
-                    let cleanLinks = cleanImageLink(rawImg);
-                    if (cleanLinks.length > 0) {
-                         imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Lampiran Gambar</div><div class="mb-2">`;
-                         cleanLinks.forEach((lnk, i) => { imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Gambar ${i+1}</a>`; });
-                         imgHTML += `</div>`;
-                    } else { imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Lampiran Gambar</div><small class="text-muted">Tiada gambar dilampirkan.</small>`; }
-
-                    let cardHTML = `
-                    <div class="col-md-6 col-lg-4">
-                        <div class="verify-card">
-                            <div class="verify-header">
-                                <div>
-                                    <div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${tarikh}</div>
-                                    <div class="fw-bold text-dark text-uppercase">${nama}</div>
-                                    <div class="small text-muted fst-italic">${email}</div>
-                                </div>
-                                <span class="badge bg-warning text-dark border">BARU</span>
-                            </div>
-                            <div class="verify-body">
-                                <div class="section-title"><i class="bi bi-info-circle-fill"></i> Butiran Laporan</div>
-                                <div class="v-row"><div class="v-label">Negeri:</div><div class="v-val">${negeri}</div></div>
-                                <div class="v-row"><div class="v-label">Daerah:</div><div class="v-val">${daerah}</div></div>
-                                <div class="v-row"><div class="v-label">Lokasi:</div><div class="v-val fw-bold text-dark">${lokasi}</div></div>
-                                <div class="v-row"><div class="v-label">Koordinat:</div><div class="v-val small font-monospace">${koordinat}</div></div>
-                                <div class="v-row"><div class="v-label">Tanaman:</div><div class="v-val fw-bold text-success">${tanaman}</div></div>
-                                <div class="v-row"><div class="v-label">Varieti:</div><div class="v-val">${varieti}</div></div>
-                                <div class="v-row"><div class="v-label">Luas Bertanam:</div><div class="v-val">${luasBertanam} Ha</div></div>
-                                ${detailHTML}
-                                ${pestTableHTML}
-                                ${syorHTML}
-                                ${imgHTML}
-                            </div>
-                            <div class="verify-footer">
-                                <button class="btn btn-outline-danger flex-grow-1" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-circle me-1"></i> Tolak</button>
-                                <button class="btn btn-success flex-grow-1" onclick="subVer(${r.row},'APPROVE')"><i class="bi bi-check-circle-fill me-1"></i> Sahkan</button>
-                            </div>
-                        </div>
-                    </div>`;
+                    let imgIdx = d.headers.findIndex(h => h.match(/gambar|image|img|foto|link/i)); let rawImg = (imgIdx > -1) ? r.data[imgIdx] : ""; let cleanLinks = cleanImageLink(rawImg);
+                    if (cleanLinks.length > 0) { imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Lampiran Gambar</div><div class="mb-2">`; cleanLinks.forEach((lnk, i) => { imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Gambar ${i+1}</a>`; }); imgHTML += `</div>`; } else { imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Lampiran Gambar</div><small class="text-muted">Tiada gambar dilampirkan.</small>`; }
+                    let cardHTML = `<div class="col-md-6 col-lg-4"><div class="verify-card"><div class="verify-header"><div><div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${tarikh}</div><div class="fw-bold text-dark text-uppercase">${nama}</div><div class="small text-muted fst-italic">${email}</div></div><span class="badge bg-warning text-dark border">BARU</span></div><div class="verify-body"><div class="section-title"><i class="bi bi-info-circle-fill"></i> Butiran Laporan</div><div class="v-row"><div class="v-label">Negeri:</div><div class="v-val">${negeri}</div></div><div class="v-row"><div class="v-label">Daerah:</div><div class="v-val">${daerah}</div></div><div class="v-row"><div class="v-label">Lokasi:</div><div class="v-val fw-bold text-dark">${lokasi}</div></div><div class="v-row"><div class="v-label">Koordinat:</div><div class="v-val small font-monospace">${koordinat}</div></div><div class="v-row"><div class="v-label">Tanaman:</div><div class="v-val fw-bold text-success">${tanaman}</div></div><div class="v-row"><div class="v-label">Varieti:</div><div class="v-val">${varieti}</div></div><div class="v-row"><div class="v-label">Luas Bertanam:</div><div class="v-val">${luasBertanam} Ha</div></div>${detailHTML}${pestTableHTML}${syorHTML}${imgHTML}</div><div class="verify-footer"><button class="btn btn-outline-danger flex-grow-1" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-circle me-1"></i> Tolak</button><button class="btn btn-success flex-grow-1" onclick="subVer(${r.row},'APPROVE')"><i class="bi bi-check-circle-fill me-1"></i> Sahkan</button></div></div></div>`;
                     container.innerHTML += cardHTML;
                 });
             } catch(e) { console.error(e); container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; }
         }
-
         async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
+        async function approveAll() { if(!currentPendingRows || currentPendingRows.length === 0) { alert("Tiada data untuk disahkan."); return; } if(!confirm("⚠️ AMARAN: Anda pasti mahu mengesahkan SEMUA " + currentPendingRows.length + " rekod ini sekaligus?")) return; const container = document.getElementById('verifyContainer'); container.innerHTML = `<div class="col-12 text-center p-5 bg-white rounded shadow-sm"><h4 class="mb-3 text-primary"><i class="bi bi-gear-wide-connected fa-spin"></i> Sedang Memproses...</h4><p class="text-muted mb-2">Sila tunggu sebentar. Jangan tutup tab ini.</p><div class="progress" style="height: 25px;"><div id="progBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%">0%</div></div><div id="progText" class="mt-2 fw-bold">0 / ${currentPendingRows.length}</div></div>`; let count = 0; const total = currentPendingRows.length; for (const r of currentPendingRows) { try { await postData('submitVerify', {row: r.row, act: 'APPROVE', reason: '', name: uProf.name}); } catch(e) { console.error("Gagal row:", r.row); } count++; const pct = Math.round((count / total) * 100); document.getElementById('progBar').style.width = pct + "%"; document.getElementById('progBar').innerText = pct + "%"; document.getElementById('progText').innerText = `${count} / ${total} Selesai`; } alert("✅ Selesai! Semua data telah disahkan."); loadPend(); initDash(); checkPendingCount(); }
 
-        async function approveAll() {
-            if(!currentPendingRows || currentPendingRows.length === 0) { alert("Tiada data untuk disahkan."); return; }
-            if(!confirm("⚠️ AMARAN: Anda pasti mahu mengesahkan SEMUA " + currentPendingRows.length + " rekod ini sekaligus?")) return;
-
-            const container = document.getElementById('verifyContainer');
-            container.innerHTML = `
-                <div class="col-12 text-center p-5 bg-white rounded shadow-sm">
-                    <h4 class="mb-3 text-primary"><i class="bi bi-gear-wide-connected fa-spin"></i> Sedang Memproses...</h4>
-                    <p class="text-muted mb-2">Sila tunggu sebentar. Jangan tutup tab ini.</p>
-                    <div class="progress" style="height: 25px;">
-                        <div id="progBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%">0%</div>
-                    </div>
-                    <div id="progText" class="mt-2 fw-bold">0 / ${currentPendingRows.length}</div>
-                </div>`;
-
-            let count = 0;
-            const total = currentPendingRows.length;
-
-            for (const r of currentPendingRows) {
-                try {
-                    await postData('submitVerify', {row: r.row, act: 'APPROVE', reason: '', name: uProf.name});
-                } catch(e) { console.error("Gagal row:", r.row); }
-                count++;
-                const pct = Math.round((count / total) * 100);
-                document.getElementById('progBar').style.width = pct + "%";
-                document.getElementById('progBar').innerText = pct + "%";
-                document.getElementById('progText').innerText = `${count} / ${total} Selesai`;
-            }
-
-            alert("✅ Selesai! Semua data telah disahkan.");
-            loadPend(); 
-            initDash();
-            checkPendingCount(); 
-        }
-
+        // --- 9. FUNGSI DOWNLOAD & EXPORT ---
         async function downloadDualExcel() { 
             if (!fData.length) { alert("Tiada data!"); return; } 
-            
-            const workbook = new ExcelJS.Workbook(); 
-            const worksheet = workbook.addWorksheet('Laporan Penuh'); 
-            
-            worksheet.columns = [
-                { header: 'ID', key: 'id', width: 6 },
-                { header: 'Tarikh', key: 't', width: 12 },
-                { header: 'Nama Pegawai', key: 'pg', width: 20 }, 
-                { header: 'Negeri', key: 'n', width: 15 }, 
-                { header: 'Daerah', key: 'd', width: 15 }, 
-                { header: 'Lokasi', key: 'l', width: 22 }, 
-                { header: 'Koordinat', key: 'c', width: 22 }, 
-                { header: 'Kategori', key: 'kt', width: 18 }, 
-                { header: 'Tanaman', key: 'tn', width: 18 }, 
-                { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, 
-                { header: 'Syor Kawalan', key: 's', width: 25 }, 
-                { header: 'Perosak', key: 'p', width: 20 }, 
-                { header: 'Keterukan', key: 'k', width: 10 }, 
-                { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, 
-                { header: '% Serangan', key: 'pct', width: 15 }
-            ]; 
-            
-            worksheet.getRow(1).font = { bold: true }; 
-            worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; 
-            
+            const workbook = new ExcelJS.Workbook(); const worksheet = workbook.addWorksheet('Laporan Penuh'); 
+            worksheet.columns = [ { header: 'ID', key: 'id', width: 6 }, { header: 'Tarikh', key: 't', width: 12 }, { header: 'Nama Pegawai', key: 'pg', width: 20 }, { header: 'Negeri', key: 'n', width: 15 }, { header: 'Daerah', key: 'd', width: 15 }, { header: 'Lokasi', key: 'l', width: 22 }, { header: 'Koordinat', key: 'c', width: 22 }, { header: 'Kategori', key: 'kt', width: 18 }, { header: 'Tanaman', key: 'tn', width: 18 }, { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, { header: 'Syor Kawalan', key: 's', width: 25 }, { header: 'Perosak', key: 'p', width: 20 }, { header: 'Keterukan', key: 'k', width: 10 }, { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, { header: '% Serangan', key: 'pct', width: 15 } ]; 
+            worksheet.getRow(1).font = { bold: true }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; 
             let rowIndex = 2; 
-            
             fData.forEach(d => { 
-                let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]]; 
-                let startRow = rowIndex; 
-                let luasTanam = parseFloat(d.lt) || 0; 
-                
+                let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]]; let startRow = rowIndex; let luasTanam = parseFloat(d.lt) || 0; 
                 pestEntries.forEach(([pName, pArea]) => { 
-                    let luasSerang = parseFloat(pArea) || 0; 
-                    let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%"; 
+                    let luasSerang = parseFloat(pArea) || 0; let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%"; 
                     const row = worksheet.getRow(rowIndex); 
-                    
-                    row.values = { 
-                        id: d.id, 
-                        t: d.t, 
-                        pg: d.pg || "-",
-                        n: d.n, 
-                        d: d.d, 
-                        l: d.l, 
-                        c: d.c || "-", 
-                        kt: d.kt || "-", 
-                        tn: d.tn, 
-                        lt: luasTanam, 
-                        s: d.s, 
-                        p: pName, 
-                        k: d.k, 
-                        ls: luasSerang, 
-                        pct: pctVal 
-                    }; 
-                    
-                    row.eachCell({ includeEmpty: true }, (cell) => { 
-                        cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; 
-                        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; 
-                    }); 
-                    rowIndex++; 
+                    row.values = { id: d.id, t: d.t, pg: d.pg || "-", n: d.n, d: d.d, l: d.l, c: d.c || "-", kt: d.kt || "-", tn: d.tn, lt: luasTanam, s: d.s, p: pName, k: d.k, ls: luasSerang, pct: pctVal }; 
+                    row.eachCell({ includeEmpty: true }, (cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; }); rowIndex++; 
                 }); 
-                
-                if (pestEntries.length > 1) { 
-                    for (let c = 1; c <= 11; c++) { 
-                        worksheet.mergeCells(startRow, c, rowIndex - 1, c); 
-                    } 
-                } 
+                if (pestEntries.length > 1) { for (let c = 1; c <= 11; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); } } 
             }); 
-            
-            const buffer = await workbook.xlsx.writeBuffer(); 
-            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); 
-            const url = window.URL.createObjectURL(blob); 
-            const anchor = document.createElement('a'); 
-            anchor.href = url; 
-            anchor.download = 'PNR_Laporan_Lengkap.xlsx'; 
-            anchor.click(); 
-            window.URL.revokeObjectURL(url); 
+            const buffer = await workbook.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = window.URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'PNR_Laporan_Lengkap.xlsx'; anchor.click(); window.URL.revokeObjectURL(url); 
         }        
-
         async function dlPDF() { const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = "Jana..."; btn.disabled = true; let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length-1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length-1])}`; } try { const m = { user: uProf.name, negeri: document.getElementById('selNegeri').value || "Semua", dates: dateLabel }; const r = await postData('genPDF', {data: fData, meta: m}); if(r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } } catch(e) { console.error(e); } btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false; }
 
-        // --- LOGIK MODAL: VIEW, EDIT, SAVE, DELETE ---
-        let currentEditID = null;
-
-        // --- LOGIK MODAL: VIEW (REPORT CARD STYLE) & EDIT (ALL COLUMNS) ---
-    let currentEditID = null;
-
-    function openDetailModal(id) {
-        const d = fData.find(x => x.id === id);
-        if(!d) return;
-        currentEditID = id;
-
-        const modalBody = document.getElementById('modalBody');
-        const modalFooter = document.getElementById('modalFooter');
-        
-        // --- BAHAGIAN 1: VIEW MODE (DESIGN REPORT CARD) ---
-        // Kita guna logik sama macam loadPend() untuk paparkan data
-        
-        // Helper untuk tarik value berdasarkan nama header (Case Insensitive)
-        const getVal = (key) => { 
-            const i = globalHeaders.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); 
-            return i > -1 ? d.rawData[i] : "-"; 
-        }
-
-        const tarikh = getVal('Tarikh') || getVal('Date');
-        const nama = getVal('Nama') || getVal('Pegawai');
-        const email = getVal('Email'); 
-        const lokasi = getVal('Lokasi') || getVal('Kebun');
-        
-        // Proses Gambar
-        let imgIdx = globalHeaders.findIndex(h => h.match(/gambar|image|img|foto|link/i));
-        let rawImg = (imgIdx > -1) ? d.rawData[imgIdx] : "";
-        let imgHTML = "";
-        
-        // Fungsi cuci link gambar
-        const cleanLinks = (raw) => {
-            if (!raw) return [];
-            let str = String(raw).replace(/[\[\]"']/g, '');
-            return str.split(',').map(l => l.trim()).filter(l => l.startsWith('http'));
-        }
-        
-        let links = cleanLinks(rawImg);
-        if(links.length > 0) {
-            imgHTML = `<div class="section-title mt-3"><i class="bi bi-images"></i> Lampiran Gambar</div><div class="mb-2">`;
-            links.forEach((l, i) => imgHTML += `<a href="${l}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Foto ${i+1}</a>`);
-            imgHTML += `</div>`;
-        }
-
-        // Proses Data Table (Serangan)
-        let pestTableHTML = "";
-        try {
-            const luasObj = JSON.parse(getVal('Luas Serangan') || "{}");
-            const pctObj = JSON.parse(getVal('Peratus') || "{}");
-            const sevObj = JSON.parse(getVal('Keterukan') || "{}");
+        // --- 10. LOGIK MODAL: VIEW (REPORT CARD) & EDIT (DYNAMIC FORM) ---
+        function openDetailModal(id) {
+            const d = fData.find(x => x.id === id); if(!d) return;
+            currentEditID = id;
+            const modalBody = document.getElementById('modalBody'); const modalFooter = document.getElementById('modalFooter');
             
-            if(Object.keys(luasObj).length > 0) {
-                pestTableHTML = `<div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Perincian Serangan</div>
-                <table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas (Ha)</th><th class="center">%</th><th class="center">Tahap</th></tr></thead><tbody>`;
-                Object.keys(luasObj).forEach(k => {
-                    pestTableHTML += `<tr><td>${k}</td><td class="center fw-bold">${luasObj[k]}</td><td class="center">${pctObj[k]||0}%</td><td class="center"><span class="badge bg-secondary">T${sevObj[k]||0}</span></td></tr>`;
-                });
-                pestTableHTML += `</tbody></table>`;
+            // VIEW MODE (REPORT CARD)
+            const getVal = (key) => { const i = globalHeaders.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? d.rawData[i] : "-"; }
+            const tarikh = getVal('Tarikh') || getVal('Date'); const nama = getVal('Nama') || getVal('Pegawai'); const email = getVal('Email'); const lokasi = getVal('Lokasi') || getVal('Kebun');
+            let imgIdx = globalHeaders.findIndex(h => h.match(/gambar|image|img|foto|link/i)); let rawImg = (imgIdx > -1) ? d.rawData[imgIdx] : ""; let imgHTML = "";
+            const cleanLinks = (raw) => { if (!raw) return []; let str = String(raw).replace(/[\[\]"']/g, ''); return str.split(',').map(l => l.trim()).filter(l => l.startsWith('http')); }
+            let links = cleanLinks(rawImg); if(links.length > 0) { imgHTML = `<div class="section-title mt-3"><i class="bi bi-images"></i> Lampiran Gambar</div><div class="mb-2">`; links.forEach((l, i) => imgHTML += `<a href="${l}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Foto ${i+1}</a>`); imgHTML += `</div>`; }
+            let pestTableHTML = ""; try { const luasObj = JSON.parse(getVal('Luas Serangan') || "{}"); const pctObj = JSON.parse(getVal('Peratus') || "{}"); const sevObj = JSON.parse(getVal('Keterukan') || "{}"); if(Object.keys(luasObj).length > 0) { pestTableHTML = `<div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Perincian Serangan</div><table class="mini-table"><thead><tr><th>Perosak</th><th class="center">Luas (Ha)</th><th class="center">%</th><th class="center">Tahap</th></tr></thead><tbody>`; Object.keys(luasObj).forEach(k => { pestTableHTML += `<tr><td>${k}</td><td class="center fw-bold">${luasObj[k]}</td><td class="center">${pctObj[k]||0}%</td><td class="center"><span class="badge bg-secondary">T${sevObj[k]||0}</span></td></tr>`; }); pestTableHTML += `</tbody></table>`; } } catch(e) {}
+            let detailsHTML = ""; let ignoreCols = ['gambar','image','log','id','status','luas serangan','peratus','keterukan','tarikh','nama','pegawai','email','lokasi','kebun'];
+            globalHeaders.forEach((h, i) => { if(ignoreCols.some(x => h.toLowerCase().includes(x))) return; detailsHTML += `<div class="v-row"><div class="v-label">${h}:</div><div class="v-val">${d.rawData[i]}</div></div>`; });
+            let viewHtml = `<div id="viewMode"><div class="verify-card shadow-none border"><div class="verify-header"><div><div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${tarikh}</div><div class="fw-bold text-dark text-uppercase">${nama}</div><div class="small text-muted fst-italic">${email}</div></div><span class="badge bg-light text-dark border">READ ONLY</span></div><div class="verify-body"><div class="v-row"><div class="v-label">Lokasi:</div><div class="v-val fw-bold text-dark fs-6">${lokasi}</div></div>${detailsHTML}${pestTableHTML}${imgHTML}</div></div></div>`;
+
+            // EDIT MODE (DYNAMIC FORM)
+            let formFields = ""; const forbidden = ['LOG SEMAKAN', 'LOG', 'TIMESTAMP', 'ROW_ID', 'STATUS PENGESAHAN'];
+            globalHeaders.forEach((h, i) => {
+                if(forbidden.some(x => h.toUpperCase().includes(x))) return;
+                let val = d.rawData[i]; let inputType = "text"; let headerUp = h.toUpperCase();
+                if(headerUp.includes('TARIKH') || headerUp.includes('DATE')) { inputType = "date"; } else if(headerUp.includes('LUAS') || headerUp.includes('PERATUS') || headerUp.includes('PERCENT')) { inputType = "number"; }
+                if(headerUp.includes('SYOR') || headerUp.includes('CATATAN') || headerUp.includes('ULASAN')) { formFields += `<div class="mb-3"><label class="form-label fw-bold small text-muted text-uppercase">${h}</label><textarea class="form-control" name="${h}" rows="3">${val}</textarea></div>`; } 
+                else { let step = inputType === "number" ? 'step="0.01"' : ''; formFields += `<div class="mb-2"><label class="form-label fw-bold small text-muted text-uppercase">${h}</label><input type="${inputType}" ${step} class="form-control" name="${h}" value="${val}"></div>`; }
+            });
+            let editHtml = `<div id="editMode" style="display:none"><div class="alert alert-warning small mb-3"><i class="bi bi-pencil-fill me-2"></i><strong>Mode Suntingan:</strong> Anda boleh menyunting semua maklumat data mentah. Sila berhati-hati.<br>Log Semakan tidak boleh disunting demi integriti data.</div><form id="formEdit"><div class="row">${formFields}</div></form></div>`;
+            modalBody.innerHTML = viewHtml + editHtml;
+
+            // FOOTER
+            let footerHtml = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>`;
+            if (typeof uProf !== 'undefined' && (uProf.role === "ADMIN" || uProf.role === "PENYELIA")) {
+                footerHtml = `<div id="btnGroupDefault" class="d-flex gap-2 w-100 justify-content-end"><button onclick="confirmDelete(${d.id})" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Padam</button><button onclick="enableEditMode()" class="btn btn-primary"><i class="bi bi-pencil-square"></i> Kemaskini Data</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button></div><div id="btnGroupEdit" class="d-flex gap-2 w-100 justify-content-end" style="display:none"><button onclick="saveEdit(${d.id})" class="btn btn-success fw-bold"><i class="bi bi-check-lg"></i> SIMPAN PERUBAHAN</button><button onclick="cancelEdit()" class="btn btn-light border">Batal</button></div>`;
             }
-        } catch(e) {}
-
-        // Loop SEMUA Column lain untuk paparan senarai
-        let detailsHTML = "";
-        let ignoreCols = ['gambar','image','log','id','status','luas serangan','peratus','keterukan','tarikh','nama','pegawai','email','lokasi','kebun'];
-        
-        globalHeaders.forEach((h, i) => {
-            // Skip column yang dah dipaparkan di header atau special
-            if(ignoreCols.some(x => h.toLowerCase().includes(x))) return;
-            detailsHTML += `<div class="v-row"><div class="v-label">${h}:</div><div class="v-val">${d.rawData[i]}</div></div>`;
-        });
-
-        // HTML VIEW MODE
-        let viewHtml = `
-            <div id="viewMode">
-                <div class="verify-card shadow-none border">
-                    <div class="verify-header">
-                        <div>
-                            <div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${tarikh}</div>
-                            <div class="fw-bold text-dark text-uppercase">${nama}</div>
-                            <div class="small text-muted fst-italic">${email}</div>
-                        </div>
-                        <span class="badge bg-light text-dark border">READ ONLY</span>
-                    </div>
-                    <div class="verify-body">
-                        <div class="v-row"><div class="v-label">Lokasi:</div><div class="v-val fw-bold text-dark fs-6">${lokasi}</div></div>
-                        ${detailsHTML}
-                        ${pestTableHTML}
-                        ${imgHTML}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // --- BAHAGIAN 2: EDIT MODE (AUTO GENERATE ALL COLUMNS) ---
-        let formFields = "";
-        
-        // Column yang DILARANG edit
-        const forbidden = ['LOG SEMAKAN', 'LOG', 'TIMESTAMP', 'ROW_ID', 'STATUS PENGESAHAN'];
-
-        globalHeaders.forEach((h, i) => {
-            // 1. Skip column larangan
-            if(forbidden.some(x => h.toUpperCase().includes(x))) return;
-
-            let val = d.rawData[i];
-            let inputType = "text";
-            let headerUp = h.toUpperCase();
-
-            // 2. Tentukan jenis input biar user senang
-            if(headerUp.includes('TARIKH') || headerUp.includes('DATE')) {
-                // Cuba format ke YYYY-MM-DD untuk input date HTML
-                inputType = "date";
-                // Kadang format date excel pelik, kalau string biasa biar text je
-            } 
-            else if(headerUp.includes('LUAS') || headerUp.includes('PERATUS') || headerUp.includes('PERCENT')) {
-                inputType = "number";
-            }
-
-            // 3. Render Input
-            // PENTING: name="${h}" mestilah SAMA dengan header Excel supaya Backend jumpa
-            if(headerUp.includes('SYOR') || headerUp.includes('CATATAN') || headerUp.includes('ULASAN')) {
-                formFields += `
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted text-uppercase">${h}</label>
-                        <textarea class="form-control" name="${h}" rows="3">${val}</textarea>
-                    </div>`;
-            } else {
-                let step = inputType === "number" ? 'step="0.01"' : '';
-                formFields += `
-                    <div class="mb-2">
-                        <label class="form-label fw-bold small text-muted text-uppercase">${h}</label>
-                        <input type="${inputType}" ${step} class="form-control" name="${h}" value="${val}">
-                    </div>`;
-            }
-        });
-
-        let editHtml = `
-            <div id="editMode" style="display:none">
-                <div class="alert alert-warning small mb-3">
-                    <i class="bi bi-pencil-fill me-2"></i><strong>Mode Suntingan:</strong> Anda boleh menyunting semua maklumat data mentah. Sila berhati-hati.
-                    <br>Log Semakan tidak boleh disunting demi integriti data.
-                </div>
-                <form id="formEdit">
-                    <div class="row">
-                        ${formFields} </div>
-                </form>
-            </div>
-        `;
-        
-        modalBody.innerHTML = viewHtml + editHtml;
-
-        // --- BAHAGIAN 3: FOOTER BUTTONS ---
-        let footerHtml = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>`;
-        
-        if (typeof uProf !== 'undefined' && (uProf.role === "ADMIN" || uProf.role === "PENYELIA")) {
-            footerHtml = `
-                <div id="btnGroupDefault" class="d-flex gap-2 w-100 justify-content-end">
-                    <button onclick="confirmDelete(${d.id})" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Padam</button>
-                    <button onclick="enableEditMode()" class="btn btn-primary"><i class="bi bi-pencil-square"></i> Kemaskini Data</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                </div>
-                <div id="btnGroupEdit" class="d-flex gap-2 w-100 justify-content-end" style="display:none">
-                    <button onclick="saveEdit(${d.id})" class="btn btn-success fw-bold"><i class="bi bi-check-lg"></i> SIMPAN PERUBAHAN</button>
-                    <button onclick="cancelEdit()" class="btn btn-light border">Batal</button>
-                </div>
-            `;
+            modalFooter.innerHTML = footerHtml;
+            new bootstrap.Modal(document.getElementById('detailModal')).show();
         }
 
-        modalFooter.innerHTML = footerHtml;
-        new bootstrap.Modal(document.getElementById('detailModal')).show();
-    }
-        function enableEditMode() {
-            document.getElementById('viewMode').style.display = 'none';
-            document.getElementById('editMode').style.display = 'block';
-            document.getElementById('btnGroupDefault').style.display = 'none';
-            document.getElementById('btnGroupEdit').style.display = 'flex';
-        }
-
-        function cancelEdit() {
-            document.getElementById('viewMode').style.display = 'block';
-            document.getElementById('editMode').style.display = 'none';
-            document.getElementById('btnGroupDefault').style.display = 'flex';
-            document.getElementById('btnGroupEdit').style.display = 'none';
-        }
-
+        function enableEditMode() { document.getElementById('viewMode').style.display = 'none'; document.getElementById('editMode').style.display = 'block'; document.getElementById('btnGroupDefault').style.display = 'none'; document.getElementById('btnGroupEdit').style.display = 'flex'; }
+        function cancelEdit() { document.getElementById('viewMode').style.display = 'block'; document.getElementById('editMode').style.display = 'none'; document.getElementById('btnGroupDefault').style.display = 'flex'; document.getElementById('btnGroupEdit').style.display = 'none'; }
+        
         async function saveEdit(id) {
-            const form = document.getElementById('formEdit');
-            const inputs = form.querySelectorAll('input, textarea');
-            let updates = {};
-            
+            const form = document.getElementById('formEdit'); const inputs = form.querySelectorAll('input, textarea'); let updates = {};
             inputs.forEach(input => { updates[input.name] = input.value; });
-
-            const btn = document.querySelector('#btnGroupEdit .btn-success');
-            btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Menyimpan...`;
-            btn.disabled = true;
-
+            const btn = document.querySelector('#btnGroupEdit .btn-success'); btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Menyimpan...`; btn.disabled = true;
             const res = await postData('updateData', { id: id, updates: updates });
-            
             alert(res.message);
-            if (res.success) {
-                bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
-                initDash(); 
-            } else {
-                btn.innerHTML = `<i class="bi bi-check-lg"></i> SIMPAN`;
-                btn.disabled = false;
-            }
+            if (res.success) { bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide(); initDash(); } else { btn.innerHTML = `<i class="bi bi-check-lg"></i> SIMPAN PERUBAHAN`; btn.disabled = false; }
         }
 
         async function confirmDelete(id) {
             if(!confirm("⚠️ AMARAN:\n\nAdakah anda pasti mahu memadam rekod ini secara kekal?")) return;
-            
-            const btn = document.querySelector('#btnGroupDefault .btn-outline-danger');
-            btn.innerHTML = "Memadam...";
-            btn.disabled = true;
-
+            const btn = document.querySelector('#btnGroupDefault .btn-outline-danger'); btn.innerHTML = "Memadam..."; btn.disabled = true;
             const res = await postData('deleteData', { id: id });
-            
             alert(res.message);
-            if(res.success) {
-                bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
-                initDash(); 
-            } else {
-                btn.innerHTML = `<i class="bi bi-trash"></i> Padam`;
-                btn.disabled = false;
-            }
+            if(res.success) { bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide(); initDash(); } else { btn.innerHTML = `<i class="bi bi-trash"></i> Padam`; btn.disabled = false; }
         }
     </script>
 </body>
