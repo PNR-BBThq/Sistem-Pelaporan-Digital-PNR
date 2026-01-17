@@ -267,7 +267,21 @@
             </div>
         </div>
     </div>
-
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-text me-2"></i>Butiran Rekod</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4" id="modalBody">
+                    </div>
+                <div class="modal-footer bg-light" id="modalFooter">
+                    </div>
+            </div>
+        </div>
+    </div>
+    
     <script>
         // --- TETAPAN API ---
         // GANTIKAN DENGAN URL API SEBENAR (PASTIKAN UPDATED VERSION)
@@ -425,71 +439,99 @@
         }
 
         // --- SMART ANALYSIS (HOTSPOT + KETERUKAN 1-5 + ROUNDING) ---
+       // --- 1. ANALISIS PINTAR (LOGIK: REKOD TERTINGGI / SINGLE CHAMPION) ---
         function genSummary(pm, tt, ts) { 
             const el = document.getElementById('smartSummary'); 
             if(!el) return; 
             
-            let distMap = {}; 
-            let stateLookup = {}; 
-            
-            fData.forEach(d => { 
-                if (d.ls > 0 && d.d) { 
-                    distMap[d.d] = (distMap[d.d] || 0) + d.ls; 
-                    stateLookup[d.d] = d.n; 
-                } 
+            // A. JIKA TIADA SERANGAN LANGSUNG
+            if(ts === 0 || fData.length === 0) { 
+                el.innerHTML = `<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Tiada rekod serangan dilaporkan setakat ini.</span>`; 
+                return;
+            }
+
+            // B. CARI SATU REKOD (ROW) DENGAN LUAS SERANGAN TERTINGGI
+            // Kita anggap rekod pertama tu juara dulu, lepas tu banding dengan yang lain
+            let champion = fData[0];
+
+            fData.forEach(d => {
+                // Jika jumpa rekod yang luas serangannya lebih besar dari juara sekarang, ganti juara.
+                if ((d.ls || 0) > (champion.ls || 0)) {
+                    champion = d;
+                }
             });
 
-            let topDist = "-", topDistVal = 0;
-            Object.entries(distMap).forEach(([daerah, luas]) => { 
-                if (luas > topDistVal) { topDist = daerah; topDistVal = luas; } 
-            });
+            // C. AMBIL DATA DARI REKOD JUARA ITU SAHAJA
+            let locName = champion.l || "Lokasi Tidak Dinyatakan";
+            let districtText = `${champion.d}, ${champion.n}`;
+            let cropName = champion.tn || "-";
+            let attackArea = parseFloat(champion.ls) || 0;
+            let totalArea = parseFloat(champion.lt) || 0;
 
-            let hotspotText = topDist !== "-" ? `${topDist}, ${stateLookup[topDist]}` : (document.getElementById('selNegeri').value || "Semua Kawasan");
-            let hotspotData = topDist !== "-" ? fData.filter(d => d.d === topDist) : fData;
+            // D. CARI NAMA PEROSAK UTAMA DALAM REKOD ITU SAHAJA
+            let pestName = "-";
+            let maxPestVal = 0;
 
-            let cropMap = {}; 
-            hotspotData.forEach(d => { if(d.ls > 0) cropMap[d.tn] = (cropMap[d.tn] || 0) + d.ls; }); 
-            let topCrop = "-", topCropVal = 0; 
-            Object.entries(cropMap).forEach(([k,v]) => { if(v > topCropVal) { topCrop = k; topCropVal = v; } }); 
-            
-            let pestMap = {};
-            hotspotData.forEach(d => { 
-                if(d.p) Object.entries(d.p).forEach(([k,v]) => pestMap[k] = (pestMap[k]||0) + parseFloat(v)); 
-                else if(d.ls > 0) pestMap["Umum"] = (pestMap["Umum"]||0) + d.ls;
-            });
-            let topP="-", topV=0; 
-            Object.entries(pestMap).forEach(([k,v])=>{ if(v > topV){ topP = k; topV = v; } }); 
-            if(topP === "-" && ts > 0) topP = "Serangan Umum"; 
-            
-            let totalScore = 0, count = 0; 
-            hotspotData.forEach(d => { let level = parseInt(d.k) || 0; if(level > 0 && d.ls > 0){ totalScore += level; count++; } }); 
-            let avgIdx = count > 0 ? (totalScore / count).toFixed(1) : "0.0"; 
-            
+            if (champion.p && Object.keys(champion.p).length > 0) {
+                Object.entries(champion.p).forEach(([k, v]) => {
+                    let val = parseFloat(v) || 0;
+                    if (val > maxPestVal) {
+                        maxPestVal = val;
+                        pestName = k;
+                    }
+                });
+            } else {
+                pestName = "Tiada Maklumat";
+            }
+
+            // E. TENTUKAN TAHAP KETERUKAN (DIRECT DARI ROW ITU)
+            let level = parseInt(champion.k) || 0;
             let tafsir = "Tiada"; 
             let color = "text-success"; 
-            let idxNum = parseFloat(avgIdx);
-            let scoreBulat = Math.round(idxNum); // 2.5 -> 3
 
-            if(idxNum > 0) { 
-                if (scoreBulat <= 1) { tafsir = "Sangat Rendah"; color = "text-success"; } 
-                else if (scoreBulat === 2) { tafsir = "Rendah"; color = "text-info"; } 
-                else if (scoreBulat === 3) { tafsir = "Sederhana"; color = "text-warning"; } 
-                else if (scoreBulat === 4) { tafsir = "Teruk"; color = "text-danger"; } 
-                else { tafsir = "Sangat Teruk"; color = "text-danger fw-bold"; }
-            } 
+            if (level === 1) { tafsir = "Sangat Rendah"; color = "text-success"; } 
+            else if (level === 2) { tafsir = "Rendah"; color = "text-info"; } 
+            else if (level === 3) { tafsir = "Sederhana"; color = "text-warning"; } 
+            else if (level === 4) { tafsir = "Teruk"; color = "text-danger"; } 
+            else if (level === 5) { tafsir = "Sangat Teruk"; color = "text-danger fw-bold"; }
             
-            if(ts === 0) { 
-                el.innerHTML = `<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Tiada rekod serangan dilaporkan setakat ini.</span>`; 
-            } else { 
-                el.innerHTML = ` <div style="line-height: 1.6;"> <i class="bi bi-geo-alt-fill text-danger me-1"></i> Lokasi Hotspot: <b>${hotspotText}</b> <br> <i class="bi bi-flower1 text-success me-1"></i> Tanaman <b>${topCrop}</b> paling terkesan akibat serangan <b>${topP}</b><br> <i class="bi bi-exclamation-circle-fill text-warning me-1"></i> Luas Serangan: <b>${ts.toFixed(2)} Ha</b> (${((ts/tt)*100).toFixed(2)}%)<br> <i class="bi bi-bar-chart-fill text-secondary me-1"></i> Indeks Keterukan: <b>${avgIdx} - <span class="${color}">${tafsir}</span></b></div> `; 
-            } 
-        }
+            // F. PAPARKAN TEXT KHUSUS UNTUK LOKASI ITU
+            let percentage = totalArea > 0 ? ((attackArea/totalArea)*100).toFixed(2) : "0.00";
 
+            el.innerHTML = ` 
+            <div style="line-height: 1.6;"> 
+                <i class="bi bi-geo-alt-fill text-danger me-1"></i> Hotspot Tertinggi: <b>${locName}</b> (${districtText}) <br> 
+                <i class="bi bi-flower1 text-success me-1"></i> Tanaman: <b>${cropName}</b> (Perosak Utama: <b>${pestName}</b>)<br> 
+                <i class="bi bi-exclamation-circle-fill text-warning me-1"></i> Luas Serangan: <b>${attackArea.toFixed(2)} Ha</b> daripada ${totalArea.toFixed(2)} Ha (${percentage}%)<br> 
+                <i class="bi bi-bar-chart-fill text-secondary me-1"></i> Tahap Keterukan: <b>T${level} - <span class="${color}">${tafsir}</span></b>
+            </div> `; 
+        }
         function updateCharts(pm, km) { const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); if(charts.b) charts.b.destroy(); charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); if(charts.p) charts.p.destroy(); charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); }
         function updateMap(pts) { if(layer) map.removeLayer(layer); if(pts.length) { layer = L.layerGroup(pts.map(p => L.circleMarker(p, {radius:6, color:'#dc2626', fillOpacity:0.7, stroke:true, weight:1, color:'white', fillColor:'#dc2626'}))).addTo(map); map.fitBounds(L.latLngBounds(pts)); } }
         function updateHotspot(hData) { const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; }
         
-        function renTab() { const st = (pg-1)*pSize; const dt = fData.slice(st, st+pSize); document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `<tr><td>${d.t}</td><td>${d.n}</td><td>${d.l}</td><td><span class="badge bg-light text-dark border">${d.tn}</span></td><td>${d.lt.toFixed(2)}</td><td class="text-danger fw-bold">${d.ls.toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="6" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; document.getElementById('pgInfo').innerText = `Page ${pg}`; }
+function renTab() { 
+            const st = (pg-1)*pSize; 
+            const dt = fData.slice(st, st+pSize); 
+            
+            document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `
+                <tr>
+                    <td>${d.t}</td>
+                    <td>${d.n}</td>
+                    <td>${d.l}</td>
+                    <td><span class="badge bg-light text-dark border">${d.tn}</span></td>
+                    <td>${d.lt.toFixed(2)}</td>
+                    <td class="text-danger fw-bold">${d.ls.toFixed(2)}</td>
+                    <td class="text-center">
+                        <button onclick="openDetailModal(${d.id})" class="btn btn-sm btn-outline-primary shadow-sm" title="Lihat Detail">
+                            <i class="bi bi-eye-fill"></i>
+                        </button>
+                    </td>
+                </tr>`).join('') 
+                : '<tr><td colspan="7" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; 
+                
+            document.getElementById('pgInfo').innerText = `Page ${pg}`; 
+        }       
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
         function fillSel(id, arr) { const el = document.getElementById(id); el.innerHTML='<option value="">Semua</option>'; arr.forEach(x => {if(x) el.innerHTML+=`<option value="${x}">${x}</option>`}); }
 
@@ -749,6 +791,140 @@ async function downloadDualExcel() {
             anchor.click(); 
             window.URL.revokeObjectURL(url); 
         }        async function dlPDF() { const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = "Jana..."; btn.disabled = true; let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length-1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length-1])}`; } try { const m = { user: uProf.name, negeri: document.getElementById('selNegeri').value || "Semua", dates: dateLabel }; const r = await postData('genPDF', {data: fData, meta: m}); if(r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } } catch(e) { console.error(e); } btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false; }
+   // --- LOGIK MODAL: VIEW, EDIT, SAVE, DELETE ---
+        let currentEditID = null;
+
+        function openDetailModal(id) {
+            const d = fData.find(x => x.id === id);
+            if(!d) return;
+            currentEditID = id;
+
+            const modalBody = document.getElementById('modalBody');
+            const modalFooter = document.getElementById('modalFooter');
+            
+            // 1. JANA PAPARAN DETAIL (READ ONLY)
+            // Nota: Input 'name' mestilah SAMA EJAAN dengan Header dalam Excel Tuan
+            let html = `
+                <div id="viewMode">
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="small text-muted fw-bold">TARIKH</label><div class="fw-bold">${d.t}</div></div>
+                        <div class="col-md-6"><label class="small text-muted fw-bold">PEGAWAI</label><div>${d.pg}</div></div>
+                        <div class="col-12"><hr class="my-2"></div>
+                        
+                        <div class="col-md-6"><label class="small text-muted fw-bold">NEGERI</label><div>${d.n}</div></div>
+                        <div class="col-md-6"><label class="small text-muted fw-bold">DAERAH</label><div>${d.d}</div></div>
+                        
+                        <div class="col-md-12"><label class="small text-muted fw-bold">LOKASI / KEBUN</label><div class="fw-bold fs-5">${d.l}</div></div>
+                        
+                        <div class="col-md-6"><label class="small text-muted fw-bold">TANAMAN</label><div class="text-success fw-bold">${d.tn}</div></div>
+                        
+                        <div class="col-md-4"><label class="small text-muted fw-bold">LUAS BANCIAN (Ha)</label><div class="fs-5">${d.lt}</div></div>
+                        <div class="col-md-4"><label class="small text-muted fw-bold">LUAS SERANGAN (Ha)</label><div class="text-danger fs-5 fw-bold">${d.ls}</div></div>
+                        <div class="col-md-4"><label class="small text-muted fw-bold">KETERUKAN</label><div><span class="badge bg-warning text-dark">T${d.k}</span></div></div>
+
+                        <div class="col-12"><label class="small text-muted fw-bold">SYOR KAWALAN</label><div class="p-2 bg-light border rounded fst-italic">${d.s}</div></div>
+                    </div>
+                </div>
+                
+                <div id="editMode" style="display:none">
+                    <div class="alert alert-warning small"><i class="bi bi-pencil-fill me-1"></i> Anda sedang mengemaskini data. Status akan kembali ke 'BARU'.</div>
+                    <form id="formEdit">
+                        <div class="mb-2"><label>Lokasi</label><input type="text" class="form-control" name="Lokasi" value="${d.l}"></div>
+                        <div class="row">
+                            <div class="col-6 mb-2"><label>Luas Bancian (Ha)</label><input type="number" step="0.01" class="form-control" name="Luas Bancian (Ha)" value="${d.lt}"></div>
+                            <div class="col-6 mb-2"><label>Luas Serangan (Ha)</label><input type="number" step="0.01" class="form-control" name="Luas Serangan (Ha)" value="${d.ls}"></div>
+                        </div>
+                        <div class="mb-2"><label>Syor Kawalan</label><textarea class="form-control" name="Syor Kawalan">${d.s}</textarea></div>
+                    </form>
+                </div>
+            `;
+            
+            modalBody.innerHTML = html;
+
+            // 2. BUTANG FOOTER (IKUT ROLE)
+            let footerHtml = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>`;
+            
+            // Semak Role (Pastikan variable uProf wujud dari login)
+            if (typeof uProf !== 'undefined' && (uProf.role === "ADMIN" || uProf.role === "PENYELIA")) {
+                footerHtml = `
+                    <div id="btnGroupDefault" class="d-flex gap-2 w-100 justify-content-end">
+                        <button onclick="confirmDelete(${d.id})" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Padam</button>
+                        <button onclick="enableEditMode()" class="btn btn-primary"><i class="bi bi-pencil-square"></i> Kemaskini</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+                    <div id="btnGroupEdit" class="d-flex gap-2 w-100 justify-content-end" style="display:none">
+                        <button onclick="saveEdit(${d.id})" class="btn btn-success fw-bold"><i class="bi bi-check-lg"></i> SIMPAN</button>
+                        <button onclick="cancelEdit()" class="btn btn-light border">Batal</button>
+                    </div>
+                `;
+            }
+
+            modalFooter.innerHTML = footerHtml;
+            new bootstrap.Modal(document.getElementById('detailModal')).show();
+        }
+
+        // --- FUNGSI TUKAR MODE ---
+        function enableEditMode() {
+            document.getElementById('viewMode').style.display = 'none';
+            document.getElementById('editMode').style.display = 'block';
+            document.getElementById('btnGroupDefault').style.display = 'none';
+            document.getElementById('btnGroupEdit').style.display = 'flex';
+        }
+
+        function cancelEdit() {
+            document.getElementById('viewMode').style.display = 'block';
+            document.getElementById('editMode').style.display = 'none';
+            document.getElementById('btnGroupDefault').style.display = 'flex';
+            document.getElementById('btnGroupEdit').style.display = 'none';
+        }
+
+        // --- FUNGSI SIMPAN (UPDATE) ---
+        async function saveEdit(id) {
+            const form = document.getElementById('formEdit');
+            const inputs = form.querySelectorAll('input, textarea');
+            let updates = {};
+            
+            // Ambil value dari form
+            inputs.forEach(input => {
+                updates[input.name] = input.value; 
+            });
+
+            const btn = document.querySelector('#btnGroupEdit .btn-success');
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Menyimpan...`;
+            btn.disabled = true;
+
+            // Panggil API Backend
+            const res = await postData('updateData', { id: id, updates: updates });
+            
+            alert(res.message);
+            if (res.success) {
+                bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
+                initDash(); // Refresh data dashboard
+            } else {
+                btn.innerHTML = `<i class="bi bi-check-lg"></i> SIMPAN`;
+                btn.disabled = false;
+            }
+        }
+
+        // --- FUNGSI PADAM (DELETE) ---
+        async function confirmDelete(id) {
+            if(!confirm("⚠️ AMARAN:\n\nAdakah anda pasti mahu memadam rekod ini secara kekal?")) return;
+            
+            const btn = document.querySelector('#btnGroupDefault .btn-outline-danger');
+            btn.innerHTML = "Memadam...";
+            btn.disabled = true;
+
+            const res = await postData('deleteData', { id: id });
+            
+            alert(res.message);
+            if(res.success) {
+                bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
+                initDash(); 
+            } else {
+                btn.innerHTML = `<i class="bi bi-trash"></i> Padam`;
+                btn.disabled = false;
+            }
+        }
     </script>
 </body>
 </html>
