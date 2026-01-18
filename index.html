@@ -388,67 +388,176 @@
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
 
         /* --- 1. REPORT CARD VIEW LOGIC (FEATURE REQUEST) --- */
-        async function loadPend() { 
-    const container = document.getElementById('verifyContainer'); 
-    container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>'; 
+        // --- 1. REPORT CARD VIEW (VERSI ASAL TUAN - RESTORED) ---
+async function loadPend() {
+    const container = document.getElementById('verifyContainer');
+    // Tunjuk Loading Spinner
+    container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div><div class="mt-2 text-muted">Memuatkan data...</div></div>';
     
     try {
         const d = await postData('getPending', {state: uProf.state});
         currentPendingRows = d.rows || [];
-        
-        if(!d.rows || !d.rows.length) { 
-            container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>'; 
-            return; 
-        }
-        
-        container.innerHTML = "";
-        
-        d.rows.forEach((r) => {
-            const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }
-            
-            const tarikh = getVal('Tarikh') || getVal('Date');
-            const nama = getVal('Nama') || getVal('Pegawai');
-            const lokasi = getVal('Lokasi') || getVal('Kebun');
-            const tanaman = getVal('Tanaman');
-            const luas = getVal('Luas Bertanam') || getVal('Luas') || "-";
-            
-            // Logic Table Mini Perosak
-            let pestHTML = "";
-            try {
-               const luasObj = JSON.parse(getVal('Luas Serangan') || "{}");
-               if(Object.keys(luasObj).length > 0) {
-                   pestHTML = `<div class="mt-3 small border rounded p-2 bg-light"><div class="fw-bold mb-1 text-danger">Perincian Serangan:</div><table class="w-100" style="font-size:0.8rem">`;
-                   Object.entries(luasObj).forEach(([k,v]) => pestHTML += `<tr><td>• ${k}</td><td class="text-end fw-bold">${v} Ha</td></tr>`);
-                   pestHTML += `</table></div>`;
-               }
-            } catch(e){}
 
-            // HTML Card Design Asal
+        // Jika tiada data
+        if(!d.rows || !d.rows.length) {
+            container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>';
+            return;
+        }
+
+        container.innerHTML = "";
+
+        // Helper: Bersihkan Link Gambar
+        const cleanImageLink = (raw) => {
+            if (!raw) return [];
+            let str = String(raw).trim();
+            if(str.length < 5) return [];
+            str = str.replace(/[\[\]"']/g, ''); // Buang bracket/quote
+            let links = str.split(',');
+            return links.map(l => l.trim()).filter(l => l.startsWith('http'));
+        }
+
+        // --- LOOP SETIAP BARIS DATA ---
+        d.rows.forEach((r) => {
+            // Helper: Cari data ikut nama Header (Tak kisah huruf besar/kecil)
+            const getVal = (key) => { 
+                const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); 
+                return i > -1 ? r.data[i] : ""; 
+            }
+
+            // 1. Ambil Data Asas
+            const tarikh = getVal('Tarikh') || getVal('Date') || "-";
+            const nama = getVal('Nama') || getVal('Pegawai') || "-";
+            const email = getVal('Email') || "-";
+            const negeri = getVal('Negeri') || "-";
+            const daerah = getVal('Daerah') || "-";
+            const lokasi = getVal('Lokasi') || getVal('Kebun') || "-";
+            const koordinat = getVal('Koordinat') || "-";
+            const tanaman = getVal('Tanaman') || "-"; // Cari column Tanaman
+            const varieti = getVal('Varieti') || "-";
+            const luasBertanam = getVal('Luas Bertanam') || getVal('Luas Bancian') || "-";
+            const syor = getVal('Syor') || "-";
+
+            // 2. Bina Butiran Tambahan (Loop header lain yang bukan special)
+            let specialCols = ['status', 'log', 'luas serangan', 'peratus', 'keterukan', 'gambar', 'image', 'tarikh', 'date', 'nama', 'pegawai', 'email', 'negeri', 'daerah', 'lokasi', 'kebun', 'koordinat', 'tanaman', 'varieti', 'luas bertanam', 'luas bancian', 'syor', 'perosak'];
+            let detailHTML = "";
+            
+            d.headers.forEach((h, i) => {
+                let headerName = String(h).toLowerCase();
+                if(specialCols.some(k => headerName.includes(k))) return; // Skip column special
+                let val = r.data[i];
+                if(val && val !== "" && val !== "-") {
+                    detailHTML += `<div class="v-row"><div class="v-label">${h}:</div><div class="v-val">${val}</div></div>`;
+                }
+            });
+
+            // 3. Bina Table Perosak (Parse JSON dari column Luas/Peratus/Keterukan)
+            let pestTableHTML = "";
+            try {
+                let rawLuas = getVal('Luas Serangan');
+                let rawPct = getVal('Peratus');
+                let rawSev = getVal('Keterukan');
+
+                const luasObj = JSON.parse(rawLuas || "{}");
+                const pctObj = JSON.parse(rawPct || "{}");
+                const sevObj = JSON.parse(rawSev || "{}");
+
+                if(Object.keys(luasObj).length > 0) {
+                    pestTableHTML = `
+                    <div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Data Serangan</div>
+                    <table class="mini-table">
+                        <thead>
+                            <tr>
+                                <th>Perosak</th>
+                                <th class="center">Luas (Ha)</th>
+                                <th class="center">%</th>
+                                <th class="center">Tahap</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                    
+                    Object.keys(luasObj).forEach(key => {
+                        let level = sevObj[key] || 0;
+                        let badgeClass = level >= 4 ? 'bg-danger' : (level == 3 ? 'bg-warning text-dark' : 'bg-success');
+                        
+                        pestTableHTML += `
+                        <tr>
+                            <td>${key}</td>
+                            <td class="center fw-bold">${luasObj[key]}</td>
+                            <td class="center">${pctObj[key]||0}%</td>
+                            <td class="center"><span class="badge ${badgeClass}">T${level}</span></td>
+                        </tr>`;
+                    });
+                    pestTableHTML += `</tbody></table>`;
+                }
+            } catch(e) { console.log("Ralat Table Perosak:", e); }
+
+            // 4. Syor Kawalan
+            let syorHTML = "";
+            if(syor && syor !== "-" && syor.length > 2) {
+                syorHTML = `<div class="alert alert-warning border p-2 small mb-3 mt-2"><i class="bi bi-lightbulb-fill me-1"></i> <strong>Syor:</strong> ${syor}</div>`;
+            }
+
+            // 5. Gambar (Images)
+            let imgHTML = "";
+            let imgIdx = d.headers.findIndex(h => h.match(/gambar|image|foto/i));
+            let rawImg = (imgIdx > -1) ? r.data[imgIdx] : "";
+            let cleanLinks = cleanImageLink(rawImg);
+            
+            if (cleanLinks.length > 0) {
+                 imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Gambar</div><div class="mb-2">`;
+                 cleanLinks.forEach((lnk, i) => {
+                     imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Foto ${i+1}</a>`;
+                 });
+                 imgHTML += `</div>`;
+            }
+
+            // --- GABUNGKAN HTML CARD ---
             const cardHTML = `
             <div class="col-md-6 col-lg-4">
-                <div class="verify-card h-100">
+                <div class="verify-card">
                     <div class="verify-header">
                         <div>
                             <div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${tarikh}</div>
                             <div class="fw-bold text-dark text-uppercase">${nama}</div>
+                            <div class="small text-muted fst-italic" style="font-size:0.75rem">${email}</div>
                         </div>
                         <span class="badge bg-warning text-dark border">BARU</span>
                     </div>
-                    <div class="verify-body d-flex flex-column">
-                        <div class="v-row"><div class="v-label">LOKASI</div><div class="v-val fw-bold text-primary">${lokasi}</div></div>
-                        <div class="v-row"><div class="v-label">TANAMAN</div><div class="v-val">${tanaman}</div></div>
-                        <div class="v-row"><div class="v-label">LUAS</div><div class="v-val">${luas} Ha</div></div>
-                        ${pestHTML}
+
+                    <div class="verify-body">
+                        <div class="section-title"><i class="bi bi-info-circle-fill"></i> Lokasi & Tanaman</div>
+                        
+                        <div class="v-row"><div class="v-label">Negeri:</div><div class="v-val">${negeri}</div></div>
+                        <div class="v-row"><div class="v-label">Daerah:</div><div class="v-val">${daerah}</div></div>
+                        <div class="v-row"><div class="v-label">Lokasi:</div><div class="v-val fw-bold text-dark">${lokasi}</div></div>
+                        <div class="v-row"><div class="v-label">Koordinat:</div><div class="v-val small font-monospace">${koordinat}</div></div>
+                        
+                        <div class="border-top my-2"></div>
+                        
+                        <div class="v-row"><div class="v-label">Tanaman:</div><div class="v-val fw-bold text-success">${tanaman}</div></div>
+                        <div class="v-row"><div class="v-label">Varieti:</div><div class="v-val">${varieti}</div></div>
+                        <div class="v-row"><div class="v-label">Luas Tanam:</div><div class="v-val">${luasBertanam} Ha</div></div>
+                        
+                        ${detailHTML}
+                        ${pestTableHTML}
+                        ${syorHTML}
+                        ${imgHTML}
                     </div>
-                    <div class="verify-footer mt-auto">
-                        <button class="btn btn-outline-danger flex-grow-1 btn-sm fw-bold" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-circle me-1"></i> TOLAK</button>
-                        <button class="btn btn-success flex-grow-1 btn-sm fw-bold" onclick="subVer(${r.row},'APPROVE')"><i class="bi bi-check-circle-fill me-1"></i> SAHKAN</button>
+
+                    <div class="verify-footer">
+                        <button class="btn btn-outline-danger flex-grow-1" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-circle me-1"></i> Tolak</button>
+                        <button class="btn btn-success flex-grow-1 fw-bold" onclick="subVer(${r.row},'APPROVE')"><i class="bi bi-check-circle-fill me-1"></i> Sahkan</button>
                     </div>
                 </div>
             </div>`;
+            
             container.innerHTML += cardHTML;
         });
-    } catch(e) { container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; }
+
+    } catch(e) { 
+        console.error(e); 
+        container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data. Sila refresh.</div>'; 
+    }
 }
         async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
 
