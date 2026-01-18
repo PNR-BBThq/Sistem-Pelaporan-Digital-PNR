@@ -388,66 +388,68 @@
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
 
         /* --- 1. REPORT CARD VIEW LOGIC (FEATURE REQUEST) --- */
-        async function loadPend() {
-            const container = document.getElementById('verifyContainer');
-            container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
-            
-            try {
-                const d = await postData('getPending', {state: uProf.state});
-                currentPendingRows = d.rows || [];
-
-                if(!d.rows || !d.rows.length) {
-                    container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>';
-                    return;
-                }
-
-                container.innerHTML = "";
-                const cleanImageLink = (raw) => { if (!raw) return []; let str = String(raw).trim(); if(str.length < 5) return []; str = str.replace(/[\[\]"']/g, ''); return str.split(',').map(l => l.trim()).filter(l => l.startsWith('http')); }
-
-                d.rows.forEach((r) => {
-                    const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }
-                    
-                    const tarikh = getVal('Tarikh') || getVal('Date');
-                    const nama = getVal('Nama') || getVal('Pegawai');
-                    const lokasi = getVal('Lokasi') || getVal('Kebun') || "-";
-                    const tanaman = getVal('Tanaman');
-                    const luas = getVal('Luas Bertanam') || getVal('Luas') || "-";
-                    
-                    // Logic Table Perosak (Mini)
-                    let pestHTML = "";
-                    try {
-                        const luasObj = JSON.parse(getVal('Luas Serangan') || "{}");
-                        if(Object.keys(luasObj).length > 0) {
-                            pestHTML = `<table class="mini-table mt-3"><thead><tr><th>Perosak</th><th>Luas (Ha)</th></tr></thead><tbody>`;
-                            Object.entries(luasObj).forEach(([k,v]) => pestHTML += `<tr><td>${k}</td><td>${v}</td></tr>`);
-                            pestHTML += `</tbody></table>`;
-                        }
-                    } catch(e){}
-
-                    const cardHTML = `
-                    <div class="col-md-6 col-lg-4">
-                        <div class="verify-card">
-                            <div class="verify-header">
-                                <div><div class="small text-muted fw-bold">${tarikh}</div><div class="fw-bold text-dark text-uppercase">${nama}</div></div>
-                                <span class="badge bg-warning text-dark border">BARU</span>
-                            </div>
-                            <div class="verify-body">
-                                <div class="v-row"><div class="v-label">LOKASI</div><div class="v-val fw-bold text-primary">${lokasi}</div></div>
-                                <div class="v-row"><div class="v-label">TANAMAN</div><div class="v-val">${tanaman}</div></div>
-                                <div class="v-row"><div class="v-label">LUAS</div><div class="v-val">${luas} Ha</div></div>
-                                ${pestHTML}
-                            </div>
-                            <div class="verify-footer">
-                                <button class="btn btn-outline-danger flex-grow-1" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-circle me-1"></i> Tolak</button>
-                                <button class="btn btn-success flex-grow-1" onclick="subVer(${r.row},'APPROVE')"><i class="bi bi-check-circle-fill me-1"></i> Sahkan</button>
-                            </div>
-                        </div>
-                    </div>`;
-                    container.innerHTML += cardHTML;
-                });
-            } catch(e) { container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; }
+        async function loadPend() { 
+    const container = document.getElementById('verifyContainer'); 
+    container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>'; 
+    
+    try {
+        const d = await postData('getPending', {state: uProf.state});
+        currentPendingRows = d.rows || [];
+        
+        if(!d.rows || !d.rows.length) { 
+            container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>'; 
+            return; 
         }
+        
+        container.innerHTML = "";
+        
+        d.rows.forEach((r) => {
+            const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }
+            
+            const tarikh = getVal('Tarikh') || getVal('Date');
+            const nama = getVal('Nama') || getVal('Pegawai');
+            const lokasi = getVal('Lokasi') || getVal('Kebun');
+            const tanaman = getVal('Tanaman');
+            const luas = getVal('Luas Bertanam') || getVal('Luas') || "-";
+            
+            // Logic Table Mini Perosak
+            let pestHTML = "";
+            try {
+               const luasObj = JSON.parse(getVal('Luas Serangan') || "{}");
+               if(Object.keys(luasObj).length > 0) {
+                   pestHTML = `<div class="mt-3 small border rounded p-2 bg-light"><div class="fw-bold mb-1 text-danger">Perincian Serangan:</div><table class="w-100" style="font-size:0.8rem">`;
+                   Object.entries(luasObj).forEach(([k,v]) => pestHTML += `<tr><td>• ${k}</td><td class="text-end fw-bold">${v} Ha</td></tr>`);
+                   pestHTML += `</table></div>`;
+               }
+            } catch(e){}
 
+            // HTML Card Design Asal
+            const cardHTML = `
+            <div class="col-md-6 col-lg-4">
+                <div class="verify-card h-100">
+                    <div class="verify-header">
+                        <div>
+                            <div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${tarikh}</div>
+                            <div class="fw-bold text-dark text-uppercase">${nama}</div>
+                        </div>
+                        <span class="badge bg-warning text-dark border">BARU</span>
+                    </div>
+                    <div class="verify-body d-flex flex-column">
+                        <div class="v-row"><div class="v-label">LOKASI</div><div class="v-val fw-bold text-primary">${lokasi}</div></div>
+                        <div class="v-row"><div class="v-label">TANAMAN</div><div class="v-val">${tanaman}</div></div>
+                        <div class="v-row"><div class="v-label">LUAS</div><div class="v-val">${luas} Ha</div></div>
+                        ${pestHTML}
+                    </div>
+                    <div class="verify-footer mt-auto">
+                        <button class="btn btn-outline-danger flex-grow-1 btn-sm fw-bold" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-circle me-1"></i> TOLAK</button>
+                        <button class="btn btn-success flex-grow-1 btn-sm fw-bold" onclick="subVer(${r.row},'APPROVE')"><i class="bi bi-check-circle-fill me-1"></i> SAHKAN</button>
+                    </div>
+                </div>
+            </div>`;
+            container.innerHTML += cardHTML;
+        });
+    } catch(e) { container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; }
+}
         async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
 
         /* --- 3. APPROVE ALL (FEATURE REQUEST) --- */
