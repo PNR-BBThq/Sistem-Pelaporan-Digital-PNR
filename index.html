@@ -257,15 +257,29 @@
         let currentUserID = "";
 
         async function postData(act, load) {
-            try {
-                // SUNTIK TOKEN SETIAP KALI REQUEST
-                const payload = { ...load, action: act, token: userToken, u: currentUserID };
-                const res = await fetch(`${API_URL}?action=${act}`, { 
-                    method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) 
-                });
-                return JSON.parse(await res.text());
-            } catch(e) { console.error(e); return {success:false, message:"Ralat sambungan."}; }
+    try {
+        let payload;
+        
+        // JIKA LOGIN: Jangan hantar token/user kosong, guna apa yang ditaip sahaja
+        if (act === 'login') {
+            payload = { action: act, ...load };
+        } 
+        // JIKA BUKAN LOGIN: Baru suntik token dan user ID semasa
+        else {
+            payload = { action: act, token: userToken, u: currentUserID, ...load };
         }
+        
+        const res = await fetch(`${API_URL}?action=${act}`, { 
+            method: "POST", 
+            headers: { "Content-Type": "text/plain" }, 
+            body: JSON.stringify(payload) 
+        });
+        return JSON.parse(await res.text());
+    } catch(e) { 
+        console.error(e); 
+        return {success:false, message:"Ralat sambungan."}; 
+    }
+}
 
         async function doLogin() {
             const u = document.getElementById('uid').value; const p = document.getElementById('pwd').value; 
