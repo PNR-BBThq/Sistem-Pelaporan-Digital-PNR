@@ -381,7 +381,7 @@
         function renTab() { const st = (pg-1)*pSize; const dt = fData.slice(st, st+pSize); document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `<tr><td>${d.t}</td><td>${d.n}</td><td>${d.l}</td><td><span class="badge bg-light text-dark border">${d.tn}</span></td><td>${d.lt.toFixed(2)}</td><td class="text-danger fw-bold">${d.ls.toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="6" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; document.getElementById('pgInfo').innerText = `Page ${pg}`; }
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
 
-      /* --- LOGIC CARD VIEW UPDATE (FIX GAMBAR & DESIGN) --- */
+      /* --- LOGIC CARD VIEW UPDATE (FIX NAMA COLUMN IMAGE) --- */
 async function loadPend() {
     const container = document.getElementById('verifyContainer');
     container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
@@ -397,29 +397,19 @@ async function loadPend() {
 
         container.innerHTML = "";
 
-        // --- 1. FUNGSI PEMBERSIH LINK GAMBAR (LEBIH KUAT) ---
+        // Helper: Bersihkan Link Gambar
         const cleanImageLink = (raw) => { 
             if (!raw) return []; 
-            let str = String(raw).trim();
-            if (str === "" || str === "-") return [];
-            
-            // Buang aksara JSON yang mengganggu: [ ] " ' \ 
+            let str = String(raw).trim(); 
+            if(str.length < 5) return []; 
+            // Buang aksara JSON/kurungan
             str = str.replace(/[\[\]"'\\]/g, ''); 
-            
-            // Pecahkan ikut koma (jika ada banyak gambar)
-            let links = str.split(',');
-            
-            // Filter link yang valid (mesti ada 'http' dan panjang > 10)
-            return links.map(l => l.trim()).filter(l => l.toLowerCase().includes('http') && l.length > 10); 
+            // Pecahkan ikut koma
+            return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http')); 
         }
 
         d.rows.forEach((r) => {
-            // Helper cari data
-            const getVal = (key) => { 
-                // Cari column yang mengandungi keyword, case insensitive
-                const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); 
-                return i > -1 ? r.data[i] : ""; 
-            }
+            const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }
             
             // Mapping Data
             const tarikh = getVal('Tarikh') || getVal('Date');
@@ -435,12 +425,7 @@ async function loadPend() {
             const syor = getVal('Syor') || "-";
             const timestamp = getVal('Timestamp') || tarikh;
 
-            // --- 2. CARI COLUMN GAMBAR (LEBIH BANYAK KEYWORD) ---
-            // Cari column yang ada perkataan: Gambar, Image, Foto, Lampiran, Evidence
-            const rawImg = getVal('Gambar') || getVal('Image') || getVal('Foto') || getVal('Lampiran') || getVal('Evidence');
-            const imgLinks = cleanImageLink(rawImg);
-
-            // Logic Table Serangan
+            // 1. Table Serangan
             let pestRows = "";
             try {
                 const lsObj = JSON.parse(getVal('Luas Serangan') || "{}");
@@ -453,7 +438,7 @@ async function loadPend() {
                         let badgeColor = level < 3 ? 'success' : (level < 4 ? 'warning' : 'danger');
                         pestRows += `
                         <tr>
-                            <td style="font-size:0.85rem" class="text-uppercase">${k}</td>
+                            <td style="font-size:0.85rem">${k}</td>
                             <td class="text-center fw-bold">${lsObj[k]}</td>
                             <td class="text-center small">${pctObj[k]||0}%</td>
                             <td class="text-center"><span class="badge bg-${badgeColor}">T${level}</span></td>
@@ -464,19 +449,25 @@ async function loadPend() {
                 }
             } catch(e) { pestRows = `<tr><td colspan="4" class="text-center text-muted small">Ralat Data</td></tr>`; }
 
-            // --- 3. PAPARAN GAMBAR ---
+            // 2. Logic Gambar (UPDATED COLUMN NAME)
+            // KITA CARI NAMA SPESIFIK DULU
+            const rawImg = getVal('IMAGE LINKS (COMMA SEPARATED)') || getVal('Gambar') || getVal('Image') || getVal('Foto');
+            const imgLinks = cleanImageLink(rawImg);
+            
             let imgHTML = "";
             if (imgLinks.length > 0) {
+                // Ada gambar
                 imgHTML = `<div class="mt-3 pt-2 border-top">
                     <h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-paperclip me-1"></i> LAMPIRAN GAMBAR (${imgLinks.length})</h6>
                     <div class="d-flex flex-wrap gap-2">`;
                 imgLinks.forEach((lnk, i) => {
                     imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate text-uppercase fw-bold" style="max-width: 140px;">
-                        <i class="bi bi-image me-1"></i> LIHAT FOTO ${i+1}
+                        <i class="bi bi-image me-1"></i> FOTO ${i+1}
                     </a>`;
                 });
                 imgHTML += `</div></div>`;
             } else {
+                // Tiada gambar
                 imgHTML = `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic text-uppercase"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR DILAMPIRKAN</small></div>`;
             }
 
@@ -521,7 +512,7 @@ async function loadPend() {
                             <div class="col-8 text-uppercase">${varieti}</div>
                         </div>
                         <div class="row g-2 mb-3" style="font-size:0.9rem">
-                            <div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAMAN:</div>
+                            <div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAM:</div>
                             <div class="col-8 text-dark text-uppercase">${luasTanam} HA</div>
                         </div>
                     </div>
@@ -533,9 +524,9 @@ async function loadPend() {
                                 <thead class="table-light">
                                     <tr>
                                         <th class="text-uppercase">PEROSAK</th>
-                                        <th class="text-center text-uppercase">LUAS SERANGAN (HA)</th>
-                                        <th class="text-center">PERATUS SERANGAN</th>
-                                        <th class="text-center text-uppercase">KETERUKAN SERANGAN</th>
+                                        <th class="text-center text-uppercase">LUAS (HA)</th>
+                                        <th class="text-center">%</th>
+                                        <th class="text-center text-uppercase">TAHAP</th>
                                     </tr>
                                 </thead>
                                 <tbody>${pestRows}</tbody>
