@@ -38,21 +38,28 @@
         .text-danger { color: #dc2626 !important; }
         .badge-pending { background: #dc2626; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; display: none; }
 
-        /* --- 1. STYLE REPORT CARD (FEATURE REQUEST) --- */
+        /* --- STYLE REPORT CARD (DIKEMASKINI) --- */
         .verify-card { background: #fff; border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; height: 100%; display: flex; flex-direction: column; transition: transform 0.2s; border: 1px solid #e2e8f0; }
         .verify-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .verify-header { background: #f8f9fa; border-bottom: 1px solid #e9ecef; padding: 15px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
         .verify-body { padding: 20px; flex-grow: 1; }
         .verify-footer { background: #fff; border-top: 1px solid #e9ecef; padding: 15px; display: flex; gap: 10px; }
-        .section-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--primary); margin: 15px 0 8px 0; border-bottom: 1px dashed #dee2e6; padding-bottom: 4px; }
+        
+        .section-title { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--primary); margin: 15px 0 8px 0; border-bottom: 1px dashed #dee2e6; padding-bottom: 4px; display: flex; align-items: center; gap: 5px; }
         .section-title:first-child { margin-top: 0; }
+        
         .v-row { display: flex; margin-bottom: 6px; font-size: 0.9rem; align-items: flex-start; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px;}
-        .v-label { width: 120px; font-weight: 700; color: #000; flex-shrink: 0; font-size: 0.85rem; }
+        .v-label { width: 130px; font-weight: 700; color: #000; flex-shrink: 0; font-size: 0.85rem; }
         .v-val { flex-grow: 1; color: #1e293b; font-weight: 500; word-break: break-word; }
-        .mini-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; margin-top: 5px; margin-bottom: 15px; }
-        .mini-table th { background: #f1f5f9; text-transform: uppercase; font-size: 0.75rem; color: #475569; padding: 6px; border: 1px solid #e2e8f0; }
-        .mini-table td { padding: 6px; border: 1px solid #e2e8f0; vertical-align: middle; }
+        
+        /* TABLE MINI DALAM KAD (HEADER UPDATED) */
+        .mini-table { width: 100%; font-size: 0.8rem; border-collapse: collapse; margin-top: 5px; margin-bottom: 15px; }
+        .mini-table th { background: #f1f5f9; text-transform: uppercase; font-size: 0.7rem; color: #475569; padding: 8px; border: 1px solid #e2e8f0; font-weight: 800; }
+        .mini-table td { padding: 8px; border: 1px solid #e2e8f0; vertical-align: middle; }
         .mini-table td.center { text-align: center; }
+        
+        .syor-box { background-color: #fffbeb; border: 1px solid #fde68a; padding: 10px; border-radius: 6px; font-size: 0.85rem; color: #92400e; display: flex; gap: 8px; align-items: flex-start; }
+
         .filter-label { font-size: 0.75rem; font-weight: 800; color: #000; margin-bottom: 3px; display: block; text-transform: uppercase; }
 
         @media (max-width: 768px) {
@@ -257,29 +264,17 @@
         let currentUserID = "";
 
         async function postData(act, load) {
-    try {
-        let payload;
-        
-        // JIKA LOGIN: Jangan hantar token/user kosong, guna apa yang ditaip sahaja
-        if (act === 'login') {
-            payload = { action: act, ...load };
-        } 
-        // JIKA BUKAN LOGIN: Baru suntik token dan user ID semasa
-        else {
-            payload = { action: act, token: userToken, u: currentUserID, ...load };
+            try {
+                let payload;
+                if (act === 'login') { payload = { action: act, ...load }; } 
+                else { payload = { action: act, token: userToken, u: currentUserID, ...load }; }
+                
+                const res = await fetch(`${API_URL}?action=${act}`, { 
+                    method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) 
+                });
+                return JSON.parse(await res.text());
+            } catch(e) { console.error(e); return {success:false, message:"Ralat sambungan."}; }
         }
-        
-        const res = await fetch(`${API_URL}?action=${act}`, { 
-            method: "POST", 
-            headers: { "Content-Type": "text/plain" }, 
-            body: JSON.stringify(payload) 
-        });
-        return JSON.parse(await res.text());
-    } catch(e) { 
-        console.error(e); 
-        return {success:false, message:"Ralat sambungan."}; 
-    }
-}
 
         async function doLogin() {
             const u = document.getElementById('uid').value; const p = document.getElementById('pwd').value; 
@@ -308,12 +303,14 @@
         async function checkPendingCount() { try { const d = await postData('getPending', {state: uProf.state}); const b = document.getElementById('badgePending'); if(d.rows && d.rows.length > 0) { b.innerText = d.rows.length; b.style.display = "inline-block"; } else { b.style.display = "none"; } } catch(e){} }
 
         async function initDash() {
+            document.getElementById('smartSummary').innerHTML = '<span class="text-primary"><i class="bi bi-arrow-clockwise fa-spin"></i> Sedang mengemaskini data...</span>';
             const d = await postData('getAnalytics', {state: uProf.state}); 
-            if(!d.records) { alert(d.message || "Tiada Data"); return; }
+            if(!d.records) { alert(d.message || "Tiada Data"); document.getElementById('smartSummary').innerHTML = "Tiada data."; return; }
             mData = d.records; 
             
-            // Populate Initial Dropdowns
+            const currentN = document.getElementById('selNegeri').value;
             fillSel('selNegeri', mData.map(d => d.n).filter((v, i, a) => a.indexOf(v) === i).sort()); 
+            if(currentN) document.getElementById('selNegeri').value = currentN;
             
             if(uProf.state !== "ALL") { 
                 const s = document.getElementById('selNegeri'); 
@@ -324,7 +321,6 @@
             runFilter('n');
         }
 
-        // --- 2. FUNGSI FILTER DEPENDENT (FEATURE REQUEST) ---
         function runFilter(source) {
             const n=v('selNegeri'), d=v('selDaerah'), t=v('selTanaman'), p=v('selPerosak'), k=v('selKategori'), s=v('dS'), e=v('dE');
 
@@ -334,7 +330,6 @@
                 return (n===""||r.n===n) && (d===""||r.d===d) && (t===""||r.tn===t) && (k===""||r.kt===k) && pestOk && (!s||r.t>=s) && (!e||r.t<=e);
             });
 
-            // Cascading Logic
             if(source === 'n' || !source) {
                 const dataD = mData.filter(r => n === "" || r.n === n);
                 updateDropdown('selDaerah', [...new Set(dataD.map(x=>x.d).filter(x=>x))].sort(), d);
@@ -379,7 +374,6 @@
             updateCharts(pm, km); updateMap(pts); updateHotspot(hData); genSummary(pm, tt, ts); renTab();
         }
 
-        // ... (FUNGSI CHART, MAP, HOTSPOT, SUMMARY - SAMA MACAM KOD ASAL) ...
         function genSummary(pm, tt, ts) { const el = document.getElementById('smartSummary'); if(!el) return; let stateMap = {}; fData.forEach(d => { if (d.ls > 0) { stateMap[d.n] = (stateMap[d.n] || 0) + d.ls; } }); let topState = "-", topStateVal = 0; Object.entries(stateMap).forEach(([negeri, luas]) => { if (luas > topStateVal) { topState = negeri; topStateVal = luas; } }); if (topState === "-") topState = document.getElementById('selNegeri').value || "Semua Kawasan"; let cropMap = {}; fData.forEach(d => { if(d.ls > 0) cropMap[d.tn] = (cropMap[d.tn] || 0) + d.ls; }); let topCrop = "-", topCropVal = 0; Object.entries(cropMap).forEach(([k,v]) => { if(v > topCropVal) { topCrop = k; topCropVal = v; } }); let topP="-", topV=0; Object.entries(pm).forEach(([k,v])=>{ if(v > topV){ topP = k; topV = v; } }); if(topP === "-" && ts > 0) topP = "Serangan Umum"; let totalScore = 0, count = 0; fData.forEach(d => { let level = parseInt(d.k) || 0; if(level > 0 && d.ls > 0){ totalScore += level; count++; } }); let avgIdx = count > 0 ? (totalScore / count).toFixed(1) : "0.0"; let tafsir = "Tiada", color = "text-success"; let idxNum = parseFloat(avgIdx); if(idxNum > 0) { if(idxNum <= 2.9) tafsir = "Ringan"; else if(idxNum <= 3.9) { tafsir = "Sederhana"; color = "text-warning"; } else { tafsir = "Teruk"; color = "text-danger fw-bold"; } } if(ts === 0) { el.innerHTML = `<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Tiada rekod serangan dilaporkan setakat ini.</span>`; } else { el.innerHTML = ` <div style="line-height: 1.6;"> <i class="bi bi-geo-alt-fill text-danger me-1"></i> Lokasi Hotspot: <b>${topState}</b> <br> <i class="bi bi-flower1 text-success me-1"></i> Tanaman <b>${topCrop}</b> paling terkesan akibat serangan <b>${topP}</b><br> <i class="bi bi-exclamation-circle-fill text-warning me-1"></i> Luas Serangan: <b>${ts.toFixed(2)} Ha</b> (${((ts/tt)*100).toFixed(2)}%)<br> <i class="bi bi-bar-chart-fill text-secondary me-1"></i> Indeks Keterukan: <b>${avgIdx}</b> (<span class="${color}">${tafsir}</span>) </div> `; } }
         function updateCharts(pm, km) { const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); if(charts.b) charts.b.destroy(); charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); if(charts.p) charts.p.destroy(); charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); }
         function updateMap(pts) { if(layer) map.removeLayer(layer); if(pts.length) { layer = L.layerGroup(pts.map(p => L.circleMarker(p, {radius:6, color:'#dc2626', fillOpacity:0.7, stroke:true, weight:1, color:'white', fillColor:'#dc2626'}))).addTo(map); map.fitBounds(L.latLngBounds(pts)); } }
@@ -387,181 +381,92 @@
         function renTab() { const st = (pg-1)*pSize; const dt = fData.slice(st, st+pSize); document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `<tr><td>${d.t}</td><td>${d.n}</td><td>${d.l}</td><td><span class="badge bg-light text-dark border">${d.tn}</span></td><td>${d.lt.toFixed(2)}</td><td class="text-danger fw-bold">${d.ls.toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="6" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; document.getElementById('pgInfo').innerText = `Page ${pg}`; }
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
 
-        /* --- 1. REPORT CARD VIEW LOGIC (FEATURE REQUEST) --- */
-        // --- 1. REPORT CARD VIEW (VERSI ASAL TUAN - RESTORED) ---
-async function loadPend() {
-    const container = document.getElementById('verifyContainer');
-    // Tunjuk Loading Spinner
-    container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div><div class="mt-2 text-muted">Memuatkan data...</div></div>';
-    
-    try {
-        const d = await postData('getPending', {state: uProf.state});
-        currentPendingRows = d.rows || [];
-
-        // Jika tiada data
-        if(!d.rows || !d.rows.length) {
-            container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>';
-            return;
-        }
-
-        container.innerHTML = "";
-
-        // Helper: Bersihkan Link Gambar
-        const cleanImageLink = (raw) => {
-            if (!raw) return [];
-            let str = String(raw).trim();
-            if(str.length < 5) return [];
-            str = str.replace(/[\[\]"']/g, ''); // Buang bracket/quote
-            let links = str.split(',');
-            return links.map(l => l.trim()).filter(l => l.startsWith('http'));
-        }
-
-        // --- LOOP SETIAP BARIS DATA ---
-        d.rows.forEach((r) => {
-            // Helper: Cari data ikut nama Header (Tak kisah huruf besar/kecil)
-            const getVal = (key) => { 
-                const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); 
-                return i > -1 ? r.data[i] : ""; 
-            }
-
-            // 1. Ambil Data Asas
-            const tarikh = getVal('Tarikh') || getVal('Date') || "-";
-            const nama = getVal('Nama') || getVal('Pegawai') || "-";
-            const email = getVal('Email') || "-";
-            const negeri = getVal('Negeri') || "-";
-            const daerah = getVal('Daerah') || "-";
-            const lokasi = getVal('Lokasi') || getVal('Kebun') || "-";
-            const koordinat = getVal('Koordinat') || "-";
-            const tanaman = getVal('Tanaman') || "-"; // Cari column Tanaman
-            const varieti = getVal('Varieti') || "-";
-            const luasBertanam = getVal('Luas Bertanam') || getVal('Luas Bancian') || "-";
-            const syor = getVal('Syor') || "-";
-
-            // 2. Bina Butiran Tambahan (Loop header lain yang bukan special)
-            let specialCols = ['status', 'log', 'luas serangan', 'peratus', 'keterukan', 'gambar', 'image', 'tarikh', 'date', 'nama', 'pegawai', 'email', 'negeri', 'daerah', 'lokasi', 'kebun', 'koordinat', 'tanaman', 'varieti', 'luas bertanam', 'luas bancian', 'syor', 'perosak'];
-            let detailHTML = "";
+        /* --- LOGIC CARD VIEW UPDATE --- */
+        async function loadPend() {
+            const container = document.getElementById('verifyContainer');
+            container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
             
-            d.headers.forEach((h, i) => {
-                let headerName = String(h).toLowerCase();
-                if(specialCols.some(k => headerName.includes(k))) return; // Skip column special
-                let val = r.data[i];
-                if(val && val !== "" && val !== "-") {
-                    detailHTML += `<div class="v-row"><div class="v-label">${h}:</div><div class="v-val">${val}</div></div>`;
-                }
-            });
-
-            // 3. Bina Table Perosak (Parse JSON dari column Luas/Peratus/Keterukan)
-            let pestTableHTML = "";
             try {
-                let rawLuas = getVal('Luas Serangan');
-                let rawPct = getVal('Peratus');
-                let rawSev = getVal('Keterukan');
+                const d = await postData('getPending', {state: uProf.state});
+                currentPendingRows = d.rows || [];
 
-                const luasObj = JSON.parse(rawLuas || "{}");
-                const pctObj = JSON.parse(rawPct || "{}");
-                const sevObj = JSON.parse(rawSev || "{}");
-
-                if(Object.keys(luasObj).length > 0) {
-                    pestTableHTML = `
-                    <div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Data Serangan</div>
-                    <table class="mini-table">
-                        <thead>
-                            <tr>
-                                <th>Perosak</th>
-                                <th class="center">Luas (Ha)</th>
-                                <th class="center">%</th>
-                                <th class="center">Tahap</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-                    
-                    Object.keys(luasObj).forEach(key => {
-                        let level = sevObj[key] || 0;
-                        let badgeClass = level >= 4 ? 'bg-danger' : (level == 3 ? 'bg-warning text-dark' : 'bg-success');
-                        
-                        pestTableHTML += `
-                        <tr>
-                            <td>${key}</td>
-                            <td class="center fw-bold">${luasObj[key]}</td>
-                            <td class="center">${pctObj[key]||0}%</td>
-                            <td class="center"><span class="badge ${badgeClass}">T${level}</span></td>
-                        </tr>`;
-                    });
-                    pestTableHTML += `</tbody></table>`;
+                if(!d.rows || !d.rows.length) {
+                    container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>';
+                    return;
                 }
-            } catch(e) { console.log("Ralat Table Perosak:", e); }
 
-            // 4. Syor Kawalan
-            let syorHTML = "";
-            if(syor && syor !== "-" && syor.length > 2) {
-                syorHTML = `<div class="alert alert-warning border p-2 small mb-3 mt-2"><i class="bi bi-lightbulb-fill me-1"></i> <strong>Syor:</strong> ${syor}</div>`;
-            }
+                container.innerHTML = "";
+                const cleanImageLink = (raw) => { if (!raw) return []; let str = String(raw).trim(); if(str.length < 5) return []; str = str.replace(/[\[\]"']/g, ''); return str.split(',').map(l => l.trim()).filter(l => l.startsWith('http')); }
 
-            // 5. Gambar (Images)
-            let imgHTML = "";
-            let imgIdx = d.headers.findIndex(h => h.match(/gambar|image|foto/i));
-            let rawImg = (imgIdx > -1) ? r.data[imgIdx] : "";
-            let cleanLinks = cleanImageLink(rawImg);
-            
-            if (cleanLinks.length > 0) {
-                 imgHTML = `<div class="section-title mt-2"><i class="bi bi-images"></i> Gambar</div><div class="mb-2">`;
-                 cleanLinks.forEach((lnk, i) => {
-                     imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary me-1 mb-1"><i class="bi bi-image"></i> Foto ${i+1}</a>`;
-                 });
-                 imgHTML += `</div>`;
-            }
+                d.rows.forEach((r) => {
+                    const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }
+                    
+                    const tarikh = getVal('Tarikh') || getVal('Date');
+                    const nama = getVal('Nama') || getVal('Pegawai');
+                    const lokasi = getVal('Lokasi') || getVal('Kebun') || "-";
+                    const negeri = getVal('Negeri') || "-";
+                    const daerah = getVal('Daerah') || "-";
+                    const koordinat = getVal('Koordinat') || "-";
+                    const varieti = getVal('Varieti') || "-";
+                    const luas = getVal('Luas Bertanam') || getVal('Luas') || "-";
+                    const syor = getVal('Syor') || "-";
+                    
+                    // Logic Mapping Tanaman vs Kategori
+                    let kategori = getVal('Kategori');
+                    let tanaman = getVal('Nama Tanaman') || getVal('Jenis Tanaman');
+                    if (!tanaman) tanaman = getVal('Tanaman'); // Fallback jika header 'Tanaman' shj
 
-            // --- GABUNGKAN HTML CARD ---
-            const cardHTML = `
-            <div class="col-md-6 col-lg-4">
-                <div class="verify-card">
-                    <div class="verify-header">
-                        <div>
-                            <div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${tarikh}</div>
-                            <div class="fw-bold text-dark text-uppercase">${nama}</div>
-                            <div class="small text-muted fst-italic" style="font-size:0.75rem">${email}</div>
+                    // Table Perosak
+                    let pestHTML = "";
+                    try {
+                        const luasObj = JSON.parse(getVal('Luas Serangan') || "{}");
+                        const pctObj = JSON.parse(getVal('Peratus') || "{}");
+                        const sevObj = JSON.parse(getVal('Keterukan') || "{}");
+                        
+                        if(Object.keys(luasObj).length > 0) {
+                            pestHTML = `<div class="section-title mt-3"><i class="bi bi-bug-fill"></i> Data Serangan</div>
+                            <table class="mini-table"><thead><tr><th>Nama Perosak</th><th class="center">Luas Serangan (Ha)</th><th class="center">Peratus Serangan (%)</th><th class="center">Keterukan Serangan</th></tr></thead><tbody>`;
+                            Object.keys(luasObj).forEach(key => {
+                                pestHTML += `<tr><td>${key}</td><td class="center fw-bold">${luasObj[key]}</td><td class="center">${pctObj[key]||0}%</td><td class="center"><span class="badge bg-secondary">T${sevObj[key]||0}</span></td></tr>`;
+                            });
+                            pestHTML += `</tbody></table>`;
+                        }
+                    } catch(e){}
+
+                    const cardHTML = `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="verify-card">
+                            <div class="verify-header">
+                                <div><div class="small text-muted fw-bold"><i class="bi bi-calendar3 me-1"></i> ${tarikh}</div><div class="fw-bold text-dark text-uppercase">${nama}</div></div>
+                                <span class="badge bg-warning text-dark border">BARU</span>
+                            </div>
+                            <div class="verify-body">
+                                <div class="section-title"><i class="bi bi-info-circle-fill"></i> Lokasi & Tanaman</div>
+                                <div class="v-row"><div class="v-label">Negeri:</div><div class="v-val text-uppercase">${negeri}</div></div>
+                                <div class="v-row"><div class="v-label">Daerah:</div><div class="v-val text-uppercase">${daerah}</div></div>
+                                <div class="v-row"><div class="v-label">Lokasi:</div><div class="v-val fw-bold text-dark text-uppercase">${lokasi}</div></div>
+                                <div class="v-row"><div class="v-label">Koordinat:</div><div class="v-val font-monospace text-muted small">${koordinat}</div></div>
+                                <hr class="my-2 border-light">
+                                <div class="v-row"><div class="v-label">Kategori:</div><div class="v-val text-uppercase">${kategori}</div></div>
+                                <div class="v-row"><div class="v-label">Tanaman:</div><div class="v-val fw-bold text-success text-uppercase">${tanaman}</div></div>
+                                <div class="v-row"><div class="v-label">Varieti:</div><div class="v-val text-uppercase">${varieti}</div></div>
+                                <div class="v-row"><div class="v-label">Luas Tanam:</div><div class="v-val">${luas} Ha</div></div>
+                                ${pestHTML}
+                                <div class="syor-box mt-3"><i class="bi bi-lightbulb-fill"></i><div><strong>Syor Kawalan:</strong> ${syor}</div></div>
+                            </div>
+                            <div class="verify-footer">
+                                <button class="btn btn-outline-danger flex-grow-1 fw-bold" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-circle me-1"></i> TOLAK</button>
+                                <button class="btn btn-success flex-grow-1 fw-bold" onclick="subVer(${r.row},'APPROVE')"><i class="bi bi-check-circle-fill me-1"></i> SAHKAN</button>
+                            </div>
                         </div>
-                        <span class="badge bg-warning text-dark border">BARU</span>
-                    </div>
+                    </div>`;
+                    container.innerHTML += cardHTML;
+                });
+            } catch(e) { container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; }
+        }
 
-                    <div class="verify-body">
-                        <div class="section-title"><i class="bi bi-info-circle-fill"></i> Lokasi & Tanaman</div>
-                        
-                        <div class="v-row"><div class="v-label">Negeri:</div><div class="v-val">${negeri}</div></div>
-                        <div class="v-row"><div class="v-label">Daerah:</div><div class="v-val">${daerah}</div></div>
-                        <div class="v-row"><div class="v-label">Lokasi:</div><div class="v-val fw-bold text-dark">${lokasi}</div></div>
-                        <div class="v-row"><div class="v-label">Koordinat:</div><div class="v-val small font-monospace">${koordinat}</div></div>
-                        
-                        <div class="border-top my-2"></div>
-                        
-                        <div class="v-row"><div class="v-label">Tanaman:</div><div class="v-val fw-bold text-success">${tanaman}</div></div>
-                        <div class="v-row"><div class="v-label">Varieti:</div><div class="v-val">${varieti}</div></div>
-                        <div class="v-row"><div class="v-label">Luas Tanam:</div><div class="v-val">${luasBertanam} Ha</div></div>
-                        
-                        ${detailHTML}
-                        ${pestTableHTML}
-                        ${syorHTML}
-                        ${imgHTML}
-                    </div>
-
-                    <div class="verify-footer">
-                        <button class="btn btn-outline-danger flex-grow-1" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-circle me-1"></i> Tolak</button>
-                        <button class="btn btn-success flex-grow-1 fw-bold" onclick="subVer(${r.row},'APPROVE')"><i class="bi bi-check-circle-fill me-1"></i> Sahkan</button>
-                    </div>
-                </div>
-            </div>`;
-            
-            container.innerHTML += cardHTML;
-        });
-
-    } catch(e) { 
-        console.error(e); 
-        container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data. Sila refresh.</div>'; 
-    }
-}
         async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
 
-        /* --- 3. APPROVE ALL (FEATURE REQUEST) --- */
         async function approveAll() {
             if(!currentPendingRows || currentPendingRows.length === 0) { alert("Tiada data untuk disahkan."); return; }
             if(!confirm(`⚠️ AMARAN: Sahkan SEMUA ${currentPendingRows.length} rekod ini sekaligus?`)) return;
