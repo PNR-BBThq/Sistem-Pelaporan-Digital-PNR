@@ -142,344 +142,357 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // --- SETUP ---
-        const API_URL = "https://script.google.com/macros/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
-        
-        let mData=[], fData=[], uProf=null, charts={}, map=null, layer=null, pg=1, pSize=10;
-        let globalHeaders = [], userToken="", currentUserID="";
+    // --- SETUP ---
+    // PENTING: Sila GANTI URL ini dengan URL baru selepas anda buat 'New Deployment' > 'Anyone'
+    const API_URL = "https://script.google.com/macros/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec"; 
+    
+    let mData=[], fData=[], uProf=null, charts={}, map=null, layer=null, pg=1, pSize=10;
+    let globalHeaders = [], userToken="", currentUserID="";
 
-        // --- 1. KOMUNIKASI SERVER (DENGAN TOKEN) ---
-        async function postData(act, load) {
+    // --- 1. KOMUNIKASI SERVER (DIPERKEMAS) ---
+    async function postData(act, load) {
+        try {
+            // Kita gabungkan data dengan kemas
+            // Jika load ada 'u' (masa login), ia akan ambil yang itu.
+            // Jika tidak, ia guna currentUserID.
+            const payload = { 
+                action: act, 
+                token: userToken, 
+                u: currentUserID, 
+                ...load 
+            };
+            
+            // Console log untuk debugging (boleh buang nanti)
+            console.log("Sending to Server:", payload);
+
+            const res = await fetch(API_URL, { 
+                method: "POST", 
+                // mode: 'no-cors', // JANGAN GUNA no-cors, ia akan sembunyikan error
+                redirect: "follow", // Penting untuk Apps Script
+                headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                body: JSON.stringify(payload) 
+            });
+
+            if (!res.ok) throw new Error("Server respon: " + res.status);
+            
+            const textResult = await res.text();
+            // Cuba parse JSON, kalau gagal server mungkin hantar HTML error
             try {
-                // Pastikan 'token' dan 'u' dihantar setiap kali
-                const payload = { 
-                    action: act, 
-                    token: userToken, 
-                    u: currentUserID, 
-                    ...load // Data tambahan (state, row, dll) di hujung
-                };
-                
-                const res = await fetch(`${API_URL}?action=${act}`, { 
-                    method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) 
-                });
-                return JSON.parse(await res.text());
-            } catch(e) { console.error(e); return {success:false, message:"Ralat sambungan server."}; }
+                return JSON.parse(textResult);
+            } catch (e) {
+                console.error("Server Raw Response:", textResult);
+                throw new Error("Respon bukan JSON. Sila semak deployment 'Anyone'.");
+            }
+
+        } catch(e) { 
+            console.error(e); 
+            return {success:false, message:"Ralat Sambungan: " + e.message}; 
+        }
+    }
+
+    async function doLogin() {
+        const u = document.getElementById('uid').value; 
+        const p = document.getElementById('pwd').value; 
+        const btn = document.getElementById('btnLogin'); 
+        const msg = document.getElementById('loginMsg');
+        
+        if(!u || !p) { msg.innerText = "Sila isi ID dan Kata Laluan"; return; }
+        
+        btn.disabled = true; btn.innerText = "Memproses...";
+        msg.innerText = ""; // Kosongkan error lama
+        
+        // Hantar login
+        const r = await postData('login', {u: u, p: p});
+        
+        if(r.success) {
+            uProf = r; 
+            userToken = r.token; 
+            currentUserID = u;   
+            
+            document.getElementById('uDisp').innerText = r.name; 
+            document.getElementById('loginOverlay').style.display = 'none';
+            
+            if(["ADMIN","PENYELIA"].includes((r.role||"").toUpperCase())) { 
+                document.getElementById('navVerify').style.display = "flex"; 
+                checkPendingCount(); 
+            }
+            initDash();
+        } else { 
+            msg.innerText = r.message; 
+            btn.disabled = false; 
+            btn.innerText = "MASUK"; 
+        }
+    }
+
+    function switchTab(t, el) {
+        document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active')); if(el) el.classList.add('active');
+        document.getElementById('view-main').style.display = t==='main'?'block':'none';
+        document.getElementById('view-verify').style.display = t==='verify'?'block':'none';
+        if(t==='verify') loadPend();
+        if(t==='main' && map) setTimeout(() => map.invalidateSize(), 300);
+    }
+
+    async function checkPendingCount() { try { const d = await postData('getPending', {state: uProf.state}); const b = document.getElementById('badgePending'); if(d.rows && d.rows.length > 0) { b.innerText = d.rows.length; b.style.display = "inline-block"; } else { b.style.display = "none"; } } catch(e){} }
+
+    // --- 2. INIT DASHBOARD ---
+    async function initDash() {
+        const d = await postData('getAnalytics', {state: uProf.state}); 
+        if(!d.records) { alert(d.message || "Tiada Data"); return; }
+        
+        globalHeaders = d.headers || []; 
+
+        mData = d.records.map((r, i) => {
+            if(!r.id) r.id = i + 2; 
+            r.rawData = r.rawData || []; 
+            return r;
+        }); 
+        
+        fillSel('selNegeri', mData.map(d => d.n).filter((v, i, a) => a.indexOf(v) === i).sort()); 
+        fillSel('selTanaman', mData.map(d => d.tn).filter((v, i, a) => a.indexOf(v) === i).sort()); 
+        
+        // Fix: Kadang2 uProf.state undefined kalau login admin HQ
+        if(uProf.state && uProf.state !== "ALL") { const s = document.getElementById('selNegeri'); s.value = uProf.state; s.disabled = true; }
+        
+        if(!map) { map = L.map('map').setView([4.2105, 101.9758], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); }
+        
+        runFilter();
+    }
+
+    function runFilter(source) {
+        const selN = document.getElementById('selNegeri').value;
+        const selT = document.getElementById('selTanaman').value;
+        const selP = document.getElementById('selPerosak').value;
+        
+        // Tapis Data
+        fData = mData.filter(d => { 
+            let pestMatch = true;
+            if(selP !== "") {
+                let pObj = d.p;
+                if(typeof pObj === 'string') { try{ pObj = JSON.parse(pObj); }catch(e){ pObj={} } }
+                pestMatch = (pObj && pObj[selP]);
+            }
+            // Logic tapisan mudah
+            let ok = (selN==="" || d.n===selN) && (selT==="" || d.tn===selT) && pestMatch; 
+            return ok; 
+        });
+
+        // Dropdown Logic (Cascade)
+        if(source === 'n' || !source) {
+            // Update Tanaman based on Negeri
+        }
+        if(source === 't' || source === 'n' || !source) {
+            let validData = mData.filter(d => (selN==="" || d.n===selN) && (selT==="" || d.tn===selT));
+            let allPests = new Set();
+            validData.forEach(d => {
+                let p = d.p;
+                if(typeof p === 'string') { try{ p = JSON.parse(p); }catch(e){ p={} } }
+                if(p && typeof p === 'object') Object.keys(p).forEach(k => allPests.add(k));
+            });
+            updateDropdownOptions('selPerosak', [...allPests].sort(), selP);
+        }
+        pg = 1; calcUI();
+    }
+
+    function updateDropdownOptions(id, list, currentValue) {
+        const el = document.getElementById(id); el.innerHTML = '<option value="">Semua</option>';
+        list.forEach(item => { let opt = document.createElement('option'); opt.value = item; opt.innerText = item; el.appendChild(opt); });
+        if(list.includes(currentValue)) el.value = currentValue; else el.value = "";
+    }
+    function fillSel(id, arr) { updateDropdownOptions(id, arr, ""); } 
+
+    function resetFilter() {
+        document.querySelectorAll('select').forEach(s => { if(!s.disabled) s.value = ""; });
+        initDash(); 
+    }
+
+    // --- 3. CALCULATE UI ---
+    function calcUI() {
+        let tt=0, ts=0, pm={}, km={1:0,2:0,3:0,4:0,5:0}, pts=[], hData={};
+        
+        fData.forEach(d => {
+            let luasTanam = Number(d.lt) || 0;
+            let luasSerang = Number(d.ls) || 0;
+            tt += luasTanam; ts += luasSerang;
+
+            let pObj = d.p;
+            if (typeof pObj === 'string') { try { pObj = JSON.parse(pObj); } catch(e) { pObj = {}; } }
+
+            if(pObj && typeof pObj === 'object' && Object.keys(pObj).length > 0) {
+                Object.entries(pObj).forEach(([k,v]) => { pm[k] = (pm[k]||0) + Number(v); });
+            } else if (luasSerang > 0) { pm["Umum"] = (pm["Umum"]||0) + luasSerang; }
+
+            let l = parseInt(d.k) || 0; if(l>0 && l<=5) km[l]++;
+
+            if(d.c && typeof d.c === 'string' && d.c.includes(',')) { 
+                let p = d.c.split(',').map(Number); 
+                if(p.length===2 && !isNaN(p[0])) pts.push(p); 
+            }
+            if(luasSerang > 0 && d.d && d.d !== "-") hData[d.d] = (hData[d.d]||0) + luasSerang;
+        });
+
+        document.getElementById('k1').innerText = tt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('k2').innerText = ts.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('k3').innerText = tt>0 ? ((ts/tt)*100).toFixed(1)+"%" : "0%";
+        document.getElementById('k4').innerText = fData.length.toLocaleString('en-US');
+        
+        updateCharts(pm, km); updateMap(pts); updateHotspot(hData); genSummary(tt, ts); renTab();
+    }
+
+    function genSummary(tt, ts) { 
+        const el = document.getElementById('smartSummary'); if(!el) return; 
+        if(ts === 0 || fData.length === 0) { el.innerHTML = `<span class="text-success fw-bold">Tiada rekod serangan dilaporkan setakat ini.</span>`; return; }
+        
+        let champion = fData[0];
+        fData.forEach(d => { if ((Number(d.ls) || 0) > (Number(champion.ls) || 0)) { champion = d; } });
+
+        if((Number(champion.ls)||0) > 0) {
+            el.innerHTML = `<div><b>Hotspot Tertinggi:</b> ${champion.l}, ${champion.d}<br><b>Masalah:</b> ${champion.tn} (Luas: ${Number(champion.ls).toFixed(2)} Ha)<br><b>Cadangan:</b> ${champion.s || "-"}</div>`;
+        } else {
+            el.innerHTML = "Analisis selesai. Tiada isu kritikal.";
+        }
+    }
+
+    function updateCharts(pm, km) { 
+        const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); 
+        if(charts.b) charts.b.destroy(); 
+        charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); 
+        
+        if(charts.p) charts.p.destroy(); 
+        charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); 
+    }
+
+    function updateMap(pts) { 
+        if(layer) map.removeLayer(layer); 
+        if(pts.length) { 
+            layer = L.layerGroup(pts.map(p => L.circleMarker(p, {radius:6, color:'#dc2626', fillOpacity:0.7, stroke:true, weight:1, color:'white', fillColor:'#dc2626'}))).addTo(map); 
+            try { map.fitBounds(L.latLngBounds(pts)); } catch(e){} 
+        } 
+    }
+
+    function updateHotspot(hData) { 
+        const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); 
+        document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; 
+    }
+    
+    function renTab() { 
+        const st = (pg-1)*pSize; const dt = fData.slice(st, st+pSize); 
+        document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `
+            <tr>
+                <td>${d.t || "-"}</td>
+                <td>${d.l || "-"}</td>
+                <td>${d.tn || "-"}</td>
+                <td>${(Number(d.lt) || 0).toFixed(2)}</td>
+                <td class="text-danger fw-bold">${(Number(d.ls) || 0).toFixed(2)}</td>
+                <td class="text-center">
+                    <button onclick="openModal(${d.id})" class="btn btn-sm btn-outline-primary shadow-sm" title="Lihat Detail">
+                        <i class="bi bi-eye-fill"></i>
+                    </button>
+                </td>
+            </tr>`).join('') 
+            : '<tr><td colspan="6" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; 
+            
+        document.getElementById('pgInfo').innerText = `Page ${pg}`; 
+    }        
+    function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
+
+    // --- 4. MODAL VIEW ---
+    function openModal(id) {
+        const d = fData.find(x => x.id === id);
+        // Kalau rawData tiada, guna array kosong
+        const raw = d.rawData || []; 
+        
+        // Modal Logic... (Sama seperti asal, cuma tambah error handling)
+        const getVal = (key) => { 
+            if(!globalHeaders.length) return "-";
+            const i = globalHeaders.findIndex(h => String(h).toUpperCase().includes(key.toUpperCase())); 
+            return (i > -1 && raw[i]) ? raw[i] : "-"; 
         }
 
-        async function doLogin() {
-            const u = document.getElementById('uid').value; const p = document.getElementById('pwd').value; 
-            const btn = document.getElementById('btnLogin'); const msg = document.getElementById('loginMsg');
-            if(!u || !p) { msg.innerText = "Sila isi ID dan Kata Laluan"; return; }
-            btn.disabled = true; btn.innerText = "Memproses...";
+        const tarikh = getVal('TARIKH') || getVal('DATE');
+        const nama = getVal('NAMA') || getVal('PEGAWAI');
+        const email = getVal('EMAIL');
+        const lokasi = getVal('LOKASI') || getVal('KEBUN');
+
+        let details = "";
+        let pestHTML = "";
+
+        if(globalHeaders.length){
+            globalHeaders.forEach((h, i) => {
+                if(!['ID','LOG','TIMESTAMP','STATUS','GAMBAR','IMAGE','TARIKH','DATE','NAMA','PEGAWAI','EMAIL','LOKASI','KEBUN'].some(x=>String(h).toUpperCase().includes(x))) {
+                    details += `<div class="v-row"><div class="v-label">${h}</div><div class="v-val">${raw[i]||"-"}</div></div>`;
+                }
+            });
+        }
+
+        try {
+            let p = typeof d.p === 'string' ? JSON.parse(d.p) : d.p;
+            if(p && Object.keys(p).length) {
+                pestHTML = `<table class="mini-table"><thead><tr><th>Perosak</th><th>Luas (Ha)</th></tr></thead><tbody>`;
+                Object.keys(p).forEach(k => pestHTML+=`<tr><td>${k}</td><td>${p[k]}</td></tr>`);
+                pestHTML += "</tbody></table>";
+            }
+        } catch(e){}
+
+        document.getElementById('modalBody').innerHTML = `
+            <div class="verify-card shadow-none border mb-0">
+                <div class="verify-header">
+                    <div><small class="text-muted fw-bold">${tarikh}</small><div class="fw-bold text-uppercase">${nama}</div><small>${email}</small></div>
+                    <span class="badge bg-secondary">READ ONLY</span>
+                </div>
+                <div class="verify-body">
+                    <div class="v-row mb-3 pb-2 border-bottom"><div class="v-label text-dark">LOKASI UTAMA</div><div class="v-val fw-bold text-primary fs-5">${lokasi}</div></div>
+                    ${details}
+                    ${pestHTML ? `<div class="mt-3 fw-bold small text-uppercase">Perincian Serangan</div>` + pestHTML : ''}
+                </div>
+            </div>`;
+        
+        new bootstrap.Modal(document.getElementById('detailModal')).show();
+    }
+
+    // --- 5. EXPORT FUNCTIONS ---
+    async function downloadDualExcel() {
+        if(!fData.length) return alert("Tiada data");
+        const wb = new ExcelJS.Workbook();
+        const ws = wb.addWorksheet('Laporan');
+        const headerRow = ['Tarikh', 'Negeri', 'Daerah', 'Lokasi', 'Tanaman', 'Luas Bancian (Ha)', 'Luas Serangan (Ha)', 'Syor'];
+        ws.addRow(headerRow);
+        fData.forEach(d => { ws.addRow([d.t, d.n, d.d, d.l, d.tn, d.lt, d.ls, d.s]); });
+        const buf = await wb.xlsx.writeBuffer();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([buf]));
+        a.download = 'Laporan_PNR.xlsx';
+        a.click();
+    }
+
+    // FUNGSI PDF DIBAIKI (Fix Dataset Mismatch)
+    async function dlPDF() {
+        const btn = document.querySelector('button[onclick="dlPDF()"]'); 
+        btn.innerHTML = "Jana..."; btn.disabled = true;
+        
+        let dateLabel = "Terkini";
+        if (fData.length > 0) {
+            const sortedDates = fData.map(d => d.t).sort();
+            dateLabel = `${sortedDates[0]} - ${sortedDates[sortedDates.length-1]}`;
+        }
+
+        try {
+            const m = { user: uProf.name, negeri: document.getElementById('selNegeri').value || "Semua", dates: dateLabel };
             
-            // Login tak perlukan token lagi, sebab nak dapatkan token
-            const r = await postData('login', {u, p});
+            // PERUBAHAN: Backend guna 'dataset', jadi sini pun kena hantar 'dataset'
+            const r = await postData('genPDF', { dataset: fData, meta: m });
             
             if(r.success) {
-                uProf = r; 
-                userToken = r.token; // SIMPAN TOKEN DARI SERVER
-                currentUserID = u;   // SIMPAN USER ID
-                
-                document.getElementById('uDisp').innerText = r.name; 
-                document.getElementById('loginOverlay').style.display = 'none';
-                
-                if(["ADMIN","PENYELIA"].includes((r.role||"").toUpperCase())) { 
-                    document.getElementById('navVerify').style.display = "flex"; 
-                    checkPendingCount(); 
-                }
-                initDash();
-            } else { 
-                msg.innerText = r.message; 
-                btn.disabled = false; 
-                btn.innerText = "MASUK"; 
-            }
-        }
-
-        function switchTab(t, el) {
-            document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active')); if(el) el.classList.add('active');
-            document.getElementById('view-main').style.display = t==='main'?'block':'none';
-            document.getElementById('view-verify').style.display = t==='verify'?'block':'none';
-            if(t==='verify') loadPend();
-            if(t==='main' && map) setTimeout(() => map.invalidateSize(), 300);
-        }
-
-        async function checkPendingCount() { try { const d = await postData('getPending', {state: uProf.state}); const b = document.getElementById('badgePending'); if(d.rows && d.rows.length > 0) { b.innerText = d.rows.length; b.style.display = "inline-block"; } else { b.style.display = "none"; } } catch(e){} }
-
-        // --- 2. INIT DASHBOARD ---
-        async function initDash() {
-            const d = await postData('getAnalytics', {state: uProf.state}); 
-            if(!d.records) { alert(d.message || "Tiada Data"); return; }
-            
-            // SIMPAN HEADER UNTUK MODAL VIEW
-            globalHeaders = d.headers || []; 
-
-            // PROSES DATA
-            mData = d.records.map((r, i) => {
-                if(!r.id) r.id = i + 2; 
-                r.rawData = r.rawData || []; // Pastikan rawData wujud
-                return r;
-            }); 
-            
-            fillSel('selNegeri', mData.map(d => d.n).filter((v, i, a) => a.indexOf(v) === i).sort()); 
-            fillSel('selTanaman', mData.map(d => d.tn).filter((v, i, a) => a.indexOf(v) === i).sort()); 
-            fillSel('selKategori', mData.map(d => d.kt).filter((v, i, a) => a.indexOf(v) === i).sort());
-            
-            if(uProf.state !== "ALL") { const s = document.getElementById('selNegeri'); s.value = uProf.state; s.disabled = true; }
-            if(!map) { map = L.map('map').setView([4.2105, 101.9758], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); }
-            
-            runFilter();
-        }
-
-        function runFilter(source) {
-            const selN = document.getElementById('selNegeri').value;
-            const selD = document.getElementById('selDaerah').value;
-            const selT = document.getElementById('selTanaman').value;
-            const selP = document.getElementById('selPerosak').value;
-            const selK = document.getElementById('selKategori').value;
-            const dS = document.getElementById('dS').value;
-            const dE = document.getElementById('dE').value;
-
-            fData = mData.filter(d => { 
-                let pestMatch = true;
-                if(selP !== "") {
-                    let pObj = d.p;
-                    if(typeof pObj === 'string') { try{ pObj = JSON.parse(pObj); }catch(e){ pObj={} } }
-                    pestMatch = (pObj && pObj[selP]);
-                }
-                let ok = (selN==="" || d.n===selN) && (selD==="" || d.d===selD) && (selT==="" || d.tn===selT) && pestMatch && (selK==="" || d.kt===selK); 
-                if(dS && d.t < dS) ok = false; 
-                if(dE && d.t > dE) ok = false; 
-                return ok; 
-            });
-
-            if(source === 'n' || !source) {
-                let validData = mData.filter(d => selN === "" || d.n === selN);
-                updateDropdownOptions('selDaerah', [...new Set(validData.map(d=>d.d).filter(x=>x))].sort(), selD);
-            }
-            if(source === 'd' || source === 'n' || !source) {
-                let validData = mData.filter(d => (selN === "" || d.n === selN) && (selD === "" || d.d === selD));
-                updateDropdownOptions('selTanaman', [...new Set(validData.map(d=>d.tn).filter(x=>x))].sort(), selT);
-            }
-            if(source === 't' || source === 'd' || source === 'n' || !source) {
-                let validData = mData.filter(d => (selN==="" || d.n===selN) && (selD==="" || d.d===selD) && (selT==="" || d.tn===selT));
-                let allPests = new Set();
-                validData.forEach(d => {
-                    let p = d.p;
-                    if(typeof p === 'string') { try{ p = JSON.parse(p); }catch(e){ p={} } }
-                    if(p && typeof p === 'object') Object.keys(p).forEach(k => allPests.add(k));
-                });
-                updateDropdownOptions('selPerosak', [...allPests].sort(), selP);
-            }
-            pg = 1; calcUI();
-        }
-
-        function updateDropdownOptions(id, list, currentValue) {
-            const el = document.getElementById(id); el.innerHTML = '<option value="">Semua</option>';
-            list.forEach(item => { let opt = document.createElement('option'); opt.value = item; opt.innerText = item; el.appendChild(opt); });
-            if(list.includes(currentValue)) el.value = currentValue; else el.value = "";
-        }
-        function fillSel(id, arr) { updateDropdownOptions(id, arr, ""); } 
-
-        function resetFilter() {
-            document.querySelectorAll('select').forEach(s => { if(!s.disabled) s.value = ""; });
-            document.querySelectorAll('input[type=date]').forEach(i => i.value = "");
-            initDash(); 
-        }
-
-        // --- 3. CALCULATE UI ---
-        function calcUI() {
-            let tt=0, ts=0, pm={}, km={1:0,2:0,3:0,4:0,5:0}, pts=[], hData={};
-            
-            fData.forEach(d => {
-                let luasTanam = Number(d.lt) || 0;
-                let luasSerang = Number(d.ls) || 0;
-                tt += luasTanam; ts += luasSerang;
-
-                let pObj = d.p;
-                if (typeof pObj === 'string') { try { pObj = JSON.parse(pObj); } catch(e) { pObj = {}; } }
-
-                if(pObj && typeof pObj === 'object' && Object.keys(pObj).length > 0) {
-                    Object.entries(pObj).forEach(([k,v]) => { pm[k] = (pm[k]||0) + Number(v); });
-                } else if (luasSerang > 0) { pm["Umum"] = (pm["Umum"]||0) + luasSerang; }
-
-                let l = parseInt(d.k) || 0; if(l>0 && l<=5) km[l]++;
-
-                if(d.c && typeof d.c === 'string' && d.c.includes(',')) { 
-                    let p = d.c.split(',').map(Number); 
-                    if(p.length===2 && !isNaN(p[0])) pts.push(p); 
-                }
-                if(luasSerang > 0 && d.d && d.d !== "-") hData[d.d] = (hData[d.d]||0) + luasSerang;
-            });
-
-            document.getElementById('k1').innerText = tt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('k2').innerText = ts.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('k3').innerText = tt>0 ? ((ts/tt)*100).toFixed(1)+"%" : "0%";
-            document.getElementById('k4').innerText = fData.length.toLocaleString('en-US');
-            
-            updateCharts(pm, km); updateMap(pts); updateHotspot(hData); genSummary(tt, ts); renTab();
-        }
-
-        function genSummary(tt, ts) { 
-            const el = document.getElementById('smartSummary'); if(!el) return; 
-            if(ts === 0 || fData.length === 0) { el.innerHTML = `<span class="text-success fw-bold">Tiada rekod serangan dilaporkan setakat ini.</span>`; return; }
-            
-            let champion = fData[0];
-            fData.forEach(d => { if ((Number(d.ls) || 0) > (Number(champion.ls) || 0)) { champion = d; } });
-
-            if((Number(champion.ls)||0) > 0) {
-                el.innerHTML = `<div><b>Hotspot Tertinggi:</b> ${champion.l}, ${champion.d}<br><b>Masalah:</b> ${champion.tn} (Luas: ${Number(champion.ls).toFixed(2)} Ha)<br><b>Cadangan:</b> ${champion.s || "-"}</div>`;
+                const a = document.createElement('a');
+                a.href = "data:application/pdf;base64," + r.base64; 
+                a.download = r.filename;
+                a.click();
             } else {
-                el.innerHTML = "Analisis selesai. Tiada isu kritikal.";
+                alert("Gagal menjana PDF: " + r.message);
             }
-        }
-
-        function updateCharts(pm, km) { 
-            const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); 
-            if(charts.b) charts.b.destroy(); 
-            charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); 
-            
-            if(charts.p) charts.p.destroy(); 
-            charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); 
-        }
-
-        function updateMap(pts) { 
-            if(layer) map.removeLayer(layer); 
-            if(pts.length) { 
-                layer = L.layerGroup(pts.map(p => L.circleMarker(p, {radius:6, color:'#dc2626', fillOpacity:0.7, stroke:true, weight:1, color:'white', fillColor:'#dc2626'}))).addTo(map); 
-                try { map.fitBounds(L.latLngBounds(pts)); } catch(e){} 
-            } 
-        }
-
-        function updateHotspot(hData) { 
-            const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); 
-            document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; 
-        }
+        } catch(e) { console.error(e); alert("Ralat PDF: " + e.message); }
         
-        function renTab() { 
-            const st = (pg-1)*pSize; const dt = fData.slice(st, st+pSize); 
-            document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `
-                <tr>
-                    <td>${d.t || "-"}</td>
-                    <td>${d.l || "-"}</td>
-                    <td>${d.tn || "-"}</td>
-                    <td>${(Number(d.lt) || 0).toFixed(2)}</td>
-                    <td class="text-danger fw-bold">${(Number(d.ls) || 0).toFixed(2)}</td>
-                    <td class="text-center">
-                        <button onclick="openModal(${d.id})" class="btn btn-sm btn-outline-primary shadow-sm" title="Lihat Detail">
-                            <i class="bi bi-eye-fill"></i>
-                        </button>
-                    </td>
-                </tr>`).join('') 
-                : '<tr><td colspan="6" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; 
-                
-            document.getElementById('pgInfo').innerText = `Page ${pg}`; 
-        }        
-        function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
-
-        // --- 4. MODAL VIEW (REPORT CARD STYLE) ---
-        function openModal(id) {
-            const d = fData.find(x => x.id === id);
-            const raw = d.rawData || []; // Data mentah
-            
-            // Helper function untuk cari data berdasarkan nama column
-            const getVal = (key) => { 
-                if(!globalHeaders.length) return "-";
-                // Cari index column yang mengandungi kata kunci (case insensitive)
-                const i = globalHeaders.findIndex(h => String(h).toUpperCase().includes(key.toUpperCase())); 
-                return (i > -1 && raw[i]) ? raw[i] : "-"; 
-            }
-
-            const tarikh = getVal('TARIKH') || getVal('DATE');
-            const nama = getVal('NAMA') || getVal('PEGAWAI');
-            const email = getVal('EMAIL');
-            const lokasi = getVal('LOKASI') || getVal('KEBUN');
-
-            let details = "";
-            let pestHTML = "";
-
-            // Loop semua header untuk paparkan data (kecuali column sistem)
-            if(globalHeaders.length){
-                globalHeaders.forEach((h, i) => {
-                    if(!['ID','LOG','TIMESTAMP','STATUS','GAMBAR','IMAGE','TARIKH','DATE','NAMA','PEGAWAI','EMAIL','LOKASI','KEBUN'].some(x=>String(h).toUpperCase().includes(x))) {
-                        details += `<div class="v-row"><div class="v-label">${h}</div><div class="v-val">${raw[i]||"-"}</div></div>`;
-                    }
-                });
-            }
-
-            // Table Perosak (Parse JSON jika ada)
-            try {
-                let p = typeof d.p === 'string' ? JSON.parse(d.p) : d.p;
-                if(p && Object.keys(p).length) {
-                    pestHTML = `<table class="mini-table"><thead><tr><th>Perosak</th><th>Luas (Ha)</th></tr></thead><tbody>`;
-                    Object.keys(p).forEach(k => pestHTML+=`<tr><td>${k}</td><td>${p[k]}</td></tr>`);
-                    pestHTML += "</tbody></table>";
-                }
-            } catch(e){}
-
-            document.getElementById('modalBody').innerHTML = `
-                <div class="verify-card shadow-none border mb-0">
-                    <div class="verify-header">
-                        <div><small class="text-muted fw-bold">${tarikh}</small><div class="fw-bold text-uppercase">${nama}</div><small>${email}</small></div>
-                        <span class="badge bg-secondary">READ ONLY</span>
-                    </div>
-                    <div class="verify-body">
-                        <div class="v-row mb-3 pb-2 border-bottom"><div class="v-label text-dark">LOKASI UTAMA</div><div class="v-val fw-bold text-primary fs-5">${lokasi}</div></div>
-                        ${details}
-                        ${pestHTML ? `<div class="mt-3 fw-bold small text-uppercase">Perincian Serangan</div>` + pestHTML : ''}
-                    </div>
-                </div>`;
-            
-            new bootstrap.Modal(document.getElementById('detailModal')).show();
-        }
-
-        // --- 5. EXPORT FUNCTIONS ---
-        async function downloadDualExcel() {
-            if(!fData.length) return alert("Tiada data");
-            const wb = new ExcelJS.Workbook();
-            const ws = wb.addWorksheet('Laporan');
-            
-            // Header Excel
-            const headerRow = ['Tarikh', 'Negeri', 'Daerah', 'Lokasi', 'Tanaman', 'Luas Bancian (Ha)', 'Luas Serangan (Ha)', 'Syor'];
-            ws.addRow(headerRow);
-            
-            fData.forEach(d => {
-                ws.addRow([d.t, d.n, d.d, d.l, d.tn, d.lt, d.ls, d.s]);
-            });
-
-            const buf = await wb.xlsx.writeBuffer();
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([buf]));
-            a.download = 'Laporan_PNR.xlsx';
-            a.click();
-        }
-
-        async function dlPDF() {
-            const btn = document.querySelector('button[onclick="dlPDF()"]'); 
-            btn.innerHTML = "Jana..."; btn.disabled = true;
-            
-            let dateLabel = "Terkini";
-            if (fData.length > 0) {
-                const sortedDates = fData.map(d => d.t).sort();
-                dateLabel = `${sortedDates[0]} - ${sortedDates[sortedDates.length-1]}`;
-            }
-
-            try {
-                const m = { user: uProf.name, negeri: document.getElementById('selNegeri').value || "Semua", dates: dateLabel };
-                // Call Backend PDF Engine
-                const r = await postData('genPDF', {data: fData, meta: m});
-                
-                if(r.success) {
-                    const a = document.createElement('a');
-                    a.href = "data:application/pdf;base64," + r.base64; // Base64 dari backend
-                    a.download = r.filename;
-                    a.click();
-                } else {
-                    alert("Gagal menjana PDF: " + r.message);
-                }
-            } catch(e) { console.error(e); alert("Ralat PDF."); }
-            
-            btn.innerHTML = 'PDF'; btn.disabled = false;
-        }
-    </script>
+        btn.innerHTML = 'PDF'; btn.disabled = false;
+    }
+</script>
 </body>
 </html>
