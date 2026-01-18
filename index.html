@@ -374,8 +374,129 @@
             updateCharts(pm, km); updateMap(pts); updateHotspot(hData); genSummary(pm, tt, ts); renTab();
         }
 
-        function genSummary(pm, tt, ts) { const el = document.getElementById('smartSummary'); if(!el) return; let stateMap = {}; fData.forEach(d => { if (d.ls > 0) { stateMap[d.n] = (stateMap[d.n] || 0) + d.ls; } }); let topState = "-", topStateVal = 0; Object.entries(stateMap).forEach(([negeri, luas]) => { if (luas > topStateVal) { topState = negeri; topStateVal = luas; } }); if (topState === "-") topState = document.getElementById('selNegeri').value || "Semua Kawasan"; let cropMap = {}; fData.forEach(d => { if(d.ls > 0) cropMap[d.tn] = (cropMap[d.tn] || 0) + d.ls; }); let topCrop = "-", topCropVal = 0; Object.entries(cropMap).forEach(([k,v]) => { if(v > topCropVal) { topCrop = k; topCropVal = v; } }); let topP="-", topV=0; Object.entries(pm).forEach(([k,v])=>{ if(v > topV){ topP = k; topV = v; } }); if(topP === "-" && ts > 0) topP = "Serangan Umum"; let totalScore = 0, count = 0; fData.forEach(d => { let level = parseInt(d.k) || 0; if(level > 0 && d.ls > 0){ totalScore += level; count++; } }); let avgIdx = count > 0 ? (totalScore / count).toFixed(1) : "0.0"; let tafsir = "Tiada", color = "text-success"; let idxNum = parseFloat(avgIdx); if(idxNum > 0) { if(idxNum <= 2.9) tafsir = "Ringan"; else if(idxNum <= 3.9) { tafsir = "Sederhana"; color = "text-warning"; } else { tafsir = "Teruk"; color = "text-danger fw-bold"; } } if(ts === 0) { el.innerHTML = `<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Tiada rekod serangan dilaporkan setakat ini.</span>`; } else { el.innerHTML = ` <div style="line-height: 1.6;"> <i class="bi bi-geo-alt-fill text-danger me-1"></i> Lokasi Hotspot: <b>${topState}</b> <br> <i class="bi bi-flower1 text-success me-1"></i> Tanaman <b>${topCrop}</b> paling terkesan akibat serangan <b>${topP}</b><br> <i class="bi bi-exclamation-circle-fill text-warning me-1"></i> Luas Serangan: <b>${ts.toFixed(2)} Ha</b> (${((ts/tt)*100).toFixed(2)}%)<br> <i class="bi bi-bar-chart-fill text-secondary me-1"></i> Indeks Keterukan: <b>${avgIdx}</b> (<span class="${color}">${tafsir}</span>) </div> `; } }
-        function updateCharts(pm, km) { const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); if(charts.b) charts.b.destroy(); charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); if(charts.p) charts.p.destroy(); charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); }
+        /* --- ANALISIS PINTAR (WARNA IKUT CHART) --- */
+function genSummary(pm, tt, ts) {
+    const el = document.getElementById('smartSummary');
+    if (!el) return;
+
+    // 1. Jika Tiada Data
+    if (ts === 0 || fData.length === 0) {
+        el.innerHTML = `
+        <div class="d-flex align-items-center">
+            <div class="bg-light rounded-circle p-3 me-3 text-secondary"><i class="bi bi-robot fs-2"></i></div>
+            <div><h6 class="text-primary fw-bold mb-1">Analisis Pintar</h6><span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Tiada rekod serangan dilaporkan setakat ini.</span></div>
+        </div>`;
+        return;
+    }
+
+    // 2. Logic Cari Hotspot
+    let locGroups = {};
+    fData.forEach(d => {
+        const locKey = d.l; 
+        const ls = parseFloat(d.ls) || 0;
+        const lt = parseFloat(d.lt) || 0;
+
+        if (ls > 0) {
+            if (!locGroups[locKey]) {
+                locGroups[locKey] = {
+                    name: locKey,
+                    negeri: d.n,
+                    daerah: d.d,
+                    totalLS: 0,
+                    totalLT: 0,
+                    crops: {},
+                    pests: {},
+                    severitySum: 0,
+                    count: 0
+                };
+            }
+            let g = locGroups[locKey];
+            g.totalLS += ls;
+            g.totalLT += lt; 
+            g.count++;
+            g.severitySum += (parseInt(d.k) || 0);
+            g.crops[d.tn] = (g.crops[d.tn] || 0) + ls;
+            
+            try {
+                let pObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p;
+                if (pObj) Object.entries(pObj).forEach(([pN, pA]) => g.pests[pN] = (g.pests[pN] || 0) + (parseFloat(pA)||0));
+            } catch (e) {}
+        }
+    });
+
+    // 3. Cari Juara
+    const sortedLocs = Object.values(locGroups).sort((a, b) => b.totalLS - a.totalLS);
+    
+    if (sortedLocs.length === 0) { el.innerHTML = "Data tidak mencukupi."; return; }
+
+    const topLoc = sortedLocs[0];
+
+    // 4. Cari Top Crop & Pest
+    const topCropEntry = Object.entries(topLoc.crops).sort((a,b) => b[1] - a[1])[0];
+    const topCrop = topCropEntry ? topCropEntry[0] : "Tanaman";
+
+    const topPestEntry = Object.entries(topLoc.pests).sort((a,b) => b[1] - a[1])[0];
+    const topPest = topPestEntry ? topPestEntry[0] : "Perosak";
+
+    // 5. Kira Index & Peratus
+    const avgSev = topLoc.count > 0 ? (topLoc.severitySum / topLoc.count).toFixed(1) : "0.0";
+    let score = parseFloat(avgSev);
+    
+    // --- LOGIK WARNA (IKUT CHART KETERUKAN) ---
+    let sevText = "Rendah";
+    let sevColor = "#22c55e"; // T1 (Hijau) - Default
+
+    if (score >= 4.5) {
+        sevText = "Sangat Teruk";
+        sevColor = "#ef4444"; // T5 (Merah)
+    } else if (score >= 4.0) {
+        sevText = "Teruk";
+        sevColor = "#f97316"; // T4 (Oren)
+    } else if (score >= 3.0) {
+        sevText = "Sederhana";
+        sevColor = "#eab308"; // T3 (Kuning)
+    } else if (score >= 2.0) {
+        sevText = "Rendah";
+        sevColor = "#84cc16"; // T2 (Lime)
+    }
+
+    let locPct = topLoc.totalLT > 0 ? ((topLoc.totalLS / topLoc.totalLT) * 100).toFixed(2) : "0.00";
+
+    // 6. Generate HTML
+    el.innerHTML = `
+    <div class="d-flex align-items-start">
+        <div class="d-none d-sm-flex bg-white shadow-sm border rounded-circle p-3 me-4 align-items-center justify-content-center" style="width: 60px; height: 60px; flex-shrink: 0;">
+            <i class="bi bi-robot fs-3 text-primary"></i>
+        </div>
+
+        <div style="flex-grow: 1;">
+            <h6 class="text-primary fw-bold mb-3">Analisis Pintar</h6>
+            
+            <div class="mb-2" style="font-size: 0.95rem;">
+                <i class="bi bi-geo-alt-fill text-danger me-2"></i> 
+                Lokasi Hotspot: <b class="text-uppercase text-dark">${topLoc.daerah}, ${topLoc.negeri}</b>
+            </div>
+
+            <div class="mb-2" style="font-size: 0.95rem; line-height: 1.5;">
+                <i class="bi bi-flower1 text-success me-2"></i> 
+                Tanaman <b class="text-uppercase text-dark">${topCrop}</b> paling terkesan akibat serangan <b class="text-uppercase text-dark">${topPest}</b>
+            </div>
+
+            <div class="mb-2" style="font-size: 0.95rem;">
+                <i class="bi bi-exclamation-circle-fill text-warning me-2"></i> 
+                Luas Serangan: <b class="text-dark">${topLoc.totalLS.toFixed(2)} Ha</b> 
+                <span class="text-muted">(${locPct}%)</span>
+            </div>
+
+            <div style="font-size: 0.95rem;">
+                <i class="bi bi-bar-chart-fill me-2" style="color: ${sevColor}"></i> 
+                Indeks Keterukan: <b class="text-dark">${avgSev}</b> - <span style="color: ${sevColor}; font-weight: bold;">${sevText}</span>
+            </div>
+        </div>
+    </div>
+    `;
+}
+function updateCharts(pm, km) { const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); if(charts.b) charts.b.destroy(); charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); if(charts.p) charts.p.destroy(); charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); }
         function updateMap(pts) { if(layer) map.removeLayer(layer); if(pts.length) { layer = L.layerGroup(pts.map(p => L.circleMarker(p, {radius:6, color:'#dc2626', fillOpacity:0.7, stroke:true, weight:1, color:'white', fillColor:'#dc2626'}))).addTo(map); map.fitBounds(L.latLngBounds(pts)); } }
         function updateHotspot(hData) { const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; }
         function renTab() { const st = (pg-1)*pSize; const dt = fData.slice(st, st+pSize); document.getElementById('tBody').innerHTML = dt.length ? dt.map(d => `<tr><td>${d.t}</td><td>${d.n}</td><td>${d.l}</td><td><span class="badge bg-light text-dark border">${d.tn}</span></td><td>${d.lt.toFixed(2)}</td><td class="text-danger fw-bold">${d.ls.toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="6" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; document.getElementById('pgInfo').innerText = `Page ${pg}`; }
