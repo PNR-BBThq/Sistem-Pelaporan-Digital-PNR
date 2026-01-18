@@ -209,7 +209,7 @@
                 <div class="col-md-4">
                     <div class="table-box h-100 shadow-sm" style="max-height:400px; overflow-y:auto">
                         <h6 class="fw-bold mb-3 text-danger d-flex align-items-center"><i class="bi bi-fire me-2"></i>Hotspot Daerah</h6>
-                        <table class="table table-hover small mb-0"><thead class="table-light sticky-top"><tr><th>Daerah</th><th class="text-end">Luas (Ha)</th></tr></thead><tbody id="hotspotTable"></tbody></table>
+                        <table class="table table-hover small mb-0"><thead class="table-light sticky-top"><tr><th>Daerah</th><th class="text-end">Luas Serangan (Ha)</th></tr></thead><tbody id="hotspotTable"></tbody></table>
                     </div>
                 </div>
             </div>
@@ -512,7 +512,7 @@ async function loadPend() {
                             <div class="col-8 text-uppercase">${varieti}</div>
                         </div>
                         <div class="row g-2 mb-3" style="font-size:0.9rem">
-                            <div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAM:</div>
+                            <div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAMAN:</div>
                             <div class="col-8 text-dark text-uppercase">${luasTanam} HA</div>
                         </div>
                     </div>
@@ -524,9 +524,9 @@ async function loadPend() {
                                 <thead class="table-light">
                                     <tr>
                                         <th class="text-uppercase">PEROSAK</th>
-                                        <th class="text-center text-uppercase">LUAS (HA)</th>
+                                        <th class="text-center text-uppercase">LUAS SERANGAN (HA)</th>
                                         <th class="text-center">%</th>
-                                        <th class="text-center text-uppercase">TAHAP</th>
+                                        <th class="text-center text-uppercase">KETERUKAN SERANGAN</th>
                                     </tr>
                                 </thead>
                                 <tbody>${pestRows}</tbody>
