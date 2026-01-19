@@ -286,11 +286,10 @@
         let userToken = ""; 
         let currentUserID = "";
 
-       // --- FUNGSI POST DATA (DENGAN AUTO-LOGOUT) ---
+      // --- FUNGSI POST DATA (FIXED: ELAK ERROR toLowerCase) ---
 async function postData(act, load) {
     try {
         let payload;
-        // Jika login, tak perlu token. Jika action lain, wajib ada token.
         if (act === 'login') { 
             payload = { action: act, ...load }; 
         } else { 
@@ -303,12 +302,17 @@ async function postData(act, load) {
         
         const r = JSON.parse(await res.text());
 
-        // --- SECURITY KILL SWITCH (PENAMBAHAN BARU) ---
-        // Jika backend hantar mesej "Sesi tamat" atau "Token tidak sah"
-        if (!r.success && (r.message.toLowerCase().includes("sesi") || r.message.toLowerCase().includes("token"))) {
-            alert("⛔ " + r.message + "\n\nSila log masuk semula.");
-            location.reload(); // <--- ARAHAN UNTUK REFRESH & TENDANG KE LOGIN
-            return { success: false }; // Hentikan proses
+        // --- SECURITY KILL SWITCH (DIBETULKAN) ---
+        // Periksa: Jika GAGAL, dan ADA MESEJ, baru semak isi mesejnya.
+        if (r.success === false && r.message) {
+            // Kita tukar jadi string dulu baru lowercase, untuk elak error 'undefined'
+            const msgToCheck = String(r.message).toLowerCase();
+            
+            if (msgToCheck.includes("sesi") || msgToCheck.includes("token")) {
+                alert("⛔ " + r.message + "\n\nSila log masuk semula.");
+                location.reload(); 
+                return { success: false }; 
+            }
         }
 
         return r;
