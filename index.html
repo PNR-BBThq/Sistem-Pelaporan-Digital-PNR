@@ -286,18 +286,38 @@
         let userToken = ""; 
         let currentUserID = "";
 
-        async function postData(act, load) {
-            try {
-                let payload;
-                if (act === 'login') { payload = { action: act, ...load }; } 
-                else { payload = { action: act, token: userToken, u: currentUserID, ...load }; }
-                
-                const res = await fetch(`${API_URL}?action=${act}`, { 
-                    method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) 
-                });
-                return JSON.parse(await res.text());
-            } catch(e) { console.error(e); return {success:false, message:"Ralat sambungan."}; }
+       // --- FUNGSI POST DATA (DENGAN AUTO-LOGOUT) ---
+async function postData(act, load) {
+    try {
+        let payload;
+        // Jika login, tak perlu token. Jika action lain, wajib ada token.
+        if (act === 'login') { 
+            payload = { action: act, ...load }; 
+        } else { 
+            payload = { action: act, token: userToken, u: currentUserID, ...load }; 
         }
+        
+        const res = await fetch(`${API_URL}?action=${act}`, { 
+            method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) 
+        });
+        
+        const r = JSON.parse(await res.text());
+
+        // --- SECURITY KILL SWITCH (PENAMBAHAN BARU) ---
+        // Jika backend hantar mesej "Sesi tamat" atau "Token tidak sah"
+        if (!r.success && (r.message.toLowerCase().includes("sesi") || r.message.toLowerCase().includes("token"))) {
+            alert("⛔ " + r.message + "\n\nSila log masuk semula.");
+            location.reload(); // <--- ARAHAN UNTUK REFRESH & TENDANG KE LOGIN
+            return { success: false }; // Hentikan proses
+        }
+
+        return r;
+
+    } catch(e) { 
+        console.error(e); 
+        return {success:false, message:"Ralat sambungan."}; 
+    }
+}
 
         async function doLogin() {
             const u = document.getElementById('uid').value; const p = document.getElementById('pwd').value; 
