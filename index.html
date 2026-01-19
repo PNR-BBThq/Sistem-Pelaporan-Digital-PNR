@@ -161,15 +161,15 @@
             </div>
             
             <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(to right, #e0f2fe, #f0f9ff);">
-    <div class="card-body p-4">
-        <div id="smartSummary" class="text-dark">
-            <div class="d-flex align-items-center">
-                <div class="spinner-border spinner-border-sm text-primary me-2"></div>
-                Sedang menganalisis data...
+                <div class="card-body p-4">
+                    <div id="smartSummary" class="text-dark">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                            Sedang menganalisis data...
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-</div>
 
 
             <div class="row g-3 mb-4">
@@ -257,10 +257,28 @@
         </div>
     </div>
 
+    <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-success text-white">
+                    <h6 class="modal-title fw-bold"><i class="bi bi-card-heading me-2"></i>BUTIRAN REKOD DISAHKAN</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light p-4" id="detailBody">
+                    </div>
+                <div class="modal-footer bg-white">
+                    <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
         // *** GANTI DENGAN URL API BARU DARI AKAUN GMAIL PERSONAL ANDA ***
         const API_URL = "https://script.google.com/macros/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
-        const BANCIAN_URL = "https://script.google.com/a/macros/doa.gov.my/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
+        const BANCIAN_URL = "https://script.google.com/macros/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
         const RPW_URL = "https://www.appsheet.com/start/55b088df-3ec1-469a-b5c6-1fca48052906";
         
         let mData=[], fData=[], uProf=null, charts={}, map=null, layer=null, pg=1, pSize=10;
@@ -380,404 +398,411 @@
         }
 
         /* --- ANALISIS PINTAR (WARNA IKUT CHART) --- */
-function genSummary(pm, tt, ts) {
-    const el = document.getElementById('smartSummary');
-    if (!el) return;
+        function genSummary(pm, tt, ts) {
+            const el = document.getElementById('smartSummary');
+            if (!el) return;
 
-    // 1. Jika Tiada Data
-    if (ts === 0 || fData.length === 0) {
-        el.innerHTML = `
-        <div class="d-flex align-items-center">
-            <div class="bg-light rounded-circle p-3 me-3 text-secondary"><i class="bi bi-robot fs-2"></i></div>
-            <div><h6 class="text-primary fw-bold mb-1">Analisis Pintar</h6><span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Tiada rekod serangan dilaporkan setakat ini.</span></div>
-        </div>`;
-        return;
-    }
-
-    // 2. Logic Cari Hotspot
-    let locGroups = {};
-    fData.forEach(d => {
-        const locKey = d.l; 
-        const ls = parseFloat(d.ls) || 0;
-        const lt = parseFloat(d.lt) || 0;
-
-        if (ls > 0) {
-            if (!locGroups[locKey]) {
-                locGroups[locKey] = {
-                    name: locKey,
-                    negeri: d.n,
-                    daerah: d.d,
-                    totalLS: 0,
-                    totalLT: 0,
-                    crops: {},
-                    pests: {},
-                    severitySum: 0,
-                    count: 0
-                };
+            // 1. Jika Tiada Data
+            if (ts === 0 || fData.length === 0) {
+                el.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="bg-light rounded-circle p-3 me-3 text-secondary"><i class="bi bi-robot fs-2"></i></div>
+                    <div><h6 class="text-primary fw-bold mb-1">Analisis Pintar</h6><span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Tiada rekod serangan dilaporkan setakat ini.</span></div>
+                </div>`;
+                return;
             }
-            let g = locGroups[locKey];
-            g.totalLS += ls;
-            g.totalLT += lt; 
-            g.count++;
-            g.severitySum += (parseInt(d.k) || 0);
-            g.crops[d.tn] = (g.crops[d.tn] || 0) + ls;
+
+            // 2. Logic Cari Hotspot
+            let locGroups = {};
+            fData.forEach(d => {
+                const locKey = d.l; 
+                const ls = parseFloat(d.ls) || 0;
+                const lt = parseFloat(d.lt) || 0;
+
+                if (ls > 0) {
+                    if (!locGroups[locKey]) {
+                        locGroups[locKey] = {
+                            name: locKey,
+                            negeri: d.n,
+                            daerah: d.d,
+                            totalLS: 0,
+                            totalLT: 0,
+                            crops: {},
+                            pests: {},
+                            severitySum: 0,
+                            count: 0
+                        };
+                    }
+                    let g = locGroups[locKey];
+                    g.totalLS += ls;
+                    g.totalLT += lt; 
+                    g.count++;
+                    g.severitySum += (parseInt(d.k) || 0);
+                    g.crops[d.tn] = (g.crops[d.tn] || 0) + ls;
+                    
+                    try {
+                        let pObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p;
+                        if (pObj) Object.entries(pObj).forEach(([pN, pA]) => g.pests[pN] = (g.pests[pN] || 0) + (parseFloat(pA)||0));
+                    } catch (e) {}
+                }
+            });
+
+            // 3. Cari Juara
+            const sortedLocs = Object.values(locGroups).sort((a, b) => b.totalLS - a.totalLS);
             
-            try {
-                let pObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p;
-                if (pObj) Object.entries(pObj).forEach(([pN, pA]) => g.pests[pN] = (g.pests[pN] || 0) + (parseFloat(pA)||0));
-            } catch (e) {}
+            if (sortedLocs.length === 0) { el.innerHTML = "Data tidak mencukupi."; return; }
+
+            const topLoc = sortedLocs[0];
+
+            // 4. Cari Top Crop & Pest
+            const topCropEntry = Object.entries(topLoc.crops).sort((a,b) => b[1] - a[1])[0];
+            const topCrop = topCropEntry ? topCropEntry[0] : "Tanaman";
+
+            const topPestEntry = Object.entries(topLoc.pests).sort((a,b) => b[1] - a[1])[0];
+            const topPest = topPestEntry ? topPestEntry[0] : "Perosak";
+
+            // 5. Kira Index & Peratus
+            const avgSev = topLoc.count > 0 ? (topLoc.severitySum / topLoc.count).toFixed(1) : "0.0";
+            let score = parseFloat(avgSev);
+            
+            // --- LOGIK WARNA (IKUT CHART KETERUKAN) ---
+            let sevText = "Rendah";
+            let sevColor = "#22c55e"; // T1 (Hijau) - Default
+
+            if (score >= 4.5) {
+                sevText = "Sangat Teruk";
+                sevColor = "#ef4444"; // T5 (Merah)
+            } else if (score >= 4.0) {
+                sevText = "Teruk";
+                sevColor = "#f97316"; // T4 (Oren)
+            } else if (score >= 3.0) {
+                sevText = "Sederhana";
+                sevColor = "#eab308"; // T3 (Kuning)
+            } else if (score >= 2.0) {
+                sevText = "Rendah";
+                sevColor = "#84cc16"; // T2 (Lime)
+            }
+
+            let locPct = topLoc.totalLT > 0 ? ((topLoc.totalLS / topLoc.totalLT) * 100).toFixed(2) : "0.00";
+
+            // 6. Generate HTML
+            el.innerHTML = `
+            <div class="d-flex align-items-start">
+                <div class="d-none d-sm-flex bg-white shadow-sm border rounded-circle p-3 me-4 align-items-center justify-content-center" style="width: 60px; height: 60px; flex-shrink: 0;">
+                    <i class="bi bi-robot fs-3 text-primary"></i>
+                </div>
+
+                <div style="flex-grow: 1;">
+                    <h6 class="text-primary fw-bold mb-3">Analisis Pintar</h6>
+                    
+                    <div class="mb-2" style="font-size: 0.95rem;">
+                        <i class="bi bi-geo-alt-fill text-danger me-2"></i> 
+                        Lokasi Hotspot: <b class="text-uppercase text-dark">${topLoc.daerah}, ${topLoc.negeri}</b>
+                    </div>
+
+                    <div class="mb-2" style="font-size: 0.95rem; line-height: 1.5;">
+                        <i class="bi bi-flower1 text-success me-2"></i> 
+                        Tanaman <b class="text-uppercase text-dark">${topCrop}</b> paling terkesan akibat serangan <b class="text-uppercase text-dark">${topPest}</b>
+                    </div>
+
+                    <div class="mb-2" style="font-size: 0.95rem;">
+                        <i class="bi bi-exclamation-circle-fill text-warning me-2"></i> 
+                        Luas Serangan: <b class="text-dark">${topLoc.totalLS.toFixed(2)} Ha</b> 
+                        <span class="text-muted">(${locPct}%)</span>
+                    </div>
+
+                    <div style="font-size: 0.95rem;">
+                        <i class="bi bi-bar-chart-fill me-2" style="color: ${sevColor}"></i> 
+                        Indeks Keterukan: <b class="text-dark">${avgSev}</b> - <span style="color: ${sevColor}; font-weight: bold;">${sevText}</span>
+                    </div>
+                </div>
+            </div>
+            `;
         }
-    });
 
-    // 3. Cari Juara
-    const sortedLocs = Object.values(locGroups).sort((a, b) => b.totalLS - a.totalLS);
-    
-    if (sortedLocs.length === 0) { el.innerHTML = "Data tidak mencukupi."; return; }
-
-    const topLoc = sortedLocs[0];
-
-    // 4. Cari Top Crop & Pest
-    const topCropEntry = Object.entries(topLoc.crops).sort((a,b) => b[1] - a[1])[0];
-    const topCrop = topCropEntry ? topCropEntry[0] : "Tanaman";
-
-    const topPestEntry = Object.entries(topLoc.pests).sort((a,b) => b[1] - a[1])[0];
-    const topPest = topPestEntry ? topPestEntry[0] : "Perosak";
-
-    // 5. Kira Index & Peratus
-    const avgSev = topLoc.count > 0 ? (topLoc.severitySum / topLoc.count).toFixed(1) : "0.0";
-    let score = parseFloat(avgSev);
-    
-    // --- LOGIK WARNA (IKUT CHART KETERUKAN) ---
-    let sevText = "Rendah";
-    let sevColor = "#22c55e"; // T1 (Hijau) - Default
-
-    if (score >= 4.5) {
-        sevText = "Sangat Teruk";
-        sevColor = "#ef4444"; // T5 (Merah)
-    } else if (score >= 4.0) {
-        sevText = "Teruk";
-        sevColor = "#f97316"; // T4 (Oren)
-    } else if (score >= 3.0) {
-        sevText = "Sederhana";
-        sevColor = "#eab308"; // T3 (Kuning)
-    } else if (score >= 2.0) {
-        sevText = "Rendah";
-        sevColor = "#84cc16"; // T2 (Lime)
-    }
-
-    let locPct = topLoc.totalLT > 0 ? ((topLoc.totalLS / topLoc.totalLT) * 100).toFixed(2) : "0.00";
-
-    // 6. Generate HTML
-    el.innerHTML = `
-    <div class="d-flex align-items-start">
-        <div class="d-none d-sm-flex bg-white shadow-sm border rounded-circle p-3 me-4 align-items-center justify-content-center" style="width: 60px; height: 60px; flex-shrink: 0;">
-            <i class="bi bi-robot fs-3 text-primary"></i>
-        </div>
-
-        <div style="flex-grow: 1;">
-            <h6 class="text-primary fw-bold mb-3">Analisis Pintar</h6>
-            
-            <div class="mb-2" style="font-size: 0.95rem;">
-                <i class="bi bi-geo-alt-fill text-danger me-2"></i> 
-                Lokasi Hotspot: <b class="text-uppercase text-dark">${topLoc.daerah}, ${topLoc.negeri}</b>
-            </div>
-
-            <div class="mb-2" style="font-size: 0.95rem; line-height: 1.5;">
-                <i class="bi bi-flower1 text-success me-2"></i> 
-                Tanaman <b class="text-uppercase text-dark">${topCrop}</b> paling terkesan akibat serangan <b class="text-uppercase text-dark">${topPest}</b>
-            </div>
-
-            <div class="mb-2" style="font-size: 0.95rem;">
-                <i class="bi bi-exclamation-circle-fill text-warning me-2"></i> 
-                Luas Serangan: <b class="text-dark">${topLoc.totalLS.toFixed(2)} Ha</b> 
-                <span class="text-muted">(${locPct}%)</span>
-            </div>
-
-            <div style="font-size: 0.95rem;">
-                <i class="bi bi-bar-chart-fill me-2" style="color: ${sevColor}"></i> 
-                Indeks Keterukan: <b class="text-dark">${avgSev}</b> - <span style="color: ${sevColor}; font-weight: bold;">${sevText}</span>
-            </div>
-        </div>
-    </div>
-    `;
-}
-function updateCharts(pm, km) { const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); if(charts.b) charts.b.destroy(); charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); if(charts.p) charts.p.destroy(); charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); }
+        function updateCharts(pm, km) { const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); if(charts.b) charts.b.destroy(); charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); if(charts.p) charts.p.destroy(); charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); }
         function updateMap(pts) { if(layer) map.removeLayer(layer); if(pts.length) { layer = L.layerGroup(pts.map(p => L.circleMarker(p, {radius:6, color:'#dc2626', fillOpacity:0.7, stroke:true, weight:1, color:'white', fillColor:'#dc2626'}))).addTo(map); map.fitBounds(L.latLngBounds(pts)); } }
         function updateHotspot(hData) { const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; }
-function renTab() { 
-    const st = (pg-1)*pSize; 
-    const dt = fData.slice(st, st+pSize); 
-    
-    document.getElementById('tBody').innerHTML = dt.length ? dt.map((d, i) => {
-        // Kita hantar index sebenar dalam array fData
-        const realIndex = st + i;
-        return `
-        <tr onclick="viewRec(${realIndex})" style="cursor: pointer;" title="Klik untuk lihat butiran">
-            <td>${d.t}</td>
-            <td>${d.n}</td>
-            <td>${d.l}</td>
-            <td><span class="badge bg-light text-dark border">${d.tn}</span></td>
-            <td>${d.lt.toFixed(2)}</td>
-            <td class="text-danger fw-bold">${d.ls.toFixed(2)}</td>
-        </tr>`;
-    }).join('') : '<tr><td colspan="6" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; 
-    
-    document.getElementById('pgInfo').innerText = `Page ${pg}`; 
-}        
-function viewRec(idx) {
-    const d = fData[idx]; // Ambil data penuh dari memory
-    if (!d) return;
-
-    // Helper Bersih Link Gambar
-    const cleanImg = (raw) => {
-        if (!raw) return [];
-        let str = String(raw).trim().replace(/[\[\]"'\\]/g, '');
-        return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http'));
-    };
-
-    // Table Serangan (dari object d.p)
-    let pestRows = "";
-    if (d.p && Object.keys(d.p).length > 0) {
-        Object.entries(d.p).forEach(([k, v]) => {
-            pestRows += `<tr><td style="font-size:0.85rem" class="text-uppercase">${k}</td><td class="text-center fw-bold">${parseFloat(v).toFixed(2)}</td></tr>`;
-        });
-    } else {
-        pestRows = `<tr><td colspan="2" class="text-center text-muted small">Tiada Data Terperinci</td></tr>`;
-    }
-
-    // Gambar
-    const imgLinks = cleanImg(d.im);
-    let imgHTML = "";
-    if (imgLinks.length > 0) {
-        imgHTML = `<div class="mt-3 pt-2 border-top"><h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-paperclip me-1"></i> LAMPIRAN GAMBAR</h6><div class="d-flex flex-wrap gap-2">`;
-        imgLinks.forEach((lnk, i) => {
-            imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate text-uppercase fw-bold" style="max-width: 140px;"><i class="bi bi-image me-1"></i> FOTO ${i+1}</a>`;
-        });
-        imgHTML += `</div></div>`;
-    } else {
-        imgHTML = `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic text-uppercase"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR DILAMPIRKAN</small></div>`;
-    }
-
-    // HTML Kad (Copy design Verification Tab, ubah Footer)
-    const html = `
-    <div class="verify-card bg-white rounded-3 shadow-sm border h-100">
-        <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-start">
-            <div>
-                <div class="small text-muted mb-1"><i class="bi bi-calendar3 me-1"></i> ${d.t}</div>
-                <div class="fw-bold text-uppercase text-dark">${d.pg}</div>
-                <div class="small text-muted fst-italic">${d.em}</div>
-            </div>
-            <span class="badge bg-success text-white shadow-sm">STATUS: DISAHKAN</span>
-        </div>
-
-        <div class="p-3 pb-0">
-            <h6 class="fw-bold text-success mb-3 small border-bottom pb-2 text-uppercase"><i class="bi bi-info-circle-fill me-1"></i> LOKASI & TANAMAN</h6>
-            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">NEGERI:</div><div class="col-8 text-uppercase fw-bold text-dark">${d.n}</div></div>
-            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">DAERAH:</div><div class="col-8 text-uppercase fw-bold text-dark">${d.d}</div></div>
-            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">LOKASI:</div><div class="col-8 fw-bold text-dark text-uppercase">${d.l}</div></div>
-            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">KOORDINAT:</div><div class="col-8 font-monospace text-muted small">${d.c}</div></div>
-            <hr class="my-2 text-muted opacity-25">
-            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">TANAMAN:</div><div class="col-8 fw-bold text-success text-uppercase">${d.tn}</div></div>
-            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">VARIETI:</div><div class="col-8 text-uppercase">${d.vr}</div></div>
-            <div class="row g-2 mb-3" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAM:</div><div class="col-8 text-dark text-uppercase">${d.lt.toFixed(2)} HA</div></div>
-        </div>
-
-        <div class="px-3">
-            <h6 class="fw-bold text-success mb-2 small text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
-            <div class="table-responsive border rounded">
-                <table class="table table-sm table-striped mb-0" style="font-size:0.8rem">
-                    <thead class="table-light"><tr><th class="text-uppercase">PEROSAK</th><th class="text-center text-uppercase">LUAS (HA)</th></tr></thead>
-                    <tbody>${pestRows}</tbody>
-                </table>
-            </div>
-            ${imgHTML}
-        </div>
-
-        <div class="p-3 mt-auto">
-            <div class="alert alert-warning border-warning mb-3 py-2 px-3 small">
-                <i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong class="text-uppercase">SYOR:</strong> ${d.s}
-            </div>
-            <div class="bg-success bg-opacity-10 border border-success rounded p-2 text-center">
-                <small class="text-success fw-bold text-uppercase mb-1 d-block"><i class="bi bi-check-circle-fill me-1"></i> DISAHKAN OLEH:</small>
-                <div class="text-dark small fw-bold" style="white-space: pre-wrap;">${d.vb}</div>
-            </div>
-        </div>
-    </div>`;
-
-    document.getElementById('detailBody').innerHTML = html;
-    new bootstrap.Modal(document.getElementById('detailModal')).show();
-}        
-        function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
-
-      /* --- LOGIC CARD VIEW UPDATE (FIX NAMA COLUMN IMAGE) --- */
-async function loadPend() {
-    const container = document.getElementById('verifyContainer');
-    container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
-    
-    try {
-        const d = await postData('getPending', {state: uProf.state});
-        currentPendingRows = d.rows || [];
-
-        if(!d.rows || !d.rows.length) {
-            container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>';
-            return;
-        }
-
-        container.innerHTML = "";
-
-        // Helper: Bersihkan Link Gambar
-        const cleanImageLink = (raw) => { 
-            if (!raw) return []; 
-            let str = String(raw).trim(); 
-            if(str.length < 5) return []; 
-            // Buang aksara JSON/kurungan
-            str = str.replace(/[\[\]"'\\]/g, ''); 
-            // Pecahkan ikut koma
-            return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http')); 
-        }
-
-        d.rows.forEach((r) => {
-            const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }
+        
+        // --- 1. FUNCTION RENTAB (DIKEMASKINI DENGAN KLIK ROW) ---
+        function renTab() { 
+            const st = (pg-1)*pSize; 
+            const dt = fData.slice(st, st+pSize); 
             
-            // Mapping Data
-            const tarikh = getVal('Tarikh') || getVal('Date');
-            const nama = getVal('Nama') || getVal('Pegawai');
-            const email = getVal('Email') || "-";
-            const negeri = getVal('Negeri') || "-";
-            const daerah = getVal('Daerah') || "-";
-            const lokasi = getVal('Lokasi') || getVal('Kebun') || "-";
-            const koordinat = getVal('Koordinat') || "-";
-            const tanaman = getVal('Nama Tanaman') || getVal('Tanaman') || "-";
-            const varieti = getVal('Varieti') || "-";
-            const luasTanam = getVal('Luas Bertanam') || getVal('Luas') || "-";
-            const syor = getVal('Syor') || "-";
-            const timestamp = getVal('Timestamp') || tarikh;
+            document.getElementById('tBody').innerHTML = dt.length ? dt.map((d, i) => {
+                // Kita hantar index sebenar dalam array fData
+                const realIndex = st + i;
+                return `
+                <tr onclick="viewRec(${realIndex})" style="cursor: pointer;" title="Klik untuk lihat butiran">
+                    <td>${d.t}</td>
+                    <td>${d.n}</td>
+                    <td>${d.l}</td>
+                    <td><span class="badge bg-light text-dark border">${d.tn}</span></td>
+                    <td>${d.lt.toFixed(2)}</td>
+                    <td class="text-danger fw-bold">${d.ls.toFixed(2)}</td>
+                </tr>`;
+            }).join('') : '<tr><td colspan="6" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; 
+            
+            document.getElementById('pgInfo').innerText = `Page ${pg}`; 
+        }        
 
-            // 1. Table Serangan
+        // --- 2. FUNCTION VIEWREC (BARU: UNTUK PAPAR KAD DALAM MODAL) ---
+        function viewRec(idx) {
+            const d = fData[idx]; // Ambil data penuh dari memory
+            if (!d) return;
+
+            // Helper Bersih Link Gambar
+            const cleanImg = (raw) => {
+                if (!raw) return [];
+                let str = String(raw).trim().replace(/[\[\]"'\\]/g, '');
+                return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http'));
+            };
+
+            // Table Serangan (dari object d.p)
             let pestRows = "";
-            try {
-                const lsObj = JSON.parse(getVal('Luas Serangan') || "{}");
-                const pctObj = JSON.parse(getVal('Peratus') || "{}");
-                const kObj = JSON.parse(getVal('Keterukan') || "{}");
-                
-                if(Object.keys(lsObj).length > 0) {
-                    Object.keys(lsObj).forEach(k => {
-                        let level = kObj[k] || 0;
-                        let badgeColor = level < 3 ? 'success' : (level < 4 ? 'warning' : 'danger');
-                        pestRows += `
-                        <tr>
-                            <td style="font-size:0.85rem">${k}</td>
-                            <td class="text-center fw-bold">${lsObj[k]}</td>
-                            <td class="text-center small">${pctObj[k]||0}%</td>
-                            <td class="text-center"><span class="badge bg-${badgeColor}">T${level}</span></td>
-                        </tr>`;
-                    });
-                } else {
-                    pestRows = `<tr><td colspan="4" class="text-center text-muted small">Tiada Serangan</td></tr>`;
-                }
-            } catch(e) { pestRows = `<tr><td colspan="4" class="text-center text-muted small">Ralat Data</td></tr>`; }
+            if (d.p && Object.keys(d.p).length > 0) {
+                Object.entries(d.p).forEach(([k, v]) => {
+                    pestRows += `<tr><td style="font-size:0.85rem" class="text-uppercase">${k}</td><td class="text-center fw-bold">${parseFloat(v).toFixed(2)}</td></tr>`;
+                });
+            } else {
+                pestRows = `<tr><td colspan="2" class="text-center text-muted small">Tiada Data Terperinci</td></tr>`;
+            }
 
-            // 2. Logic Gambar (UPDATED COLUMN NAME)
-            // KITA CARI NAMA SPESIFIK DULU
-            const rawImg = getVal('IMAGE LINKS (COMMA SEPARATED)') || getVal('Gambar') || getVal('Image') || getVal('Foto');
-            const imgLinks = cleanImageLink(rawImg);
-            
+            // Gambar
+            const imgLinks = cleanImg(d.im);
             let imgHTML = "";
             if (imgLinks.length > 0) {
-                // Ada gambar
-                imgHTML = `<div class="mt-3 pt-2 border-top">
-                    <h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-paperclip me-1"></i> LAMPIRAN GAMBAR (${imgLinks.length})</h6>
-                    <div class="d-flex flex-wrap gap-2">`;
+                imgHTML = `<div class="mt-3 pt-2 border-top"><h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-paperclip me-1"></i> LAMPIRAN GAMBAR</h6><div class="d-flex flex-wrap gap-2">`;
                 imgLinks.forEach((lnk, i) => {
-                    imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate text-uppercase fw-bold" style="max-width: 140px;">
-                        <i class="bi bi-image me-1"></i> FOTO ${i+1}
-                    </a>`;
+                    imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate text-uppercase fw-bold" style="max-width: 140px;"><i class="bi bi-image me-1"></i> FOTO ${i+1}</a>`;
                 });
                 imgHTML += `</div></div>`;
             } else {
-                // Tiada gambar
                 imgHTML = `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic text-uppercase"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR DILAMPIRKAN</small></div>`;
             }
 
-            const cardHTML = `
-            <div class="col-md-6 col-xl-4">
-                <div class="verify-card bg-white rounded-3 shadow-sm border mb-3 h-100">
-                    <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="small text-muted mb-1"><i class="bi bi-calendar3 me-1"></i> ${timestamp}</div>
-                            <div class="fw-bold text-uppercase text-dark">${nama}</div>
-                            <div class="small text-muted fst-italic">${email}</div>
-                        </div>
-                        <span class="badge bg-warning text-dark shadow-sm">BARU</span>
+            // HTML Kad (Copy design Verification Tab, ubah Footer)
+            const html = `
+            <div class="verify-card bg-white rounded-3 shadow-sm border h-100">
+                <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="small text-muted mb-1"><i class="bi bi-calendar3 me-1"></i> ${d.t}</div>
+                        <div class="fw-bold text-uppercase text-dark">${d.pg}</div>
+                        <div class="small text-muted fst-italic">${d.em}</div>
                     </div>
+                    <span class="badge bg-success text-white shadow-sm">STATUS: DISAHKAN</span>
+                </div>
 
-                    <div class="p-3 pb-0">
-                        <h6 class="fw-bold text-success mb-3 small border-bottom pb-2 text-uppercase"><i class="bi bi-info-circle-fill me-1"></i> LOKASI & TANAMAN</h6>
-                        
-                        <div class="row g-2 mb-1" style="font-size:0.9rem">
-                            <div class="col-4 fw-bold text-secondary text-uppercase">NEGERI:</div>
-                            <div class="col-8 text-uppercase fw-bold text-dark">${negeri}</div>
-                        </div>
-                        <div class="row g-2 mb-1" style="font-size:0.9rem">
-                            <div class="col-4 fw-bold text-secondary text-uppercase">DAERAH:</div>
-                            <div class="col-8 text-uppercase fw-bold text-dark">${daerah}</div>
-                        </div>
-                        <div class="row g-2 mb-1" style="font-size:0.9rem">
-                            <div class="col-4 fw-bold text-secondary text-uppercase">LOKASI:</div>
-                            <div class="col-8 fw-bold text-dark text-uppercase">${lokasi}</div>
-                        </div>
-                        <div class="row g-2 mb-1" style="font-size:0.9rem">
-                            <div class="col-4 fw-bold text-secondary text-uppercase">KOORDINAT:</div>
-                            <div class="col-8 font-monospace text-muted small">${koordinat}</div>
-                        </div>
-                        <hr class="my-2 text-muted opacity-25">
-                        <div class="row g-2 mb-1" style="font-size:0.9rem">
-                            <div class="col-4 fw-bold text-secondary text-uppercase">TANAMAN:</div>
-                            <div class="col-8 fw-bold text-success text-uppercase">${tanaman}</div>
-                        </div>
-                        <div class="row g-2 mb-1" style="font-size:0.9rem">
-                            <div class="col-4 fw-bold text-secondary text-uppercase">VARIETI:</div>
-                            <div class="col-8 text-uppercase">${varieti}</div>
-                        </div>
-                        <div class="row g-2 mb-3" style="font-size:0.9rem">
-                            <div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAMAN:</div>
-                            <div class="col-8 text-dark text-uppercase">${luasTanam} HA</div>
-                        </div>
+                <div class="p-3 pb-0">
+                    <h6 class="fw-bold text-success mb-3 small border-bottom pb-2 text-uppercase"><i class="bi bi-info-circle-fill me-1"></i> LOKASI & TANAMAN</h6>
+                    <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">NEGERI:</div><div class="col-8 text-uppercase fw-bold text-dark">${d.n}</div></div>
+                    <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">DAERAH:</div><div class="col-8 text-uppercase fw-bold text-dark">${d.d}</div></div>
+                    <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">LOKASI:</div><div class="col-8 fw-bold text-dark text-uppercase">${d.l}</div></div>
+                    <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">KOORDINAT:</div><div class="col-8 font-monospace text-muted small">${d.c}</div></div>
+                    <hr class="my-2 text-muted opacity-25">
+                    <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">TANAMAN:</div><div class="col-8 fw-bold text-success text-uppercase">${d.tn}</div></div>
+                    <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">VARIETI:</div><div class="col-8 text-uppercase">${d.vr}</div></div>
+                    <div class="row g-2 mb-3" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAM:</div><div class="col-8 text-dark text-uppercase">${d.lt.toFixed(2)} HA</div></div>
+                </div>
+
+                <div class="px-3">
+                    <h6 class="fw-bold text-success mb-2 small text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
+                    <div class="table-responsive border rounded">
+                        <table class="table table-sm table-striped mb-0" style="font-size:0.8rem">
+                            <thead class="table-light"><tr><th class="text-uppercase">PEROSAK</th><th class="text-center text-uppercase">LUAS (HA)</th></tr></thead>
+                            <tbody>${pestRows}</tbody>
+                        </table>
                     </div>
+                    ${imgHTML}
+                </div>
 
-                    <div class="px-3">
-                        <h6 class="fw-bold text-success mb-2 small text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
-                        <div class="table-responsive border rounded">
-                            <table class="table table-sm table-striped mb-0" style="font-size:0.8rem">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th class="text-uppercase">PEROSAK</th>
-                                        <th class="text-center text-uppercase">LUAS SERANGAN (HA)</th>
-                                        <th class="text-center text-uppercase">PERATUS SERANGAN</th>
-                                        <th class="text-center text-uppercase">KETERUKAN SERANGAN</th>
-                                    </tr>
-                                </thead>
-                                <tbody>${pestRows}</tbody>
-                            </table>
-                        </div>
-                        ${imgHTML}
+                <div class="p-3 mt-auto">
+                    <div class="alert alert-warning border-warning mb-3 py-2 px-3 small">
+                        <i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong class="text-uppercase">SYOR:</strong> ${d.s}
                     </div>
-
-                    <div class="p-3 mt-auto">
-                        <div class="alert alert-warning border-warning mb-3 py-2 px-3 small">
-                            <i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong class="text-uppercase">SYOR KAWALAN:</strong> ${syor}
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-outline-danger flex-grow-1 fw-bold text-uppercase" onclick="subVer(${r.row},'REJECT')">TOLAK</button>
-                            <button class="btn btn-success flex-grow-1 fw-bold shadow-sm text-uppercase" onclick="subVer(${r.row},'APPROVE')">SAHKAN</button>
-                        </div>
+                    <div class="bg-success bg-opacity-10 border border-success rounded p-2 text-center">
+                        <small class="text-success fw-bold text-uppercase mb-1 d-block"><i class="bi bi-check-circle-fill me-1"></i> DISAHKAN OLEH:</small>
+                        <div class="text-dark small fw-bold" style="white-space: pre-wrap;">${d.vb}</div>
                     </div>
                 </div>
             </div>`;
-            container.innerHTML += cardHTML;
-        });
-    } catch(e) { console.error(e); container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; }
-}
+
+            document.getElementById('detailBody').innerHTML = html;
+            new bootstrap.Modal(document.getElementById('detailModal')).show();
+        }
+
+        function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
+
+        /* --- LOGIC CARD VIEW UPDATE (FIX NAMA COLUMN IMAGE) --- */
+        async function loadPend() {
+            const container = document.getElementById('verifyContainer');
+            container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
+            
+            try {
+                const d = await postData('getPending', {state: uProf.state});
+                currentPendingRows = d.rows || [];
+
+                if(!d.rows || !d.rows.length) {
+                    container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>';
+                    return;
+                }
+
+                container.innerHTML = "";
+
+                // Helper: Bersihkan Link Gambar
+                const cleanImageLink = (raw) => { 
+                    if (!raw) return []; 
+                    let str = String(raw).trim(); 
+                    if(str.length < 5) return []; 
+                    // Buang aksara JSON/kurungan
+                    str = str.replace(/[\[\]"'\\]/g, ''); 
+                    // Pecahkan ikut koma
+                    return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http')); 
+                }
+
+                d.rows.forEach((r) => {
+                    const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }
+                    
+                    // Mapping Data
+                    const tarikh = getVal('Tarikh') || getVal('Date');
+                    const nama = getVal('Nama') || getVal('Pegawai');
+                    const email = getVal('Email') || "-";
+                    const negeri = getVal('Negeri') || "-";
+                    const daerah = getVal('Daerah') || "-";
+                    const lokasi = getVal('Lokasi') || getVal('Kebun') || "-";
+                    const koordinat = getVal('Koordinat') || "-";
+                    const tanaman = getVal('Nama Tanaman') || getVal('Tanaman') || "-";
+                    const varieti = getVal('Varieti') || "-";
+                    const luasTanam = getVal('Luas Bertanam') || getVal('Luas') || "-";
+                    const syor = getVal('Syor') || "-";
+                    const timestamp = getVal('Timestamp') || tarikh;
+
+                    // 1. Table Serangan
+                    let pestRows = "";
+                    try {
+                        const lsObj = JSON.parse(getVal('Luas Serangan') || "{}");
+                        const pctObj = JSON.parse(getVal('Peratus') || "{}");
+                        const kObj = JSON.parse(getVal('Keterukan') || "{}");
+                        
+                        if(Object.keys(lsObj).length > 0) {
+                            Object.keys(lsObj).forEach(k => {
+                                let level = kObj[k] || 0;
+                                let badgeColor = level < 3 ? 'success' : (level < 4 ? 'warning' : 'danger');
+                                pestRows += `
+                                <tr>
+                                    <td style="font-size:0.85rem">${k}</td>
+                                    <td class="text-center fw-bold">${lsObj[k]}</td>
+                                    <td class="text-center small">${pctObj[k]||0}%</td>
+                                    <td class="text-center"><span class="badge bg-${badgeColor}">T${level}</span></td>
+                                </tr>`;
+                            });
+                        } else {
+                            pestRows = `<tr><td colspan="4" class="text-center text-muted small">Tiada Serangan</td></tr>`;
+                        }
+                    } catch(e) { pestRows = `<tr><td colspan="4" class="text-center text-muted small">Ralat Data</td></tr>`; }
+
+                    // 2. Logic Gambar (UPDATED COLUMN NAME)
+                    // KITA CARI NAMA SPESIFIK DULU
+                    const rawImg = getVal('IMAGE LINKS (COMMA SEPARATED)') || getVal('Gambar') || getVal('Image') || getVal('Foto');
+                    const imgLinks = cleanImageLink(rawImg);
+                    
+                    let imgHTML = "";
+                    if (imgLinks.length > 0) {
+                        // Ada gambar
+                        imgHTML = `<div class="mt-3 pt-2 border-top">
+                            <h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-paperclip me-1"></i> LAMPIRAN GAMBAR (${imgLinks.length})</h6>
+                            <div class="d-flex flex-wrap gap-2">`;
+                        imgLinks.forEach((lnk, i) => {
+                            imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate text-uppercase fw-bold" style="max-width: 140px;">
+                                <i class="bi bi-image me-1"></i> FOTO ${i+1}
+                            </a>`;
+                        });
+                        imgHTML += `</div></div>`;
+                    } else {
+                        // Tiada gambar
+                        imgHTML = `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic text-uppercase"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR DILAMPIRKAN</small></div>`;
+                    }
+
+                    const cardHTML = `
+                    <div class="col-md-6 col-xl-4">
+                        <div class="verify-card bg-white rounded-3 shadow-sm border mb-3 h-100">
+                            <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="small text-muted mb-1"><i class="bi bi-calendar3 me-1"></i> ${timestamp}</div>
+                                    <div class="fw-bold text-uppercase text-dark">${nama}</div>
+                                    <div class="small text-muted fst-italic">${email}</div>
+                                </div>
+                                <span class="badge bg-warning text-dark shadow-sm">BARU</span>
+                            </div>
+
+                            <div class="p-3 pb-0">
+                                <h6 class="fw-bold text-success mb-3 small border-bottom pb-2 text-uppercase"><i class="bi bi-info-circle-fill me-1"></i> LOKASI & TANAMAN</h6>
+                                
+                                <div class="row g-2 mb-1" style="font-size:0.9rem">
+                                    <div class="col-4 fw-bold text-secondary text-uppercase">NEGERI:</div>
+                                    <div class="col-8 text-uppercase fw-bold text-dark">${negeri}</div>
+                                </div>
+                                <div class="row g-2 mb-1" style="font-size:0.9rem">
+                                    <div class="col-4 fw-bold text-secondary text-uppercase">DAERAH:</div>
+                                    <div class="col-8 text-uppercase fw-bold text-dark">${daerah}</div>
+                                </div>
+                                <div class="row g-2 mb-1" style="font-size:0.9rem">
+                                    <div class="col-4 fw-bold text-secondary text-uppercase">LOKASI:</div>
+                                    <div class="col-8 fw-bold text-dark text-uppercase">${lokasi}</div>
+                                </div>
+                                <div class="row g-2 mb-1" style="font-size:0.9rem">
+                                    <div class="col-4 fw-bold text-secondary text-uppercase">KOORDINAT:</div>
+                                    <div class="col-8 font-monospace text-muted small">${koordinat}</div>
+                                </div>
+                                <hr class="my-2 text-muted opacity-25">
+                                <div class="row g-2 mb-1" style="font-size:0.9rem">
+                                    <div class="col-4 fw-bold text-secondary text-uppercase">TANAMAN:</div>
+                                    <div class="col-8 fw-bold text-success text-uppercase">${tanaman}</div>
+                                </div>
+                                <div class="row g-2 mb-1" style="font-size:0.9rem">
+                                    <div class="col-4 fw-bold text-secondary text-uppercase">VARIETI:</div>
+                                    <div class="col-8 text-uppercase">${varieti}</div>
+                                </div>
+                                <div class="row g-2 mb-3" style="font-size:0.9rem">
+                                    <div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAM:</div>
+                                    <div class="col-8 text-dark text-uppercase">${luasTanam} HA</div>
+                                </div>
+                            </div>
+
+                            <div class="px-3">
+                                <h6 class="fw-bold text-success mb-2 small text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
+                                <div class="table-responsive border rounded">
+                                    <table class="table table-sm table-striped mb-0" style="font-size:0.8rem">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="text-uppercase">PEROSAK</th>
+                                                <th class="text-center text-uppercase">LUAS (HA)</th>
+                                                <th class="text-center">%</th>
+                                                <th class="text-center text-uppercase">TAHAP</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>${pestRows}</tbody>
+                                    </table>
+                                </div>
+                                ${imgHTML}
+                            </div>
+
+                            <div class="p-3 mt-auto">
+                                <div class="alert alert-warning border-warning mb-3 py-2 px-3 small">
+                                    <i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong class="text-uppercase">SYOR KAWALAN:</strong> ${syor}
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-outline-danger flex-grow-1 fw-bold text-uppercase" onclick="subVer(${r.row},'REJECT')">TOLAK</button>
+                                    <button class="btn btn-success flex-grow-1 fw-bold shadow-sm text-uppercase" onclick="subVer(${r.row},'APPROVE')">SAHKAN</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                    container.innerHTML += cardHTML;
+                });
+            } catch(e) { console.error(e); container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; }
+        }
+
         async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
 
         async function approveAll() {
@@ -804,22 +829,6 @@ async function loadPend() {
 
         async function downloadDualExcel() { if (!fData.length) { alert("Tiada data!"); return; } const workbook = new ExcelJS.Workbook(); const worksheet = workbook.addWorksheet('Laporan Penuh'); worksheet.columns = [{ header: 'ID', key: 'id', width: 6 }, { header: 'Tarikh', key: 't', width: 12 }, { header: 'Negeri', key: 'n', width: 15 }, { header: 'Daerah', key: 'd', width: 15 }, { header: 'Lokasi', key: 'l', width: 22 }, { header: 'Koordinat', key: 'c', width: 22 }, { header: 'Kategori', key: 'kt', width: 18 }, { header: 'Tanaman', key: 'tn', width: 18 }, { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, { header: 'Syor Kawalan', key: 's', width: 25 }, { header: 'Pegawai', key: 'pg', width: 20 }, { header: 'Perosak', key: 'p', width: 20 }, { header: 'Keterukan', key: 'k', width: 18 }, { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, { header: '% Serangan', key: 'pct', width: 15 }]; worksheet.getRow(1).font = { bold: true }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }; let rowIndex = 2; fData.forEach(d => { let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]]; let startRow = rowIndex; let luasTanam = parseFloat(d.lt) || 0; pestEntries.forEach(([pName, pArea]) => { let luasSerang = parseFloat(pArea) || 0; let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%"; const row = worksheet.getRow(rowIndex); row.values = { id: d.id, t: d.t, n: d.n, d: d.d, l: d.l, c: d.c || "-", kt: d.kt || "-", tn: d.tn, lt: luasTanam, s: d.s, pg: d.pg || "-", p: pName, k: d.k, ls: luasSerang, pct: pctVal }; row.eachCell({ includeEmpty: true }, (cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; }); rowIndex++; }); if (pestEntries.length > 1) { for (let c = 1; c <= 11; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); } } for (let r = startRow; r < rowIndex; r++) { for (let c = 1; c <= 11; c++) { worksheet.getCell(r, c).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; } } }); const buffer = await workbook.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = window.URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'PNR_Laporan_Lengkap.xlsx'; anchor.click(); window.URL.revokeObjectURL(url); }
         async function dlPDF() { const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = "Jana..."; btn.disabled = true; let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length-1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length-1])}`; } try { const m = { user: uProf.name, negeri: document.getElementById('selNegeri').value || "Semua", dates: dateLabel }; const r = await postData('genPDF', {data: fData, meta: m}); if(r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } } catch(e) { console.error(e); } btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false; }
-   
-        <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-success text-white">
-                <h6 class="modal-title fw-bold"><i class="bi bi-card-heading me-2"></i>BUTIRAN REKOD DISAHKAN</h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body bg-light p-4" id="detailBody">
-                </div>
-            <div class="modal-footer bg-white">
-                <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button>
-            </div>
-        </div>
-    </div>
-</div>
     </script>
 </body>
 </html>
