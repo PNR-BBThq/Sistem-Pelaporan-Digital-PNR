@@ -546,91 +546,114 @@
             document.getElementById('pgInfo').innerText = `Page ${pg}`; 
         }        
 
-        // --- 2. FUNCTION VIEWREC (BARU: UNTUK PAPAR KAD DALAM MODAL) ---
-        function viewRec(idx) {
-            const d = fData[idx]; // Ambil data penuh dari memory
-            if (!d) return;
+        // --- 2. FUNCTION VIEWREC (TABLE FIXED: 4 COLUMN) ---
+function viewRec(idx) {
+    const d = fData[idx]; 
+    if (!d) return;
 
-            // Helper Bersih Link Gambar
-            const cleanImg = (raw) => {
-                if (!raw) return [];
-                let str = String(raw).trim().replace(/[\[\]"'\\]/g, '');
-                return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http'));
-            };
+    // Helper Bersih Link Gambar
+    const cleanImg = (raw) => {
+        if (!raw) return [];
+        let str = String(raw).trim().replace(/[\[\]"'\\]/g, '');
+        return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http'));
+    };
 
-            // Table Serangan (dari object d.p)
-            let pestRows = "";
-            if (d.p && Object.keys(d.p).length > 0) {
-                Object.entries(d.p).forEach(([k, v]) => {
-                    pestRows += `<tr><td style="font-size:0.85rem" class="text-uppercase">${k}</td><td class="text-center fw-bold">${parseFloat(v).toFixed(2)}</td></tr>`;
-                });
-            } else {
-                pestRows = `<tr><td colspan="2" class="text-center text-muted small">Tiada Data Terperinci</td></tr>`;
-            }
+    // --- TABLE SERANGAN (DIBETULKAN: 4 COLUMN) ---
+    let pestRows = "";
+    
+    // Kita guna Object.keys dari 'd.p' (Luas) sbb itu main data
+    if (d.p && Object.keys(d.p).length > 0) {
+        Object.keys(d.p).forEach(k => {
+            // Ambil data perincian
+            let luasVal = d.p[k];
+            let pctVal = (d.pp && d.pp[k]) ? d.pp[k] : 0; // Dari object percent
+            let sevVal = (d.pk && d.pk[k]) ? d.pk[k] : 0; // Dari object keterukan
+            
+            // Logic Badge Warna (Sama macam loadPend)
+            let level = parseInt(sevVal) || 0;
+            let badgeColor = level < 3 ? 'success' : (level < 4 ? 'warning' : 'danger');
 
-            // Gambar
-            const imgLinks = cleanImg(d.im);
-            let imgHTML = "";
-            if (imgLinks.length > 0) {
-                imgHTML = `<div class="mt-3 pt-2 border-top"><h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-paperclip me-1"></i> LAMPIRAN GAMBAR</h6><div class="d-flex flex-wrap gap-2">`;
-                imgLinks.forEach((lnk, i) => {
-                    imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate text-uppercase fw-bold" style="max-width: 140px;"><i class="bi bi-image me-1"></i> FOTO ${i+1}</a>`;
-                });
-                imgHTML += `</div></div>`;
-            } else {
-                imgHTML = `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic text-uppercase"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR DILAMPIRKAN</small></div>`;
-            }
+            pestRows += `
+            <tr>
+                <td style="font-size:0.85rem" class="text-uppercase">${k}</td>
+                <td class="text-center fw-bold">${parseFloat(luasVal).toFixed(2)}</td>
+                <td class="text-center small">${pctVal}%</td>
+                <td class="text-center"><span class="badge bg-${badgeColor}">T${level}</span></td>
+            </tr>`;
+        });
+    } else {
+        pestRows = `<tr><td colspan="4" class="text-center text-muted small">Tiada Data Terperinci</td></tr>`;
+    }
 
-            // HTML Kad (Copy design Verification Tab, ubah Footer)
-            const html = `
-            <div class="verify-card bg-white rounded-3 shadow-sm border h-100">
-                <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="small text-muted mb-1"><i class="bi bi-calendar3 me-1"></i> ${d.t}</div>
-                        <div class="fw-bold text-uppercase text-dark">${d.pg}</div>
-                        <div class="small text-muted fst-italic">${d.em}</div>
-                    </div>
-                    <span class="badge bg-success text-white shadow-sm">STATUS: DISAHKAN</span>
-                </div>
+    // Gambar
+    const imgLinks = cleanImg(d.im);
+    let imgHTML = "";
+    if (imgLinks.length > 0) {
+        imgHTML = `<div class="mt-3 pt-2 border-top"><h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-paperclip me-1"></i> LAMPIRAN GAMBAR</h6><div class="d-flex flex-wrap gap-2">`;
+        imgLinks.forEach((lnk, i) => {
+            imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate text-uppercase fw-bold" style="max-width: 140px;"><i class="bi bi-image me-1"></i> FOTO ${i+1}</a>`;
+        });
+        imgHTML += `</div></div>`;
+    } else {
+        imgHTML = `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic text-uppercase"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR DILAMPIRKAN</small></div>`;
+    }
 
-                <div class="p-3 pb-0">
-                    <h6 class="fw-bold text-success mb-3 small border-bottom pb-2 text-uppercase"><i class="bi bi-info-circle-fill me-1"></i> LOKASI & TANAMAN</h6>
-                    <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">NEGERI:</div><div class="col-8 text-uppercase fw-bold text-dark">${d.n}</div></div>
-                    <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">DAERAH:</div><div class="col-8 text-uppercase fw-bold text-dark">${d.d}</div></div>
-                    <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">LOKASI:</div><div class="col-8 fw-bold text-dark text-uppercase">${d.l}</div></div>
-                    <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">KOORDINAT:</div><div class="col-8 font-monospace text-muted small">${d.c}</div></div>
-                    <hr class="my-2 text-muted opacity-25">
-                    <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">TANAMAN:</div><div class="col-8 fw-bold text-success text-uppercase">${d.tn}</div></div>
-                    <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">VARIETI:</div><div class="col-8 text-uppercase">${d.vr}</div></div>
-                    <div class="row g-2 mb-3" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAMAN:</div><div class="col-8 text-dark text-uppercase">${d.lt.toFixed(2)} HA</div></div>
-                </div>
+    // HTML Kad
+    const html = `
+    <div class="verify-card bg-white rounded-3 shadow-sm border h-100">
+        <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-start">
+            <div>
+                <div class="small text-muted mb-1"><i class="bi bi-calendar3 me-1"></i> ${d.t}</div>
+                <div class="fw-bold text-uppercase text-dark">${d.pg}</div>
+                <div class="small text-muted fst-italic">${d.em}</div>
+            </div>
+            <span class="badge bg-success text-white shadow-sm">STATUS: DISAHKAN</span>
+        </div>
 
-                <div class="px-3">
-                    <h6 class="fw-bold text-success mb-2 small text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
-                    <div class="table-responsive border rounded">
-                        <table class="table table-sm table-striped mb-0" style="font-size:0.8rem">
-                            <thead class="table-light"><tr><th class="text-uppercase">PEROSAK</th><th class="text-center text-uppercase">LUAS SERANGAN (HA)</th></tr></thead>
-                            <tbody>${pestRows}</tbody>
-                        </table>
-                    </div>
-                    ${imgHTML}
-                </div>
+        <div class="p-3 pb-0">
+            <h6 class="fw-bold text-success mb-3 small border-bottom pb-2 text-uppercase"><i class="bi bi-info-circle-fill me-1"></i> LOKASI & TANAMAN</h6>
+            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">NEGERI:</div><div class="col-8 text-uppercase fw-bold text-dark">${d.n}</div></div>
+            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">DAERAH:</div><div class="col-8 text-uppercase fw-bold text-dark">${d.d}</div></div>
+            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">LOKASI:</div><div class="col-8 fw-bold text-dark text-uppercase">${d.l}</div></div>
+            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">KOORDINAT:</div><div class="col-8 font-monospace text-muted small">${d.c}</div></div>
+            <hr class="my-2 text-muted opacity-25">
+            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">TANAMAN:</div><div class="col-8 fw-bold text-success text-uppercase">${d.tn}</div></div>
+            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">VARIETI:</div><div class="col-8 text-uppercase">${d.vr}</div></div>
+            <div class="row g-2 mb-3" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAM:</div><div class="col-8 text-dark text-uppercase">${d.lt.toFixed(2)} HA</div></div>
+        </div>
 
-                <div class="p-3 mt-auto">
-                    <div class="alert alert-warning border-warning mb-3 py-2 px-3 small">
-                        <i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong class="text-uppercase">SYOR:</strong> ${d.s}
-                    </div>
-                    <div class="bg-success bg-opacity-10 border border-success rounded p-2 text-center">
-                        <small class="text-success fw-bold text-uppercase mb-1 d-block"><i class="bi bi-check-circle-fill me-1"></i> DISAHKAN OLEH:</small>
-                        <div class="text-dark small fw-bold" style="white-space: pre-wrap;">${d.vb}</div>
-                    </div>
-                </div>
-            </div>`;
+        <div class="px-3">
+            <h6 class="fw-bold text-success mb-2 small text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
+            <div class="table-responsive border rounded">
+                <table class="table table-sm table-striped mb-0" style="font-size:0.8rem">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-uppercase">PEROSAK</th>
+                            <th class="text-center text-uppercase">LUAS SERANGAN (HA)</th>
+                            <th class="text-center text-uppercase">PERATUS SERANGAN</th>
+                            <th class="text-center text-uppercase">KETERUKAN SERANGAN</th>
+                        </tr>
+                    </thead>
+                    <tbody>${pestRows}</tbody>
+                </table>
+            </div>
+            ${imgHTML}
+        </div>
 
-            document.getElementById('detailBody').innerHTML = html;
-            new bootstrap.Modal(document.getElementById('detailModal')).show();
-        }
+        <div class="p-3 mt-auto">
+            <div class="alert alert-warning border-warning mb-3 py-2 px-3 small">
+                <i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong class="text-uppercase">SYOR KAWALAN:</strong> ${d.s}
+            </div>
+            <div class="bg-success bg-opacity-10 border border-success rounded p-2 text-center">
+                <small class="text-success fw-bold text-uppercase mb-1 d-block"><i class="bi bi-check-circle-fill me-1"></i> DISAHKAN OLEH:</small>
+                <div class="text-dark small fw-bold" style="white-space: pre-wrap;">${d.vb}</div>
+            </div>
+        </div>
+    </div>`;
 
+    document.getElementById('detailBody').innerHTML = html;
+    new bootstrap.Modal(document.getElementById('detailModal')).show();
+}
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
 
         /* --- LOGIC CARD VIEW UPDATE (FIX NAMA COLUMN IMAGE) --- */
