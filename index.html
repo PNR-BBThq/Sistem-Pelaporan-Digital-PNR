@@ -570,98 +570,106 @@ async function postData(act, load) {
             document.getElementById('pgInfo').innerText = `Page ${pg}`; 
         }        
 
-        // --- 2. FUNCTION VIEWREC (TABLE FIXED: 4 COLUMN) ---
-// --- FUNCTION VIEWREC (DENGAN EDIT & DELETE ADMIN) ---
+      // --- FUNCTION VIEWREC (FULL EDIT MODE) ---
 function viewRec(idx) {
     const d = fData[idx];
     if (!d) return;
 
-    // Helper Bersih Link Gambar
     const cleanImg = (raw) => {
         if (!raw) return [];
         let str = String(raw).trim().replace(/[\[\]"'\\]/g, '');
         return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http'));
     };
 
-    // Table Serangan
     let pestRows = "";
     if (d.p && Object.keys(d.p).length > 0) {
         Object.keys(d.p).forEach(k => {
-            let luasVal = d.p[k];
-            let pctVal = (d.pp && d.pp[k]) ? d.pp[k] : 0;
-            let sevVal = (d.pk && d.pk[k]) ? d.pk[k] : 0;
-            let level = parseInt(sevVal) || 0;
+            let luasVal = d.p[k], pctVal = (d.pp && d.pp[k]) ? d.pp[k] : 0, sevVal = (d.pk && d.pk[k]) ? d.pk[k] : 0, level = parseInt(sevVal) || 0;
             let badgeColor = level < 3 ? 'success' : (level < 4 ? 'warning' : 'danger');
-
             pestRows += `<tr><td style="font-size:0.85rem" class="text-uppercase">${k}</td><td class="text-center fw-bold">${parseFloat(luasVal).toFixed(2)}</td><td class="text-center small">${pctVal}%</td><td class="text-center"><span class="badge bg-${badgeColor}">T${level}</span></td></tr>`;
         });
     } else { pestRows = `<tr><td colspan="4" class="text-center text-muted small">Tiada Data Terperinci</td></tr>`; }
 
-    // Gambar
     const imgLinks = cleanImg(d.im);
     let imgHTML = imgLinks.length > 0 ? `<div class="mt-3 pt-2 border-top"><h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-paperclip me-1"></i> LAMPIRAN GAMBAR</h6><div class="d-flex flex-wrap gap-2">` + imgLinks.map((lnk,i)=>`<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate fw-bold" style="max-width:140px;"><i class="bi bi-image me-1"></i> FOTO ${i+1}</a>`).join('') + `</div></div>` : `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic text-uppercase"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR</small></div>`;
 
-    // --- BUTTON ADMIN (EDIT/DELETE) ---
+    // ADMIN BUTTONS
     let adminBtns = "";
     if (uProf.role === "ADMIN") {
-        adminBtns = `
-        <div class="border-top pt-3 mt-3 d-flex justify-content-between gap-2">
-            <button onclick="enableEditMode(${d.id})" class="btn btn-outline-primary btn-sm flex-grow-1"><i class="bi bi-pencil-square me-1"></i> KEMASKINI</button>
-            <button onclick="doDeleteRec(${d.id})" class="btn btn-outline-danger btn-sm flex-grow-1"><i class="bi bi-trash-fill me-1"></i> PADAM</button>
-        </div>`;
+        adminBtns = `<div class="border-top pt-3 mt-3 d-flex justify-content-between gap-2"><button onclick="enableEditMode(${d.id})" class="btn btn-outline-primary btn-sm flex-grow-1"><i class="bi bi-pencil-square me-1"></i> KEMASKINI</button><button onclick="doDeleteRec(${d.id})" class="btn btn-outline-danger btn-sm flex-grow-1"><i class="bi bi-trash-fill me-1"></i> PADAM</button></div>`;
     }
 
+    // --- FORM HTML ---
     const html = `
     <div class="verify-card bg-white rounded-3 shadow-sm border h-100 position-relative">
         <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-start">
             <div>
                 <div class="small text-muted mb-1"><i class="bi bi-calendar3 me-1"></i> ${d.t}</div>
-                <div class="fw-bold text-uppercase text-dark" id="disp_nama_${d.id}">${d.pg}</div>
+                <div class="fw-bold text-uppercase text-dark">${d.pg}</div>
                 <div class="small text-muted fst-italic">${d.em}</div>
             </div>
             <span class="badge bg-success text-white shadow-sm">DISAHKAN</span>
         </div>
 
         <div class="p-3 pb-0">
-            <h6 class="fw-bold text-success mb-3 small border-bottom pb-2 text-uppercase"><i class="bi bi-info-circle-fill me-1"></i> LOKASI & TANAMAN</h6>
-            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">NEGERI:</div><div class="col-8 fw-bold text-dark">${d.n}</div></div>
-            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">DAERAH:</div><div class="col-8 fw-bold text-dark">${d.d}</div></div>
-            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">LOKASI:</div><div class="col-8 fw-bold text-dark">${d.l}</div></div>
-            <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">TANAMAN:</div><div class="col-8 fw-bold text-success">${d.tn}</div></div>
-            <div class="row g-2 mb-3" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">LUAS TANAM:</div><div class="col-8 text-dark">${d.lt.toFixed(2)} HA</div></div>
-        </div>
-
-        <div class="px-3">
-            <h6 class="fw-bold text-success mb-2 small text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
-            <div id="view_mode_${d.id}">
-                <div class="table-responsive border rounded mb-2">
-                    <table class="table table-sm table-striped mb-0" style="font-size:0.8rem">
-                        <thead class="table-light"><tr><th>PEROSAK</th><th class="text-center">LUAS (HA)</th><th class="text-center">%</th><th class="text-center">TAHAP</th></tr></thead>
-                        <tbody>${pestRows}</tbody>
-                    </table>
-                </div>
-                <div class="alert alert-warning border-warning mb-0 py-2 px-3 small">
-                    <i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong>SYOR:</strong> <span id="disp_syor_${d.id}">${d.s}</span>
-                </div>
+            <div id="view_info_${d.id}">
+                <h6 class="fw-bold text-success mb-3 small border-bottom pb-2 text-uppercase"><i class="bi bi-info-circle-fill me-1"></i> LOKASI & TANAMAN</h6>
+                <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">NEGERI:</div><div class="col-8 fw-bold text-dark">${d.n}</div></div>
+                <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">DAERAH:</div><div class="col-8 fw-bold text-dark">${d.d}</div></div>
+                <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">LOKASI:</div><div class="col-8 fw-bold text-dark">${d.l}</div></div>
+                <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">KOORDINAT:</div><div class="col-8 font-monospace text-muted small">${d.c}</div></div>
+                <hr class="my-2 text-muted opacity-25">
+                <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">TANAMAN:</div><div class="col-8 fw-bold text-success">${d.tn}</div></div>
+                <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">VARIETI:</div><div class="col-8 text-uppercase">${d.vr}</div></div>
+                <div class="row g-2 mb-3" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">LUAS TANAMAN:</div><div class="col-8 text-dark">${d.lt.toFixed(2)} HA</div></div>
             </div>
 
-            <div id="edit_mode_${d.id}" style="display:none;" class="bg-light p-3 rounded border">
-                <label class="small fw-bold mb-1">Nama Pegawai</label>
-                <input type="text" id="edit_nama_${d.id}" class="form-control form-control-sm mb-2" value="${d.pg}">
+            <div id="edit_mode_${d.id}" style="display:none;" class="bg-light p-3 rounded border mb-3">
+                <h6 class="fw-bold text-primary mb-3 small border-bottom pb-2"><i class="bi bi-pencil-fill me-1"></i> MOD PENYUNTINGAN</h6>
                 
-                <label class="small fw-bold mb-1">Jumlah Luas Serangan (Ha)</label>
-                <input type="number" id="edit_luas_${d.id}" class="form-control form-control-sm mb-2" value="${d.ls}">
-                <small class="text-danger d-block mb-2" style="font-size:0.7rem">*Mengubah luas total akan menimpa data perosak terperinci.</small>
+                <div class="row g-2 mb-2">
+                    <div class="col-6"><label class="small fw-bold">Tarikh</label><input type="date" id="ed_date_${d.id}" class="form-control form-control-sm" value="${d.t}"></div>
+                    <div class="col-6"><label class="small fw-bold">Pegawai</label><input type="text" id="ed_name_${d.id}" class="form-control form-control-sm" value="${d.pg}"></div>
+                </div>
+                
+                <div class="row g-2 mb-2">
+                    <div class="col-6"><label class="small fw-bold">Negeri</label><input type="text" id="ed_state_${d.id}" class="form-control form-control-sm" value="${d.n}"></div>
+                    <div class="col-6"><label class="small fw-bold">Daerah</label><input type="text" id="ed_dist_${d.id}" class="form-control form-control-sm" value="${d.d}"></div>
+                </div>
 
-                <label class="small fw-bold mb-1">Syor Kawalan</label>
-                <textarea id="edit_syor_${d.id}" class="form-control form-control-sm mb-3" rows="3">${d.s}</textarea>
+                <div class="mb-2"><label class="small fw-bold">Lokasi/Kebun</label><input type="text" id="ed_loc_${d.id}" class="form-control form-control-sm" value="${d.l}"></div>
+                <div class="mb-2"><label class="small fw-bold">Koordinat</label><input type="text" id="ed_coord_${d.id}" class="form-control form-control-sm" value="${d.c}"></div>
+
+                <div class="row g-2 mb-2">
+                    <div class="col-6"><label class="small fw-bold">Tanaman</label><input type="text" id="ed_crop_${d.id}" class="form-control form-control-sm" value="${d.tn}"></div>
+                    <div class="col-6"><label class="small fw-bold">Varieti</label><input type="text" id="ed_var_${d.id}" class="form-control form-control-sm" value="${d.vr}"></div>
+                </div>
+
+                <div class="row g-2 mb-2">
+                    <div class="col-6"><label class="small fw-bold">Luas Tanam(Ha)</label><input type="number" id="ed_lt_${d.id}" class="form-control form-control-sm" value="${d.lt}"></div>
+                    <div class="col-6"><label class="small fw-bold">Luas Serang(Ha)</label><input type="number" id="ed_ls_${d.id}" class="form-control form-control-sm" value="${d.ls}"></div>
+                </div>
+
+                <div class="mb-3"><label class="small fw-bold">Syor Kawalan</label><textarea id="ed_syor_${d.id}" class="form-control form-control-sm" rows="2">${d.s}</textarea></div>
 
                 <div class="d-flex gap-2">
                     <button onclick="cancelEdit(${d.id})" class="btn btn-secondary btn-sm flex-grow-1">Batal</button>
-                    <button onclick="saveEdit(${d.id})" class="btn btn-success btn-sm flex-grow-1">Simpan</button>
+                    <button onclick="saveEdit(${d.id})" class="btn btn-success btn-sm flex-grow-1">Simpan Perubahan</button>
                 </div>
             </div>
+        </div>
 
+        <div class="px-3" id="view_pest_${d.id}">
+            <h6 class="fw-bold text-success mb-2 small text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
+            <div class="table-responsive border rounded mb-2">
+                <table class="table table-sm table-striped mb-0" style="font-size:0.8rem">
+                    <thead class="table-light"><tr><th>PEROSAK</th><th class="text-center">LUAS SERANGAN (HA)</th><th class="text-center">PERATUS SERANGAN</th><th class="text-center">KETERUKAN SERANGAN</th></tr></thead>
+                    <tbody>${pestRows}</tbody>
+                </table>
+            </div>
+            <div class="alert alert-warning border-warning mb-0 py-2 px-3 small">
+                <i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong>SYOR:</strong> ${d.s}
+            </div>
             ${imgHTML}
         </div>
 
@@ -678,64 +686,49 @@ function viewRec(idx) {
     new bootstrap.Modal(document.getElementById('detailModal')).show();
 }
 
-// --- FUNGSI LOGIC EDIT & DELETE (TAMBAHAN) ---
-
 function enableEditMode(id) {
-    document.getElementById(`view_mode_${id}`).style.display = 'none';
+    document.getElementById(`view_info_${id}`).style.display = 'none';
+    document.getElementById(`view_pest_${id}`).style.display = 'none'; // Sembunyi detail pest masa edit untuk jimat ruang
     document.getElementById(`edit_mode_${id}`).style.display = 'block';
 }
 
 function cancelEdit(id) {
-    document.getElementById(`view_mode_${id}`).style.display = 'block';
+    document.getElementById(`view_info_${id}`).style.display = 'block';
+    document.getElementById(`view_pest_${id}`).style.display = 'block';
     document.getElementById(`edit_mode_${id}`).style.display = 'none';
 }
 
-async function doDeleteRec(rowID) {
-    if(!confirm("⚠️ AMARAN: Adakah anda pasti mahu memadam rekod ini?\n\nData akan dipindahkan ke arkib 'Data_dipadam'.")) return;
-    
-    // UI Loading
-    const btn = event.target; 
-    const oriText = btn.innerHTML;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Memadam...';
-    btn.disabled = true;
-
-    const r = await postData('deleteEntry', { row: rowID });
-    
-    if(r.success) {
-        alert("✅ " + r.message);
-        location.reload(); // Refresh untuk update data
-    } else {
-        alert("❌ " + r.message);
-        btn.innerHTML = oriText;
-        btn.disabled = false;
-    }
-}
-
 async function saveEdit(rowID) {
-    if(!confirm("Simpan perubahan ini?")) return;
+    if(!confirm("Simpan semua perubahan ini?")) return;
 
-    const syor = document.getElementById(`edit_syor_${rowID}`).value;
-    const luas = document.getElementById(`edit_luas_${rowID}`).value;
-    const nama = document.getElementById(`edit_nama_${rowID}`).value;
+    // Kumpul semua data dari input
+    const payload = {
+        row: rowID,
+        tarikh: document.getElementById(`ed_date_${rowID}`).value,
+        pegawai: document.getElementById(`ed_name_${rowID}`).value,
+        negeri: document.getElementById(`ed_state_${rowID}`).value,
+        daerah: document.getElementById(`ed_dist_${rowID}`).value,
+        lokasi: document.getElementById(`ed_loc_${rowID}`).value,
+        coord: document.getElementById(`ed_coord_${rowID}`).value,
+        tanaman: document.getElementById(`ed_crop_${rowID}`).value,
+        varieti: document.getElementById(`ed_var_${rowID}`).value,
+        luasT: document.getElementById(`ed_lt_${rowID}`).value,
+        luasS: document.getElementById(`ed_ls_${rowID}`).value,
+        syor: document.getElementById(`ed_syor_${rowID}`).value
+    };
 
-    // UI Loading
     const btn = event.target;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Simpan...';
     btn.disabled = true;
 
-    const r = await postData('updateEntry', { 
-        row: rowID, 
-        syor: syor, 
-        luas: luas, 
-        pegawai: nama 
-    });
+    const r = await postData('updateEntry', payload);
 
     if(r.success) {
         alert("✅ Data berjaya dikemaskini!");
         location.reload();
     } else {
         alert("❌ " + r.message);
-        btn.innerHTML = "Simpan";
+        btn.innerHTML = "Simpan Perubahan";
         btn.disabled = false;
     }
 }
