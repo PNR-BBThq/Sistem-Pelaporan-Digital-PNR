@@ -602,14 +602,14 @@
                     <hr class="my-2 text-muted opacity-25">
                     <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">TANAMAN:</div><div class="col-8 fw-bold text-success text-uppercase">${d.tn}</div></div>
                     <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">VARIETI:</div><div class="col-8 text-uppercase">${d.vr}</div></div>
-                    <div class="row g-2 mb-3" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAM:</div><div class="col-8 text-dark text-uppercase">${d.lt.toFixed(2)} HA</div></div>
+                    <div class="row g-2 mb-3" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAMAN:</div><div class="col-8 text-dark text-uppercase">${d.lt.toFixed(2)} HA</div></div>
                 </div>
 
                 <div class="px-3">
                     <h6 class="fw-bold text-success mb-2 small text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
                     <div class="table-responsive border rounded">
                         <table class="table table-sm table-striped mb-0" style="font-size:0.8rem">
-                            <thead class="table-light"><tr><th class="text-uppercase">PEROSAK</th><th class="text-center text-uppercase">LUAS (HA)</th></tr></thead>
+                            <thead class="table-light"><tr><th class="text-uppercase">PEROSAK</th><th class="text-center text-uppercase">LUAS SERANGAN (HA)</th></tr></thead>
                             <tbody>${pestRows}</tbody>
                         </table>
                     </div>
@@ -776,9 +776,9 @@
                                         <thead class="table-light">
                                             <tr>
                                                 <th class="text-uppercase">PEROSAK</th>
-                                                <th class="text-center text-uppercase">LUAS (HA)</th>
-                                                <th class="text-center">%</th>
-                                                <th class="text-center text-uppercase">TAHAP</th>
+                                                <th class="text-center text-uppercase">LUAS SERANGAN (HA)</th>
+                                                <th class="text-center">PERATUS SERANGAN</th>
+                                                <th class="text-center text-uppercase">KETERUKAN SERANGAN</th>
                                             </tr>
                                         </thead>
                                         <tbody>${pestRows}</tbody>
