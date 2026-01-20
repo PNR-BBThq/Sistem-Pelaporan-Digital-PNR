@@ -591,7 +591,7 @@ function viewRec(idx) {
     } else { pestRows = `<tr><td colspan="4" class="text-center text-muted small">Tiada Data Terperinci</td></tr>`; }
 
     const imgLinks = cleanImg(d.im);
-    let imgHTML = imgLinks.length > 0 ? `<div class="mt-3 pt-2 border-top"><h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-paperclip me-1"></i> LAMPIRAN GAMBAR</h6><div class="d-flex flex-wrap gap-2">` + imgLinks.map((lnk,i)=>`<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate fw-bold" style="max-width:140px;"><i class="bi bi-image me-1"></i> FOTO ${i+1}</a>`).join('') + `</div></div>` : `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic text-uppercase"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR</small></div>`;
+    let imgHTML = imgLinks.length > 0 ? `<div class="mt-3 pt-2 border-top"><h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-paperclip me-1"></i> LAMPIRAN GAMBAR</h6><div class="d-flex flex-wrap gap-2">` + imgLinks.map((lnk,i)=>`<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate fw-bold" style="max-width:140px;"><i class="bi bi-image me-1"></i> Gambar ${i+1}</a>`).join('') + `</div></div>` : `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic text-uppercase"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR</small></div>`;
 
     // ADMIN BUTTONS
     let adminBtns = "";
@@ -697,7 +697,42 @@ function cancelEdit(id) {
     document.getElementById(`view_pest_${id}`).style.display = 'block';
     document.getElementById(`edit_mode_${id}`).style.display = 'none';
 }
+        
+async function doDeleteRec(rowID) {
+    if(!confirm("⚠️ AMARAN: Adakah anda pasti mahu memadam rekod ini?\n\nData akan dipindahkan ke arkib 'Data_dipadam'.")) return;
+    
+    // UI Loading (Guna closest supaya tak tersilap target ikon)
+    const btn = event.target.closest('button'); 
+    const oriText = btn ? btn.innerHTML : "PADAM";
+    
+    if (btn) {
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Memadam...';
+        btn.disabled = true;
+    }
 
+    try {
+        const r = await postData('deleteEntry', { row: rowID });
+        
+        if(r.success) {
+            alert("✅ " + r.message);
+            location.reload(); 
+        } else {
+            alert("❌ " + r.message);
+            if (btn) {
+                btn.innerHTML = oriText;
+                btn.disabled = false;
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        alert("❌ Ralat sistem.");
+        if (btn) {
+            btn.innerHTML = oriText;
+            btn.disabled = false;
+        }
+    }
+}
+        
 async function saveEdit(rowID) {
     if(!confirm("Simpan semua perubahan ini?")) return;
 
@@ -815,7 +850,7 @@ async function saveEdit(rowID) {
                             <div class="d-flex flex-wrap gap-2">`;
                         imgLinks.forEach((lnk, i) => {
                             imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate text-uppercase fw-bold" style="max-width: 140px;">
-                                <i class="bi bi-image me-1"></i> FOTO ${i+1}
+                                <i class="bi bi-image me-1"></i> Gambar ${i+1}
                             </a>`;
                         });
                         imgHTML += `</div></div>`;
