@@ -139,7 +139,7 @@
             </button>
             <div class="d-flex align-items-center justify-content-between px-2">
                 <div><small class="text-dark d-block" style="font-size: 0.75rem; font-weight:600;">Pengguna</small><strong id="uDisp" class="text-dark" style="font-size:0.9rem">-</strong></div>
-                <button class="btn btn-link text-danger btn-sm p-0" onclick="location.reload()" title="Log Keluar"><i class="bi bi-box-arrow-right fs-5"></i></button>
+                <button class="btn btn-link text-danger btn-sm p-0" onclick="doLogout()" title="Log Keluar"><i class="bi bi-box-arrow-right fs-5"></i></button>
             </div>
         </div>
     </div>
@@ -286,58 +286,117 @@
         let userToken = ""; 
         let currentUserID = "";
 
-      // --- FUNGSI POST DATA (FIXED: ELAK ERROR toLowerCase) ---
-async function postData(act, load) {
-    try {
-        let payload;
-        if (act === 'login') { 
-            payload = { action: act, ...load }; 
-        } else { 
-            payload = { action: act, token: userToken, u: currentUserID, ...load }; 
-        }
-        
-        const res = await fetch(`${API_URL}?action=${act}`, { 
-            method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) 
-        });
-        
-        const r = JSON.parse(await res.text());
+        // --- FUNGSI POST DATA (FIXED: ELAK ERROR toLowerCase) ---
+        async function postData(act, load) {
+            try {
+                let payload;
+                if (act === 'login') { 
+                    payload = { action: act, ...load }; 
+                } else { 
+                    payload = { action: act, token: userToken, u: currentUserID, ...load }; 
+                }
+                
+                const res = await fetch(`${API_URL}?action=${act}`, { 
+                    method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) 
+                });
+                
+                const r = JSON.parse(await res.text());
 
-        // --- SECURITY KILL SWITCH (DIBETULKAN) ---
-        // Periksa: Jika GAGAL, dan ADA MESEJ, baru semak isi mesejnya.
-        if (r.success === false && r.message) {
-            // Kita tukar jadi string dulu baru lowercase, untuk elak error 'undefined'
-            const msgToCheck = String(r.message).toLowerCase();
-            
-            if (msgToCheck.includes("sesi") || msgToCheck.includes("token")) {
-                alert("⛔ " + r.message + "\n\nSila log masuk semula.");
-                location.reload(); 
-                return { success: false }; 
+                // --- SECURITY KILL SWITCH (DIBETULKAN) ---
+                // Periksa: Jika GAGAL, dan ADA MESEJ, baru semak isi mesejnya.
+                if (r.success === false && r.message) {
+                    // Kita tukar jadi string dulu baru lowercase, untuk elak error 'undefined'
+                    const msgToCheck = String(r.message).toLowerCase();
+                    
+                    if (msgToCheck.includes("sesi") || msgToCheck.includes("token")) {
+                        alert("⛔ " + r.message + "\n\nSila log masuk semula.");
+                        // Clear Session
+                        localStorage.removeItem('pnr_session');
+                        location.reload(); 
+                        return { success: false }; 
+                    }
+                }
+
+                return r;
+
+            } catch(e) { 
+                console.error(e); 
+                return {success:false, message:"Ralat sambungan."}; 
             }
         }
 
-        return r;
-
-    } catch(e) { 
-        console.error(e); 
-        return {success:false, message:"Ralat sambungan."}; 
-    }
-}
-
         async function doLogin() {
-            const u = document.getElementById('uid').value; const p = document.getElementById('pwd').value; 
-            const btn = document.getElementById('btnLogin'); const msg = document.getElementById('loginMsg');
+            const u = document.getElementById('uid').value; 
+            const p = document.getElementById('pwd').value; 
+            const btn = document.getElementById('btnLogin'); 
+            const msg = document.getElementById('loginMsg');
+            
             if(!u || !p) { msg.innerText = "Sila isi ID dan Kata Laluan"; return; }
+            
             btn.disabled = true; btn.innerText = "Memproses...";
             
             const r = await postData('login', {u, p});
+            
             if(r.success) {
-                uProf = r; userToken = r.token; currentUserID = u;
-                document.getElementById('uDisp').innerText = r.name; 
-                document.getElementById('loginOverlay').style.display = 'none';
-                if(["ADMIN","PENYELIA"].includes((r.role||"").toUpperCase())) { document.getElementById('navVerify').style.display = "flex"; checkPendingCount(); }
-                initDash();
-            } else { msg.innerText = r.message; btn.disabled = false; btn.innerText = "MASUK"; }
+                // --- SIMPAN SESSION (BARU) ---
+                const sessionData = { 
+                    uProf: r, 
+                    userToken: r.token, 
+                    currentUserID: u 
+                };
+                localStorage.setItem('pnr_session', JSON.stringify(sessionData));
+                
+                applyLogin(r, r.token, u);
+
+            } else { 
+                msg.innerText = r.message; 
+                btn.disabled = false; 
+                btn.innerText = "MASUK"; 
+            }
         }
+
+        // --- FUNGSI BANTUAN SET UI (UNTUK LOGIN & AUTO-LOGIN) ---
+        function applyLogin(r, token, uid) {
+            uProf = r; 
+            userToken = token; 
+            currentUserID = uid;
+            
+            document.getElementById('uDisp').innerText = r.name; 
+            document.getElementById('loginOverlay').style.display = 'none';
+            
+            if(["ADMIN","PENYELIA"].includes((r.role||"").toUpperCase())) { 
+                document.getElementById('navVerify').style.display = "flex"; 
+                checkPendingCount(); 
+            }
+            
+            initDash();
+        }
+
+        // --- FUNGSI AUTO-LOGIN (CHECK SESSION) ---
+        function checkSession() {
+            const saved = localStorage.getItem('pnr_session');
+            if (saved) {
+                try {
+                    const s = JSON.parse(saved);
+                    // Masukkan balik data ke dalam variable dan UI
+                    if (s.uProf && s.userToken) {
+                        // Optional: Semak validiti token (expiry) jika backend support, buat masa ni kita percayakan localStorage
+                        applyLogin(s.uProf, s.userToken, s.currentUserID);
+                    }
+                } catch (e) {
+                    console.error("Gagal baca session", e);
+                }
+            }
+        }
+
+        // --- FUNGSI LOGOUT ---
+        function doLogout() {
+            localStorage.removeItem('pnr_session'); // Padam ingatan
+            location.reload(); // Refresh page
+        }
+
+        // JALANKAN CHECK SESSION SEBAIK SAHAJA PAGE LOAD
+        window.onload = checkSession;
 
         function switchTab(t, el) {
             document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active')); if(el) el.classList.add('active');
@@ -752,9 +811,13 @@ async function saveEdit(rowID) {
         syor: document.getElementById(`ed_syor_${rowID}`).value
     };
 
-    const btn = event.target;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Simpan...';
-    btn.disabled = true;
+    const btn = event.target.closest('button'); // Updated to support inner icons if any
+    const oriText = btn ? btn.innerHTML : "Simpan Perubahan"; // Safe default
+
+    if (btn) {
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Simpan...';
+      btn.disabled = true;
+    }
 
     const r = await postData('updateEntry', payload);
 
@@ -763,8 +826,10 @@ async function saveEdit(rowID) {
         location.reload();
     } else {
         alert("❌ " + r.message);
-        btn.innerHTML = "Simpan Perubahan";
-        btn.disabled = false;
+        if (btn) {
+          btn.innerHTML = oriText;
+          btn.disabled = false;
+        }
     }
 }
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
