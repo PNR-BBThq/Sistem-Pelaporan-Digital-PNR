@@ -372,22 +372,32 @@
             initDash();
         }
 
-        // --- FUNGSI AUTO-LOGIN (CHECK SESSION) ---
-        function checkSession() {
-            const saved = localStorage.getItem('pnr_session');
-            if (saved) {
-                try {
-                    const s = JSON.parse(saved);
-                    // Masukkan balik data ke dalam variable dan UI
-                    if (s.uProf && s.userToken) {
-                        // Optional: Semak validiti token (expiry) jika backend support, buat masa ni kita percayakan localStorage
-                        applyLogin(s.uProf, s.userToken, s.currentUserID);
-                    }
-                } catch (e) {
-                    console.error("Gagal baca session", e);
-                }
+     // --- FUNGSI AUTO-LOGIN (DENGAN REKOD MASA) ---
+function checkSession() {
+    const saved = localStorage.getItem('pnr_session');
+    if (saved) {
+        try {
+            const s = JSON.parse(saved);
+            
+            // Masukkan balik data ke dalam variable dan UI
+            if (s.uProf && s.userToken) {
+                // 1. Pulihkan paparan
+                applyLogin(s.uProf, s.userToken, s.currentUserID);
+                
+                // 2. HANTAR PING KE BACKEND UNTUK REKOD MASA (BARU)
+                // Kita buat secara 'senyap' (tak perlu await response)
+                postData('logSession', { 
+                    name: s.uProf.name, 
+                    role: s.uProf.role 
+                });
+                
+                console.log("Sesi dipulihkan & direkod untuk: " + s.uProf.name);
             }
+        } catch (e) {
+            console.error("Gagal baca session", e);
         }
+    }
+}
 
         // --- FUNGSI LOGOUT ---
         function doLogout() {
