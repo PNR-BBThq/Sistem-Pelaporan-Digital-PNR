@@ -134,9 +134,10 @@
         </div>
         
         <div class="sidebar-footer">
-            <button onclick="window.open(BANCIAN_URL, '_blank')" class="btn btn-success w-100 btn-sm fw-bold mb-3 py-2 shadow-sm">
-                <i class="bi bi-plus-lg me-1"></i> Tambah Data
-            </button>
+            <div class="nav-item mb-3 bg-success text-white shadow-sm" onclick="switchTab('form', this)" style="cursor: pointer;">
+                <span><i class="bi bi-plus-lg me-2"></i> Tambah Data</span>
+            </div>
+
             <div class="d-flex align-items-center justify-content-between px-2">
                 <div><small class="text-dark d-block" style="font-size: 0.75rem; font-weight:600;">Pengguna</small><strong id="uDisp" class="text-dark" style="font-size:0.9rem">-</strong></div>
                 <button class="btn btn-link text-danger btn-sm p-0" onclick="doLogout()" title="Log Keluar"><i class="bi bi-box-arrow-right fs-5"></i></button>
@@ -255,6 +256,16 @@
                 </div>
             </div>
         </div>
+
+        <div id="view-form" style="display:none; height: 100%;">
+            <iframe 
+                id="frameBorang"
+                src="https://script.google.com/macros/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec" 
+                style="width: 100%; height: 85vh; border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
+                title="Borang Bancian">
+            </iframe>
+        </div>
+
     </div>
 
     <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
@@ -372,32 +383,43 @@
             initDash();
         }
 
-     // --- FUNGSI AUTO-LOGIN (DENGAN REKOD MASA) ---
-function checkSession() {
-    const saved = localStorage.getItem('pnr_session');
-    if (saved) {
-        try {
-            const s = JSON.parse(saved);
-            
-            // Masukkan balik data ke dalam variable dan UI
-            if (s.uProf && s.userToken) {
-                // 1. Pulihkan paparan
-                applyLogin(s.uProf, s.userToken, s.currentUserID);
-                
-                // 2. HANTAR PING KE BACKEND UNTUK REKOD MASA (BARU)
-                // Kita buat secara 'senyap' (tak perlu await response)
-                postData('logSession', { 
-                    name: s.uProf.name, 
-                    role: s.uProf.role 
-                });
-                
-                console.log("Sesi dipulihkan & direkod untuk: " + s.uProf.name);
+        // --- FUNGSI AUTO-LOGIN (YANG LEBIH TEGAP) ---
+        async function checkSession() {
+            const saved = localStorage.getItem('pnr_session');
+            if (saved) {
+                try {
+                    const s = JSON.parse(saved);
+                    
+                    // Masukkan balik data ke dalam variable dan UI
+                    if (s.uProf && s.userToken) {
+                        
+                        // 1. Pulihkan paparan dulu
+                        applyLogin(s.uProf, s.userToken, s.currentUserID);
+                        
+                        // 2. HANTAR LOG KE BACKEND (CARA MANUAL)
+                        // Kita guna 'fetch' terus supaya tak bergantung pada function postData yang mungkin ada isu global variable
+                        const payload = {
+                            action: 'logSession',
+                            token: s.userToken,      // Ambil terus dari storage
+                            u: s.currentUserID,      // Ambil terus dari storage
+                            name: s.uProf.name,
+                            role: s.uProf.role
+                        };
+
+                        // Hantar senyap-senyap (tak perlu tunggu result/loading)
+                        fetch(API_URL, {
+                            method: "POST",
+                            headers: { "Content-Type": "text/plain" },
+                            body: JSON.stringify(payload)
+                        }).then(res => res.json()).then(d => {
+                            console.log("Status Log:", d.success ? "Berjaya" : "Gagal - " + d.message);
+                        }).catch(e => console.error("Log Error:", e));
+                    }
+                } catch (e) {
+                    console.error("Gagal baca session", e);
+                }
             }
-        } catch (e) {
-            console.error("Gagal baca session", e);
         }
-    }
-}
 
         // --- FUNGSI LOGOUT ---
         function doLogout() {
@@ -409,12 +431,35 @@ function checkSession() {
         window.onload = checkSession;
 
         function switchTab(t, el) {
-            document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active')); if(el) el.classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active')); 
+            if(el && !el.classList.contains('bg-success')) el.classList.add('active'); // Elak highlight butang hijau jadi pelik
+            
             document.getElementById('view-main').style.display = t==='main'?'block':'none';
             document.getElementById('view-verify').style.display = t==='verify'?'block':'none';
+            
+            // --- TAMBAHAN BARU ---
+            document.getElementById('view-form').style.display = t==='form'?'block':'none';
+            // ---------------------
+
             if(t==='verify') loadPend();
             if(t==='main' && map) setTimeout(() => map.invalidateSize(), 300);
         }
+
+        // --- DENGAR ISYARAT DARI IFRAME BORANG ---
+        window.addEventListener("message", function(event) {
+            // 1. Pastikan mesej betul
+            if (event.data === "BORANG_SELESAI") {
+                
+                // 2. Dashboard keluarkan alert (Cantik & ikut domain Tuan)
+                alert("✅ Tahniah! Borang telah berjaya dihantar ke pangkalan data.");
+                
+                // 3. Auto tutup tab borang & balik ke Dashboard
+                switchTab('main');
+                
+                // 4. Refresh data dashboard (sebab ada data baru masuk)
+                initDash();
+            }
+        });
 
         async function checkPendingCount() { try { const d = await postData('getPending', {state: uProf.state}); const b = document.getElementById('badgePending'); if(d.rows && d.rows.length > 0) { b.innerText = d.rows.length; b.style.display = "inline-block"; } else { b.style.display = "none"; } } catch(e){} }
 
@@ -1029,7 +1074,7 @@ async function saveEdit(rowID) {
             for (const r of currentPendingRows) {
                 await postData('submitVerify', {row: r.row, act: 'APPROVE', reason: 'Bulk Approval', name: uProf.name});
                 count++;
-                let pct = Math.round((count / currentPendingRows.length) * 100);
+                let pct = Math.round((count / currentPendingRows.length) * 100);f
                 bar.style.width = pct + "%";
                 txt.innerText = `${count} / ${currentPendingRows.length}`;
             }
@@ -1042,4 +1087,4 @@ async function saveEdit(rowID) {
         async function dlPDF() { const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = "Jana..."; btn.disabled = true; let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length-1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length-1])}`; } try { const m = { user: uProf.name, negeri: document.getElementById('selNegeri').value || "Semua", dates: dateLabel }; const r = await postData('genPDF', {data: fData, meta: m}); if(r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } } catch(e) { console.error(e); } btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false; }
     </script>
 </body>
-</html>
+</html>F
