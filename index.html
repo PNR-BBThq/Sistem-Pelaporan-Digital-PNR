@@ -881,8 +881,98 @@
         async function loadPend() { const container = document.getElementById('verifyContainer'); container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>'; try { const d = await postData('getPending', {state: uProf.state}); currentPendingRows = d.rows || []; if(!d.rows || !d.rows.length) { container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>'; return; } container.innerHTML = ""; const cleanImageLink = (raw) => { if (!raw) return []; let str = String(raw).trim(); if(str.length < 5) return []; str = str.replace(/[\[\]"'\\]/g, ''); return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http')); }; d.rows.forEach((r) => { const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }; const tarikh = getVal('Tarikh') || getVal('Date'); const nama = getVal('Nama') || getVal('Pegawai'); const email = getVal('Email') || "-"; const negeri = getVal('Negeri') || "-"; const daerah = getVal('Daerah') || "-"; const lokasi = getVal('Lokasi') || getVal('Kebun') || "-"; const koordinat = getVal('Koordinat') || "-"; const tanaman = getVal('Nama Tanaman') || getVal('Tanaman') || "-"; const varieti = getVal('Varieti') || "-"; const luasTanam = getVal('Luas Bertanam') || getVal('Luas') || "-"; const syor = getVal('Syor') || "-"; const timestamp = getVal('Timestamp') || tarikh; let pestRows = ""; try { const lsObj = JSON.parse(getVal('Luas Serangan') || "{}"); const pctObj = JSON.parse(getVal('Peratus') || "{}"); const kObj = JSON.parse(getVal('Keterukan') || "{}"); if(Object.keys(lsObj).length > 0) { Object.keys(lsObj).forEach(k => { let level = kObj[k] || 0; let badgeColor = level < 3 ? 'success' : (level < 4 ? 'warning' : 'danger'); pestRows += `<tr><td style="font-size:0.85rem">${k}</td><td class="text-center fw-bold">${lsObj[k]}</td><td class="text-center small">${pctObj[k]||0}%</td><td class="text-center"><span class="badge bg-${badgeColor}">T${level}</span></td></tr>`; }); } else { pestRows = `<tr><td colspan="4" class="text-center text-muted small">Tiada Serangan</td></tr>`; } } catch(e) { pestRows = `<tr><td colspan="4" class="text-center text-muted small">Ralat Data</td></tr>`; } const rawImg = getVal('IMAGE LINKS (COMMA SEPARATED)') || getVal('Gambar') || getVal('Image') || getVal('Foto'); const imgLinks = cleanImageLink(rawImg); let imgHTML = ""; if (imgLinks.length > 0) { imgHTML = `<div class="mt-3 pt-2 border-top"><h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-paperclip me-1"></i> LAMPIRAN GAMBAR (${imgLinks.length})</h6><div class="d-flex flex-wrap gap-2">`; imgLinks.forEach((lnk, i) => { imgHTML += `<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate text-uppercase fw-bold" style="max-width: 140px;"><i class="bi bi-image me-1"></i> Gambar ${i+1}</a>`; }); imgHTML += `</div></div>`; } else { imgHTML = `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic text-uppercase"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR DILAMPIRKAN</small></div>`; } const cardHTML = `<div class="col-md-6 col-xl-4"><div class="verify-card bg-white rounded-3 shadow-sm border mb-3 h-100"><div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-start"><div><div class="small text-muted mb-1"><i class="bi bi-calendar3 me-1"></i> ${timestamp}</div><div class="fw-bold text-uppercase text-dark">${nama}</div><div class="small text-muted fst-italic">${email}</div></div><span class="badge bg-warning text-dark shadow-sm">BARU</span></div><div class="p-3 pb-0"><h6 class="fw-bold text-success mb-3 small border-bottom pb-2 text-uppercase"><i class="bi bi-info-circle-fill me-1"></i> LOKASI & TANAMAN</h6><div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">NEGERI:</div><div class="col-8 text-uppercase fw-bold text-dark">${negeri}</div></div><div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">DAERAH:</div><div class="col-8 text-uppercase fw-bold text-dark">${daerah}</div></div><div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">LOKASI:</div><div class="col-8 fw-bold text-dark text-uppercase">${lokasi}</div></div><div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">KOORDINAT:</div><div class="col-8 font-monospace text-muted small">${koordinat}</div></div><hr class="my-2 text-muted opacity-25"><div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">TANAMAN:</div><div class="col-8 fw-bold text-success text-uppercase">${tanaman}</div></div><div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">VARIETI:</div><div class="col-8 text-uppercase">${varieti}</div></div><div class="row g-2 mb-3" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAM:</div><div class="col-8 text-dark text-uppercase">${luasTanam} HA</div></div></div><div class="px-3"><h6 class="fw-bold text-success mb-2 small text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6><div class="table-responsive border rounded"><table class="table table-sm table-striped mb-0" style="font-size:0.8rem"><thead class="table-light"><tr><th class="text-uppercase">PEROSAK</th><th class="text-center text-uppercase">LUAS SERANGAN (HA)</th><th class="text-center">PERATUS SERANGAN</th><th class="text-center text-uppercase">KETERUKAN SERANGAN</th></tr></thead><tbody>${pestRows}</tbody></table></div>${imgHTML}</div><div class="p-3 mt-auto"><div class="alert alert-warning border-warning mb-3 py-2 px-3 small"><i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong class="text-uppercase">SYOR KAWALAN:</strong> ${syor}</div><div class="d-flex gap-2"><button class="btn btn-outline-danger flex-grow-1 fw-bold text-uppercase" onclick="subVer(${r.row},'REJECT')">TOLAK</button><button class="btn btn-success flex-grow-1 fw-bold shadow-sm text-uppercase" onclick="subVer(${r.row},'APPROVE')">SAHKAN</button></div></div></div></div>`; container.innerHTML += cardHTML; }); } catch(e) { console.error(e); container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; } }
         async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
         async function approveAll() { if(!currentPendingRows || currentPendingRows.length === 0) { alert("Tiada data."); return; } if(!confirm(`Sahkan SEMUA ${currentPendingRows.length} rekod?`)) return; const prog = document.getElementById('bulkProgress'); const bar = document.getElementById('progBar'); const txt = document.getElementById('progText'); prog.style.display = 'block'; let count = 0; for (const r of currentPendingRows) { await postData('submitVerify', {row: r.row, act: 'APPROVE', reason: 'Bulk Approval', name: uProf.name}); count++; let pct = Math.round((count / currentPendingRows.length) * 100); bar.style.width = pct + "%"; txt.innerText = `${count} / ${currentPendingRows.length}`; } alert("✅ Selesai!"); prog.style.display = 'none'; loadPend(); initDash(); checkPendingCount(); }
-        async function downloadDualExcel() { if (!fData.length) { alert("Tiada data!"); return; } const workbook = new ExcelJS.Workbook(); const worksheet = workbook.addWorksheet('Laporan Penuh'); worksheet.columns = [{ header: 'ID', key: 'id', width: 6 }, { header: 'Tarikh', key: 't', width: 12 }, { header: 'Negeri', key: 'n', width: 15 }, { header: 'Daerah', key: 'd', width: 15 }, { header: 'Lokasi', key: 'l', width: 22 }, { header: 'Koordinat', key: 'c', width: 22 }, { header: 'Kategori', key: 'kt', width: 18 }, { header: 'Tanaman', key: 'tn', width: 18 }, { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, { header: 'Syor Kawalan', key: 's', width: 25 }, { header: 'Pegawai', key: 'pg', width: 20 }, { header: 'Perosak', key: 'p', width: 20 }, { header: 'Keterukan', key: 'k', width: 18 }, { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, { header: '% Serangan', key: 'pct', width: 15 }]; worksheet.getRow(1).font = { bold: true }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }; let rowIndex = 2; fData.forEach(d => { let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]]; let startRow = rowIndex; let luasTanam = parseFloat(d.lt) || 0; pestEntries.forEach(([pName, pArea]) => { let luasSerang = parseFloat(pArea) || 0; let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%"; const row = worksheet.getRow(rowIndex); row.values = { id: d.id, t: d.t, n: d.n, d: d.d, l: d.l, c: d.c || "-", kt: d.kt || "-", tn: d.tn, lt: luasTanam, s: d.s, pg: d.pg || "-", p: pName, k: d.k, ls: luasSerang, pct: pctVal }; row.eachCell({ includeEmpty: true }, (cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; }); rowIndex++; }); if (pestEntries.length > 1) { for (let c = 1; c <= 11; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); } } for (let r = startRow; r < rowIndex; r++) { for (let c = 1; c <= 11; c++) { worksheet.getCell(r, c).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; } } }); const buffer = await workbook.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = window.URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'PNR_Laporan_Lengkap.xlsx'; anchor.click(); window.URL.revokeObjectURL(url); }
-async function dlPDF() {
+
+        async function downloadDualExcel() { 
+            if (!fData.length) { alert("Tiada data!"); return; } 
+            
+            const workbook = new ExcelJS.Workbook(); 
+            const worksheet = workbook.addWorksheet('Laporan Penuh'); 
+            
+            // --- DEFINISI COLUMN (DIKEMASKINI) ---
+            worksheet.columns = [
+                { header: 'ID', key: 'id', width: 6 }, 
+                { header: 'Nama Pegawai', key: 'pg', width: 25 }, // PINDAH KE SINI (COL B)
+                { header: 'Tarikh', key: 't', width: 12 }, 
+                { header: 'Negeri', key: 'n', width: 15 }, 
+                { header: 'Daerah', key: 'd', width: 15 }, 
+                { header: 'Lokasi', key: 'l', width: 22 }, 
+                { header: 'Koordinat', key: 'c', width: 22 }, 
+                { header: 'Kategori', key: 'kt', width: 18 }, 
+                { header: 'Tanaman', key: 'tn', width: 18 }, 
+                { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, 
+                { header: 'Perosak', key: 'p', width: 20 }, 
+                { header: 'Keterukan', key: 'k', width: 15 }, 
+                { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, 
+                { header: '% Serangan', key: 'pct', width: 15 },
+                { header: 'Syor Kawalan', key: 's', width: 50 } // LEBAR DINAIKKAN KE 50
+            ]; 
+            
+            // Format Header
+            worksheet.getRow(1).font = { bold: true }; 
+            worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }; 
+            
+            let rowIndex = 2; 
+            
+            fData.forEach(d => { 
+                let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]]; 
+                let startRow = rowIndex; 
+                let luasTanam = parseFloat(d.lt) || 0; 
+                
+                pestEntries.forEach(([pName, pArea]) => { 
+                    let luasSerang = parseFloat(pArea) || 0; 
+                    let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%"; 
+                    
+                    const row = worksheet.getRow(rowIndex); 
+                    
+                    // --- MAPPING NILAI (IKUT SUSUNAN COLUMN DI ATAS) ---
+                    row.values = { 
+                        id: d.id, 
+                        pg: d.pg || "-", // Pegawai di sini
+                        t: d.t, 
+                        n: d.n, 
+                        d: d.d, 
+                        l: d.l, 
+                        c: d.c || "-", 
+                        kt: d.kt || "-", 
+                        tn: d.tn, 
+                        lt: luasTanam, 
+                        p: pName, 
+                        k: d.k, 
+                        ls: luasSerang, 
+                        pct: pctVal,
+                        s: d.s 
+                    }; 
+                    
+                    // --- FORMATTING CELL (CENTER SEMUA) ---
+                    row.eachCell({ includeEmpty: true }, (cell) => { 
+                        cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; 
+                        // Tambah alignment center & wrap text
+                        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+                    }); 
+                    
+                    rowIndex++; 
+                }); 
+                
+                // Merge cells untuk data utama jika ada banyak perosak (Kecuali kolum perosak/serangan)
+                if (pestEntries.length > 1) { 
+                    // Col 1 (ID) hingga 10 (Luas Bancian)
+                    for (let c = 1; c <= 10; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); }
+                    // Col 15 (Syor)
+                    worksheet.mergeCells(startRow, 15, rowIndex - 1, 15);
+                } 
+            }); 
+            
+            const buffer = await workbook.xlsx.writeBuffer(); 
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); 
+            const url = window.URL.createObjectURL(blob); 
+            const anchor = document.createElement('a'); 
+            anchor.href = url; 
+            anchor.download = 'PNR_Laporan_Lengkap.xlsx'; 
+            anchor.click(); 
+            window.URL.revokeObjectURL(url); 
+        }
+        
+        async function dlPDF() {
             const btn = document.querySelector('button[onclick="dlPDF()"]');
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Jana...';
             btn.disabled = true;
