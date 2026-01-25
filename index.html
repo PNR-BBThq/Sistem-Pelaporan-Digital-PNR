@@ -882,7 +882,66 @@
         async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
         async function approveAll() { if(!currentPendingRows || currentPendingRows.length === 0) { alert("Tiada data."); return; } if(!confirm(`Sahkan SEMUA ${currentPendingRows.length} rekod?`)) return; const prog = document.getElementById('bulkProgress'); const bar = document.getElementById('progBar'); const txt = document.getElementById('progText'); prog.style.display = 'block'; let count = 0; for (const r of currentPendingRows) { await postData('submitVerify', {row: r.row, act: 'APPROVE', reason: 'Bulk Approval', name: uProf.name}); count++; let pct = Math.round((count / currentPendingRows.length) * 100); bar.style.width = pct + "%"; txt.innerText = `${count} / ${currentPendingRows.length}`; } alert("✅ Selesai!"); prog.style.display = 'none'; loadPend(); initDash(); checkPendingCount(); }
         async function downloadDualExcel() { if (!fData.length) { alert("Tiada data!"); return; } const workbook = new ExcelJS.Workbook(); const worksheet = workbook.addWorksheet('Laporan Penuh'); worksheet.columns = [{ header: 'ID', key: 'id', width: 6 }, { header: 'Tarikh', key: 't', width: 12 }, { header: 'Negeri', key: 'n', width: 15 }, { header: 'Daerah', key: 'd', width: 15 }, { header: 'Lokasi', key: 'l', width: 22 }, { header: 'Koordinat', key: 'c', width: 22 }, { header: 'Kategori', key: 'kt', width: 18 }, { header: 'Tanaman', key: 'tn', width: 18 }, { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, { header: 'Syor Kawalan', key: 's', width: 25 }, { header: 'Pegawai', key: 'pg', width: 20 }, { header: 'Perosak', key: 'p', width: 20 }, { header: 'Keterukan', key: 'k', width: 18 }, { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, { header: '% Serangan', key: 'pct', width: 15 }]; worksheet.getRow(1).font = { bold: true }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }; let rowIndex = 2; fData.forEach(d => { let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]]; let startRow = rowIndex; let luasTanam = parseFloat(d.lt) || 0; pestEntries.forEach(([pName, pArea]) => { let luasSerang = parseFloat(pArea) || 0; let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%"; const row = worksheet.getRow(rowIndex); row.values = { id: d.id, t: d.t, n: d.n, d: d.d, l: d.l, c: d.c || "-", kt: d.kt || "-", tn: d.tn, lt: luasTanam, s: d.s, pg: d.pg || "-", p: pName, k: d.k, ls: luasSerang, pct: pctVal }; row.eachCell({ includeEmpty: true }, (cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; }); rowIndex++; }); if (pestEntries.length > 1) { for (let c = 1; c <= 11; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); } } for (let r = startRow; r < rowIndex; r++) { for (let c = 1; c <= 11; c++) { worksheet.getCell(r, c).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; } } }); const buffer = await workbook.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = window.URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'PNR_Laporan_Lengkap.xlsx'; anchor.click(); window.URL.revokeObjectURL(url); }
-        async function dlPDF() { const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = "Jana..."; btn.disabled = true; let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length-1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length-1])}`; } try { const m = { user: uProf.name, negeri: document.getElementById('selNegeri').value || "Semua", dates: dateLabel }; const r = await postData('genPDF', {data: fData, meta: m}); if(r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } } catch(e) { console.error(e); } btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false; }
-    </script>
+async function dlPDF() {
+            const btn = document.querySelector('button[onclick="dlPDF()"]');
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Jana...';
+            btn.disabled = true;
+
+            let dateLabel = "Terkini";
+            
+            // 1. Logic Kira Julat Tarikh
+            if (fData.length > 0) {
+                const sortedDates = fData.map(d => d.t).sort();
+                const fmt = (d) => d.split('-').reverse().join('/');
+                dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length - 1]) ? 
+                            fmt(sortedDates[0]) : 
+                            `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length - 1])}`;
+            }
+
+            try {
+                // --- LOGIK PENAMAAN FAIL & TAJUK (DIKEMASKINI) ---
+                
+                // A. Ambil nilai asal
+                let targetName = document.getElementById('selNegeri').value;
+
+                // B. Logic Khas
+                if (uProf && uProf.state === "CAMERON HIGHLANDS") {
+                    // Jika user adalah Cameron, kita PAKSA tajuk jadi "PAHANG"
+                    targetName = "PAHANG"; 
+                }
+                else if (uProf && uProf.state !== "ALL") {
+                    // Untuk negeri lain, guna nama negeri masing-masing
+                    targetName = uProf.state; 
+                }
+
+                // C. Fallback
+                if (!targetName) targetName = "SEMUA";
+
+                const m = {
+                    user: uProf.name,
+                    negeri: targetName, // Nama ini akan keluar di Header PDF
+                    dates: dateLabel
+                };
+
+                // Hantar data yang SUDAH DITAPIS (fData) ke backend
+                // Jadi data tetap data Cameron, cuma tajuk saja tukar Pahang.
+                const r = await postData('genPDF', { data: fData, meta: m });
+
+                if (r.success) {
+                    const a = document.createElement('a');
+                    a.href = "data:application/pdf;base64," + r.base64;
+                    a.download = r.filename; 
+                    a.click();
+                } else {
+                    alert("Gagal menjana PDF: " + r.message);
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Ralat sistem semasa menjana PDF.");
+            }
+
+            btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF';
+            btn.disabled = false;
+        }    </script>
 </body>
 </html>
