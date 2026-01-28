@@ -1168,6 +1168,83 @@
 
             btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF';
             btn.disabled = false;
-        }    </script>
+        }   
+    // =========================================================
+    // 1. LOAD DATA DARI CSV (KAEDAH PUBLISH) - CORS FRIENDLY
+    // =========================================================
+    
+    var tanamanData = {}; // Variable global wajib ada
+
+    async function loadTanamanData() {
+        console.log("🔄 Sedang tarik data dari CSV Sheet...");
+        
+        // INI LINK YANG TUAN BERI TADI
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbCkzq3QBoJOMXGAA-VtecWQJ-LL-uIcT1R3TIyrax_jBJkrsI_-kXTqqq8-AkT9Ntr-SXe_rz-Pyo/pub?gid=951625868&single=true&output=csv";
+
+        try {
+            const response = await fetch(csvUrl);
+            
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
+
+            const text = await response.text();
+            
+            // Proses CSV menjadi JSON Object
+            processCSV(text);
+            
+        } catch (error) {
+            console.error("❌ Gagal tarik CSV:", error);
+            // Kalau gagal, fallback kepada object kosong atau hardcode minima jika perlu
+        }
+    }
+
+    // Fungsi tukar Text CSV kepada Object {Kategori: {Tanaman: [Perosak]}}
+    function processCSV(csvText) {
+        tanamanData = {}; // Reset container
+        
+        // Pecahkan baris (Handle line breaks Windows/Unix)
+        const rows = csvText.split(/\r?\n/);
+        
+        // Mula dari i=1 (Sebab i=0 adalah Header: Kategori, Tanaman, Perosak)
+        for (let i = 1; i < rows.length; i++) {
+            const rowLine = rows[i];
+            if (!rowLine) continue;
+
+            // Pecahkan Kolum (Menggunakan koma)
+            // NOTA: Pastikan dalam Excel tiada koma dalam nama perosak
+            const cols = rowLine.split(',');
+            
+            // Helper function untuk bersihkan data (buang spaces & quote)
+            const clean = (str) => {
+                if(!str) return "";
+                return String(str).replace(/^"|"$/g, '').trim(); // Buang quote "" jika Excel tambah
+            };
+            
+            const kat = clean(cols[0]); // Col A: Kategori
+            const tan = clean(cols[1]); // Col B: Tanaman
+            const pes = clean(cols[2]); // Col C: Perosak
+
+            if (kat && tan) {
+                // 1. Bina Kategori jika belum ada
+                if (!tanamanData[kat]) {
+                    tanamanData[kat] = {};
+                }
+                
+                // 2. Bina Tanaman jika belum ada
+                if (!tanamanData[kat][tan]) {
+                    tanamanData[kat][tan] = [];
+                }
+
+                // 3. Masukkan Perosak
+                // (Hanya masukkan jika perosak wujud dan belum ada dalam list)
+                if (pes && !tanamanData[kat][tan].includes(pes)) {
+                    tanamanData[kat][tan].push(pes);
+                }
+            }
+        }
+        console.log("✅ Data Tanaman Berjaya Disusun dari CSV:", tanamanData);
+    }
+    </script>
 </body>
 </html>
