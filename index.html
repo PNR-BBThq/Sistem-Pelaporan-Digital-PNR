@@ -660,20 +660,30 @@
             renderEditForm(task.row, task.data);
         }
 
-      // --- RENDER EDIT FORM (VERSI FINAL: INTEGRASI DATA LIVE) ---
+     // --- RENDER EDIT FORM (VERSI FINAL & STABIL) ---
 function renderEditForm(rowID, rowData) {
-    console.log("Membuka form edit. Data Rujukan:", tanamanData); // Semak di Console
+    // 1. Diagnosis Data
+    console.log("---------------- DEBUG EDIT FORM ----------------");
+    console.log("Data Row:", rowData);
+    console.log("Master Data Tanaman:", tanamanData);
 
-    // 1. GENERATE KATEGORI OPTIONS DARI DATA LIVE
+    // 2. HELPER: Cari Kunci Yang Betul (Abaikan Huruf Besar/Kecil)
+    // Cth: Database ada "Buah", Row ada "BUAH". Function ini akan cari "Buah".
+    const findKey = (obj, searchKey) => {
+        if (!obj || !searchKey) return null;
+        const cleanSearch = String(searchKey).trim().toUpperCase();
+        return Object.keys(obj).find(k => k.toUpperCase() === cleanSearch);
+    };
+
+    // 3. SEDIAKAN OPTION KATEGORI
     let katOptions = '<option value="">- Pilih Kategori -</option>';
-    // Pastikan tanamanData wujud dan ada isi
     if (tanamanData && Object.keys(tanamanData).length > 0) {
         Object.keys(tanamanData).sort().forEach(k => {
             katOptions += `<option value="${k}">${k}</option>`;
         });
     }
 
-    // 2. BINA HTML MODAL
+    // 4. BINA HTML (Pastikan div Tanaman wujud!)
     let html = `
     <div id="fullEditForm">
         <input type="hidden" id="fe_row" value="${rowID}">
@@ -697,10 +707,14 @@ function renderEditForm(rowID, rowData) {
         </div>
 
         <h6 class="text-primary border-bottom pb-2 mt-3">B. Tanaman</h6>
+        
         <div class="mb-2">
             <label class="small fw-bold">Kategori</label>
-            <select id="fe_kategori" class="form-select form-select-sm" onchange="fe_updateTanaman()">${katOptions}</select>
+            <select id="fe_kategori" class="form-select form-select-sm" onchange="fe_updateTanaman()">
+                ${katOptions}
+            </select>
         </div>
+
         <div class="row g-2 mb-2">
             <div class="col-6">
                 <label class="small fw-bold">Tanaman</label>
@@ -708,7 +722,10 @@ function renderEditForm(rowID, rowData) {
                     <option value="">- Pilih Kategori Dulu -</option>
                 </select>
             </div>
-            <div class="col-6"><label class="small fw-bold">Varieti</label><input type="text" id="fe_varieti" class="form-control form-control-sm"></div>
+            <div class="col-6">
+                <label class="small fw-bold">Varieti</label>
+                <input type="text" id="fe_varieti" class="form-control form-control-sm">
+            </div>
         </div>
         <div class="mb-2"><label class="small fw-bold">Luas Tanam (Ha)</label><input type="number" id="fe_luasT" class="form-control form-control-sm"></div>
 
@@ -725,7 +742,7 @@ function renderEditForm(rowID, rowData) {
 
     document.getElementById('detailBody').innerHTML = html;
 
-    // 3. MASUKKAN DATA (POPULATE)
+    // --- POPULATE DATA ---
     try {
         const d = rowData;
         const setV = (id, val) => { const el = document.getElementById(id); if(el) el.value = val||""; };
@@ -746,42 +763,61 @@ function renderEditForm(rowID, rowData) {
             document.getElementById('fe_daerah').value = d[5]; 
         }
 
-        // --- LOGIK TANAMAN (PENTING) ---
-        const savedKat = d[8];
-        const savedTan = d[9];
+        // --- LOGIK TANAMAN (FIXED) ---
+        const savedKatRaw = d[8]; // Contoh: "TANAMAN KONTAN"
+        const savedTanRaw = d[9]; // Contoh: "CILI"
         
-        // 1. Set Kategori Asal
         const elKat = document.getElementById('fe_kategori');
-        if(savedKat) {
-             // Jika data belum loading, paksa tambah option nilai asal (Fallback)
-             if (!Array.from(elKat.options).some(o => o.value === savedKat)) {
-                 elKat.innerHTML += `<option value="${savedKat}" selected>${savedKat}</option>`;
-             }
-             elKat.value = savedKat;
+        const elTan = document.getElementById('fe_tanaman');
+
+        // 1. Padankan Kategori (Abaikan Huruf Besar/Kecil)
+        let realKatKey = findKey(tanamanData, savedKatRaw);
+        
+        if (realKatKey) {
+            // Jika jumpa dalam database (cth: "Tanaman Kontan"), guna key database
+            elKat.value = realKatKey;
+        } else {
+            // Jika tak jumpa (Data lama), paksa masuk sebagai option baru
+            if(savedKatRaw) {
+                const opt = document.createElement('option');
+                opt.value = savedKatRaw;
+                opt.innerText = savedKatRaw + " (Data Asal)";
+                opt.selected = true;
+                elKat.appendChild(opt);
+            }
         }
 
-        // 2. Trigger Update Tanaman (Supaya dropdown tanaman terisi)
+        // 2. Jana Senarai Tanaman
         fe_updateTanaman(); 
 
-        // 3. Set Tanaman Asal
-        const elTan = document.getElementById('fe_tanaman');
-        if(savedTan) {
-             if (!Array.from(elTan.options).some(o => o.value === savedTan)) {
-                 const opt = document.createElement('option');
-                 opt.value = savedTan; opt.innerText = savedTan + " (Asal)"; opt.selected = true;
-                 elTan.appendChild(opt);
-             } else {
-                 elTan.value = savedTan;
-             }
+        // 3. Padankan Tanaman
+        // Selepas fe_updateTanaman, dropdown tanaman dah ada isi.
+        // Kita cari savedTanRaw dalam list tersebut
+        let foundTan = false;
+        for (let i = 0; i < elTan.options.length; i++) {
+            if (elTan.options[i].value.toUpperCase() === String(savedTanRaw).toUpperCase()) {
+                elTan.selectedIndex = i;
+                foundTan = true;
+                break;
+            }
         }
 
-        // --- LOGIK PEROSAK ---
+        // Jika tanaman asal tiada dalam list, paksa masuk
+        if (!foundTan && savedTanRaw) {
+            const opt = document.createElement('option');
+            opt.value = savedTanRaw;
+            opt.innerText = savedTanRaw + " (Data Asal)";
+            opt.selected = true;
+            elTan.appendChild(opt);
+        }
+
+        // 4. Perosak
         let luasObj = {}, sevObj = {};
         try { luasObj = JSON.parse(d[14]); } catch(e) {}
         try { sevObj = JSON.parse(d[16]); } catch(e) {}
         
         const pests = Object.keys(luasObj);
-        if(pests.length === 0 && d[13]) { // Support data lama
+        if(pests.length === 0 && d[13]) { 
              addPestRow(d[13], d[14], d[16]);
         } else {
              pests.forEach(p => addPestRow(p, luasObj[p], sevObj[p]));
