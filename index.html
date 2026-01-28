@@ -635,138 +635,142 @@
             renderEditForm(task.row, task.data);
         }
 
-       // --- RENDER EDIT FORM (KEMASKINI: TAMBAH KATEGORI) ---
-        function renderEditForm(rowID, rowData) {
-            let html = `
-            <div id="fullEditForm">
-                <input type="hidden" id="fe_row" value="${rowID}">
-                <h6 class="text-primary border-bottom pb-2">A. Lokasi</h6>
-                <div class="row g-2 mb-2">
-                    <div class="col-6">
-                        <label class="small fw-bold">Negeri</label>
-                        <select id="fe_negeri" class="form-select form-select-sm" onchange="updateDistricts('fe_negeri','fe_daerah')">
-                            <option value="">- Pilih -</option>
-                            ${Object.keys(districtData).sort().map(n => `<option value="${n}">${n}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="col-6">
-                        <label class="small fw-bold">Daerah</label>
-                        <select id="fe_daerah" class="form-select form-select-sm"></select>
-                    </div>
-                </div>
-                <div class="mb-2"><label class="small fw-bold">Lokasi/Kebun</label><input type="text" id="fe_lokasi" class="form-control form-control-sm"></div>
-                <div class="mb-2"><label class="small fw-bold">Koordinat</label><input type="text" id="fe_coord" class="form-control form-control-sm"></div>
-                <div class="row g-2 mb-2">
-                    <div class="col-6"><label class="small fw-bold">Tarikh</label><input type="date" id="fe_tarikh" class="form-control form-control-sm"></div>
-                    <div class="col-6"><label class="small fw-bold">Nama Pegawai</label><input type="text" id="fe_pegawai" class="form-control form-control-sm" readonly></div>
-                </div>
+      // --- RENDER EDIT FORM (VERSI PINTAR: CASE INSENSITIVE UNTUK SEMUA) ---
+function renderEditForm(rowID, rowData) {
+    // 1. Helper function: "Cari & Pilih" (Tak kira huruf besar/kecil)
+    const setSmartValue = (elementId, dbValue) => {
+        const el = document.getElementById(elementId);
+        if (!el || !dbValue) return;
 
-                <h6 class="text-primary border-bottom pb-2 mt-3">B. Tanaman</h6>
-                
-                <div class="mb-2"><label class="small fw-bold">Kategori</label><input type="text" id="fe_kategori" class="form-control form-control-sm"></div>
-                
-                <div class="row g-2 mb-2">
-                    <div class="col-6"><label class="small fw-bold">Tanaman</label><input type="text" id="fe_tanaman" class="form-control form-control-sm"></div>
-                    <div class="col-6"><label class="small fw-bold">Varieti</label><input type="text" id="fe_varieti" class="form-control form-control-sm"></div>
-                </div>
-                <div class="mb-2"><label class="small fw-bold">Luas Bertanam (Ha)</label><input type="number" id="fe_luasT" class="form-control form-control-sm"></div>
+        const cleanDB = String(dbValue).trim().toUpperCase();
+        let found = false;
 
-                <h6 class="text-primary border-bottom pb-2 mt-3">C. Data Serangan (Dinamik)</h6>
-                <table class="table table-sm table-bordered" id="fe_pestTable">
-                    <thead class="table-light"><tr><th>Perosak</th><th width="70">Luas(Ha)</th><th width="70">Tahap(1-5)</th><th width="30"></th></tr></thead>
-                    <tbody></tbody>
-                </table>
-                <button type="button" class="btn btn-outline-primary btn-sm w-100 mb-3" onclick="addPestRow()">+ Tambah Perosak</button>
-
-                <div class="mb-3">
-                    <label class="small fw-bold text-success">Syor Kawalan</label>
-                    <textarea id="fe_syor" class="form-control" rows="6" placeholder="Masukkan cadangan kawalan..."></textarea>
-                </div>
-
-                <button class="btn btn-success w-100 py-2 fw-bold" onclick="saveFullEdit()">SIMPAN PERUBAHAN & HANTAR</button>
-            </div>`;
-
-            document.getElementById('detailBody').innerHTML = html;
-            
-            // --- POPULATE DATA (YANG DITAMBAH BAIK) ---
-            try {
-                const d = rowData;
-                
-                // Helper untuk set value (Selamat dari error null)
-                const setV = (id, val) => { 
-                    const el = document.getElementById(id);
-                    if(el) el.value = val || ""; 
-                };
-
-                // Helper untuk cari Value yang sepadan (Case Insensitive Match)
-                // Ini selesaikan masalah "SELANGOR" vs "Selangor"
-                const findMatch = (optionsArr, dbValue) => {
-                    if(!dbValue) return "";
-                    const cleanDb = String(dbValue).trim().toUpperCase();
-                    // Cari dalam array options mana satu yang sama
-                    const found = optionsArr.find(opt => String(opt).toUpperCase() === cleanDb);
-                    return found || dbValue; // Kalau jumpa guna yg jumpa, kalau tak guna asal
-                };
-
-                // 1. DATA ASAS
-                setV('fe_pegawai', d[1]); 
-                setV('fe_tarikh', formatDateForInput(d[3])); 
-                setV('fe_lokasi', d[6]);
-                setV('fe_coord', d[7]);
-
-                // 2. LOGIK NEGERI & DAERAH (YANG DIPERBAIKI)
-                const dbNegeri = d[4]; 
-                const dbDaerah = d[5];
-
-                // Dapatkan senarai negeri dari districtData
-                const listNegeri = Object.keys(districtData);
-                
-                // Cari ejaan negeri yang betul dalam sistem
-                const realNegeri = findMatch(listNegeri, dbNegeri);
-                
-                // Set Negeri & Trigger Update Daerah
-                const elNegeri = document.getElementById('fe_negeri');
-                if(elNegeri) {
-                    elNegeri.value = realNegeri; 
-                    
-                    // Kita panggil updateDistricts secara manual
-                    updateDistricts('fe_negeri','fe_daerah');
-                    
-                    // Sekarang dropdown daerah dah ada isi, kita set Daerah pula
-                    const elDaerah = document.getElementById('fe_daerah');
-                    
-                    // Kita kena baca option dalam dropdown daerah tu (sebab dia baru create)
-                    const optsDaerah = Array.from(elDaerah.options).map(o => o.value);
-                    const realDaerah = findMatch(optsDaerah, dbDaerah);
-                    
-                    elDaerah.value = realDaerah;
-                }
-
-                // 3. TANAMAN & LAIN-LAIN
-                setV('fe_kategori', d[8]); 
-                setV('fe_tanaman', d[9]);
-                setV('fe_varieti', d[11]);
-                setV('fe_luasT', d[12]);
-                setV('fe_syor', d[17]);
-
-                // 4. DATA PEROSAK (LOGIC ASAL KEKAL)
-                let luasObj = {}, sevObj = {};
-                try { luasObj = JSON.parse(d[14]); } catch(e) {}
-                try { sevObj = JSON.parse(d[16]); } catch(e) {}
-                
-                const pests = Object.keys(luasObj);
-                if(pests.length === 0 && d[13]) {
-                    addPestRow(d[13], d[14], d[16]);
-                } else {
-                    pests.forEach(p => addPestRow(p, luasObj[p], sevObj[p]));
-                }
-                if(pests.length === 0) addPestRow(); 
-
-            } catch(e) { console.error("Error populating form", e); }
-
-            document.getElementById('modalTitle').innerText = "KEMASKINI TUGASAN";
-            new bootstrap.Modal(document.getElementById('detailModal')).show();
+        // Loop semua option dalam dropdown
+        for (let i = 0; i < el.options.length; i++) {
+            if (el.options[i].value.toUpperCase() === cleanDB) {
+                el.selectedIndex = i; // Pilih yang ini
+                found = true;
+                break;
+            }
         }
+
+        // Kalau tak jumpa, PAKSA tambah option baru (Fallback)
+        if (!found) {
+            const opt = document.createElement('option');
+            opt.value = dbValue;
+            opt.innerText = dbValue + " (Asal)";
+            opt.selected = true;
+            el.appendChild(opt);
+        }
+    };
+
+    // 2. Sediakan Option Kategori
+    let katOptions = '<option value="">- Pilih Kategori -</option>';
+    if (typeof tanamanData !== 'undefined' && tanamanData) {
+        Object.keys(tanamanData).sort().forEach(k => {
+            katOptions += `<option value="${k}">${k}</option>`;
+        });
+    }
+
+    // 3. Bina HTML Modal
+    let html = `
+    <div id="fullEditForm">
+        <input type="hidden" id="fe_row" value="${rowID}">
+        
+        <h6 class="text-primary border-bottom pb-2">A. Lokasi</h6>
+        <div class="row g-2 mb-2">
+            <div class="col-6">
+                <label class="small fw-bold">Negeri</label>
+                <select id="fe_negeri" class="form-select form-select-sm" onchange="updateDistricts('fe_negeri','fe_daerah')">
+                    <option value="">- Pilih -</option>
+                    ${Object.keys(districtData).sort().map(n => `<option value="${n}">${n}</option>`).join('')}
+                </select>
+            </div>
+            <div class="col-6"><label class="small fw-bold">Daerah</label><select id="fe_daerah" class="form-select form-select-sm"></select></div>
+        </div>
+        <div class="mb-2"><label class="small fw-bold">Lokasi/Kebun</label><input type="text" id="fe_lokasi" class="form-control form-control-sm"></div>
+        <div class="mb-2"><label class="small fw-bold">Koordinat</label><input type="text" id="fe_coord" class="form-control form-control-sm"></div>
+        <div class="row g-2 mb-2">
+            <div class="col-6"><label class="small fw-bold">Tarikh</label><input type="date" id="fe_tarikh" class="form-control form-control-sm"></div>
+            <div class="col-6"><label class="small fw-bold">Pegawai</label><input type="text" id="fe_pegawai" class="form-control form-control-sm" readonly></div>
+        </div>
+
+        <h6 class="text-primary border-bottom pb-2 mt-3">B. Tanaman</h6>
+        <div class="mb-2">
+            <label class="small fw-bold">Kategori</label>
+            <select id="fe_kategori" class="form-select form-select-sm" onchange="fe_updateTanaman()">${katOptions}</select>
+        </div>
+        <div class="row g-2 mb-2">
+            <div class="col-6">
+                <label class="small fw-bold">Tanaman</label>
+                <select id="fe_tanaman" class="form-select form-select-sm" onchange="fe_updatePestOptions()">
+                    <option value="">- Pilih Kategori Dulu -</option>
+                </select>
+            </div>
+            <div class="col-6"><label class="small fw-bold">Varieti</label><input type="text" id="fe_varieti" class="form-control form-control-sm"></div>
+        </div>
+        <div class="mb-2"><label class="small fw-bold">Luas Tanam (Ha)</label><input type="number" id="fe_luasT" class="form-control form-control-sm"></div>
+
+        <h6 class="text-primary border-bottom pb-2 mt-3">C. Data Serangan</h6>
+        <table class="table table-sm table-bordered" id="fe_pestTable">
+            <thead class="table-light"><tr><th>Perosak</th><th width="70">Luas(Ha)</th><th width="70">Tahap</th><th width="30"></th></tr></thead>
+            <tbody></tbody>
+        </table>
+        <button type="button" class="btn btn-outline-primary btn-sm w-100 mb-3" onclick="addPestRow()">+ Tambah Perosak</button>
+
+        <div class="mb-3"><label class="small fw-bold text-success">Syor</label><textarea id="fe_syor" class="form-control" rows="4"></textarea></div>
+        <button class="btn btn-success w-100 py-2 fw-bold" onclick="saveFullEdit()">SIMPAN & HANTAR</button>
+    </div>`;
+
+    document.getElementById('detailBody').innerHTML = html;
+
+    // --- 4. MASUKKAN DATA (POPULATE) ---
+    try {
+        const d = rowData;
+        
+        // Data Asas (Text Field)
+        document.getElementById('fe_pegawai').value = d[1] || "";
+        document.getElementById('fe_tarikh').value = formatDateForInput(d[3]);
+        document.getElementById('fe_lokasi').value = d[6] || "";
+        document.getElementById('fe_coord').value = d[7] || "";
+        document.getElementById('fe_varieti').value = d[11] || "";
+        document.getElementById('fe_luasT').value = d[12] || "";
+        document.getElementById('fe_syor').value = d[17] || "";
+
+        // A. NEGERI & DAERAH (Guna Smart Set)
+        const dbNegeri = d[4];
+        const dbDaerah = d[5];
+        
+        setSmartValue('fe_negeri', dbNegeri); // Set Negeri
+        updateDistricts('fe_negeri','fe_daerah'); // Generate Daerah Options
+        setSmartValue('fe_daerah', dbDaerah); // Set Daerah
+
+        // B. KATEGORI & TANAMAN (Guna Smart Set)
+        const dbKategori = d[8];
+        const dbTanaman = d[9];
+
+        setSmartValue('fe_kategori', dbKategori); // Set Kategori
+        fe_updateTanaman(); // Generate Tanaman Options
+        setSmartValue('fe_tanaman', dbTanaman); // Set Tanaman
+
+        // C. PEROSAK (Looping)
+        let luasObj = {}, sevObj = {};
+        try { luasObj = JSON.parse(d[14]); } catch(e) {}
+        try { sevObj = JSON.parse(d[16]); } catch(e) {}
+        
+        const pests = Object.keys(luasObj);
+        if(pests.length === 0 && d[13]) { // Support data lama
+             addPestRow(d[13], d[14], d[16]);
+        } else {
+             pests.forEach(p => addPestRow(p, luasObj[p], sevObj[p]));
+        }
+        if(pests.length === 0) addPestRow();
+
+    } catch(e) { console.error(e); }
+
+    document.getElementById('modalTitle').innerText = "KEMASKINI TUGASAN";
+    new bootstrap.Modal(document.getElementById('detailModal')).show();
+}
 
         function formatDateForInput(dateStr) {
             // Convert dd/mm/yyyy or ISO to yyyy-mm-dd
