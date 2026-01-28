@@ -341,20 +341,19 @@
         var tanamanData = {};       // <--- INI VARIABLE BARU KITA
        // 2. Function untuk tarik data dari Google Sheet (PEST_LIST)
     // Nota: Kita guna fetch sebab Tuan host di GitHub (External)
-    async function loadTanamanData() {
-        console.log("🔄 Sedang memuatkan senarai tanaman...");
-        try {
-            // Kita hantar signal 'action=getTanamanList' ke Backend
-            const response = await fetch(API_URL + "?action=getTanamanList");
-            const result = await response.json();
-            
-            if(result && typeof result === 'object') {
-                tanamanData = result;
-                console.log("✅ Data Tanaman Berjaya:", tanamanData);
-            }
-        } catch (error) {
-            console.error("❌ Gagal tarik data tanaman:", error);
-        }
+   function loadTanamanData() {
+        console.log("🔄 Muat data (JSONP)...");
+        const cbName = 'cb_' + Math.round(100000 * Math.random());
+        window[cbName] = function(data) {
+            tanamanData = data;
+            console.log("✅ Data Berjaya Masuk:", tanamanData);
+            document.getElementById(cbName).remove();
+            delete window[cbName];
+        };
+        const script = document.createElement('script');
+        script.id = cbName;
+        script.src = API_URL + "?action=getTanamanList&callback=" + cbName;
+        document.body.appendChild(script);
     }
 
     // 3. Panggil function ini sebaik sahaja website dibuka
