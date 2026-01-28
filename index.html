@@ -688,26 +688,68 @@
 
             document.getElementById('detailBody').innerHTML = html;
             
-            // --- POPULATE DATA ---
+            // --- POPULATE DATA (YANG DITAMBAH BAIK) ---
             try {
                 const d = rowData;
-                const setV = (id, val) => { if(document.getElementById(id)) document.getElementById(id).value = val || ""; };
                 
+                // Helper untuk set value (Selamat dari error null)
+                const setV = (id, val) => { 
+                    const el = document.getElementById(id);
+                    if(el) el.value = val || ""; 
+                };
+
+                // Helper untuk cari Value yang sepadan (Case Insensitive Match)
+                // Ini selesaikan masalah "SELANGOR" vs "Selangor"
+                const findMatch = (optionsArr, dbValue) => {
+                    if(!dbValue) return "";
+                    const cleanDb = String(dbValue).trim().toUpperCase();
+                    // Cari dalam array options mana satu yang sama
+                    const found = optionsArr.find(opt => String(opt).toUpperCase() === cleanDb);
+                    return found || dbValue; // Kalau jumpa guna yg jumpa, kalau tak guna asal
+                };
+
+                // 1. DATA ASAS
                 setV('fe_pegawai', d[1]); 
                 setV('fe_tarikh', formatDateForInput(d[3])); 
-                setV('fe_negeri', d[4]); 
-                updateDistricts('fe_negeri','fe_daerah'); 
-                setV('fe_daerah', d[5]); 
                 setV('fe_lokasi', d[6]);
                 setV('fe_coord', d[7]);
+
+                // 2. LOGIK NEGERI & DAERAH (YANG DIPERBAIKI)
+                const dbNegeri = d[4]; 
+                const dbDaerah = d[5];
+
+                // Dapatkan senarai negeri dari districtData
+                const listNegeri = Object.keys(districtData);
                 
-                // MAPPING KATEGORI (Index 8)
+                // Cari ejaan negeri yang betul dalam sistem
+                const realNegeri = findMatch(listNegeri, dbNegeri);
+                
+                // Set Negeri & Trigger Update Daerah
+                const elNegeri = document.getElementById('fe_negeri');
+                if(elNegeri) {
+                    elNegeri.value = realNegeri; 
+                    
+                    // Kita panggil updateDistricts secara manual
+                    updateDistricts('fe_negeri','fe_daerah');
+                    
+                    // Sekarang dropdown daerah dah ada isi, kita set Daerah pula
+                    const elDaerah = document.getElementById('fe_daerah');
+                    
+                    // Kita kena baca option dalam dropdown daerah tu (sebab dia baru create)
+                    const optsDaerah = Array.from(elDaerah.options).map(o => o.value);
+                    const realDaerah = findMatch(optsDaerah, dbDaerah);
+                    
+                    elDaerah.value = realDaerah;
+                }
+
+                // 3. TANAMAN & LAIN-LAIN
                 setV('fe_kategori', d[8]); 
                 setV('fe_tanaman', d[9]);
                 setV('fe_varieti', d[11]);
                 setV('fe_luasT', d[12]);
                 setV('fe_syor', d[17]);
 
+                // 4. DATA PEROSAK (LOGIC ASAL KEKAL)
                 let luasObj = {}, sevObj = {};
                 try { luasObj = JSON.parse(d[14]); } catch(e) {}
                 try { sevObj = JSON.parse(d[16]); } catch(e) {}
