@@ -660,18 +660,20 @@
             renderEditForm(task.row, task.data);
         }
 
-       // --- RENDER EDIT FORM (DIPERBAIKI SEPENUHNYA) ---
+      // --- RENDER EDIT FORM (VERSI FINAL: INTEGRASI DATA LIVE) ---
 function renderEditForm(rowID, rowData) {
-    console.log("Data Rujukan:", tanamanData); // Debug check
+    console.log("Membuka form edit. Data Rujukan:", tanamanData); // Semak di Console
 
-    // 1. SEDIAKAN LIST OPTION UNTUK KATEGORI DULU
+    // 1. GENERATE KATEGORI OPTIONS DARI DATA LIVE
     let katOptions = '<option value="">- Pilih Kategori -</option>';
+    // Pastikan tanamanData wujud dan ada isi
     if (tanamanData && Object.keys(tanamanData).length > 0) {
         Object.keys(tanamanData).sort().forEach(k => {
             katOptions += `<option value="${k}">${k}</option>`;
         });
     }
 
+    // 2. BINA HTML MODAL
     let html = `
     <div id="fullEditForm">
         <input type="hidden" id="fe_row" value="${rowID}">
@@ -723,12 +725,11 @@ function renderEditForm(rowID, rowData) {
 
     document.getElementById('detailBody').innerHTML = html;
 
-    // --- MASUKKAN DATA LAMA (POPULATE) ---
+    // 3. MASUKKAN DATA (POPULATE)
     try {
         const d = rowData;
         const setV = (id, val) => { const el = document.getElementById(id); if(el) el.value = val||""; };
 
-        // 1. Lokasi & Info Asas
         setV('fe_pegawai', d[1]);
         setV('fe_tarikh', formatDateForInput(d[3]));
         setV('fe_lokasi', d[6]);
@@ -737,47 +738,61 @@ function renderEditForm(rowID, rowData) {
         setV('fe_luasT', d[12]);
         setV('fe_syor', d[17]);
 
-        // 2. Dropdown Negeri & Daerah
+        // Lokasi
         const elNeg = document.getElementById('fe_negeri');
         if(elNeg) {
-            elNeg.value = d[4]; // Set Negeri
-            updateDistricts('fe_negeri','fe_daerah'); // Generate Daerah Options
-            document.getElementById('fe_daerah').value = d[5]; // Set Daerah
+            elNeg.value = d[4]; 
+            updateDistricts('fe_negeri','fe_daerah'); 
+            document.getElementById('fe_daerah').value = d[5]; 
         }
 
-        // 3. Dropdown Kategori & Tanaman (KRITIKAL)
+        // --- LOGIK TANAMAN (PENTING) ---
         const savedKat = d[8];
         const savedTan = d[9];
         
-        // Set Kategori
+        // 1. Set Kategori Asal
         const elKat = document.getElementById('fe_kategori');
-        elKat.value = savedKat;
+        if(savedKat) {
+             // Jika data belum loading, paksa tambah option nilai asal (Fallback)
+             if (!Array.from(elKat.options).some(o => o.value === savedKat)) {
+                 elKat.innerHTML += `<option value="${savedKat}" selected>${savedKat}</option>`;
+             }
+             elKat.value = savedKat;
+        }
 
-        // Generate Tanaman berdasarkan Kategori yang di-set
+        // 2. Trigger Update Tanaman (Supaya dropdown tanaman terisi)
         fe_updateTanaman(); 
 
-        // Set Tanaman
-        document.getElementById('fe_tanaman').value = savedTan;
+        // 3. Set Tanaman Asal
+        const elTan = document.getElementById('fe_tanaman');
+        if(savedTan) {
+             if (!Array.from(elTan.options).some(o => o.value === savedTan)) {
+                 const opt = document.createElement('option');
+                 opt.value = savedTan; opt.innerText = savedTan + " (Asal)"; opt.selected = true;
+                 elTan.appendChild(opt);
+             } else {
+                 elTan.value = savedTan;
+             }
+        }
 
-        // 4. Perosak
+        // --- LOGIK PEROSAK ---
         let luasObj = {}, sevObj = {};
         try { luasObj = JSON.parse(d[14]); } catch(e) {}
         try { sevObj = JSON.parse(d[16]); } catch(e) {}
         
         const pests = Object.keys(luasObj);
-        if(pests.length === 0 && d[13]) { // Support legacy data
+        if(pests.length === 0 && d[13]) { // Support data lama
              addPestRow(d[13], d[14], d[16]);
         } else {
              pests.forEach(p => addPestRow(p, luasObj[p], sevObj[p]));
         }
-        if(pests.length === 0) addPestRow(); // Row kosong default
+        if(pests.length === 0) addPestRow();
 
     } catch(e) { console.error(e); }
 
     document.getElementById('modalTitle').innerText = "KEMASKINI TUGASAN";
     new bootstrap.Modal(document.getElementById('detailModal')).show();
 }
-
         function formatDateForInput(dateStr) {
             // Convert dd/mm/yyyy or ISO to yyyy-mm-dd
             if(!dateStr) return "";
@@ -1192,96 +1207,102 @@ function renderEditForm(rowID, rowData) {
             btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF';
             btn.disabled = false;
         }    
-        // 1. UPDATE TANAMAN BILA KATEGORI BERUBAH
-function fe_updateTanaman() {
-    const kat = document.getElementById('fe_kategori').value;
-    const target = document.getElementById('fe_tanaman');
-    target.innerHTML = '<option value="">- Pilih -</option>';
-    
-    // Check dalam tanamanData[kat]
-    if (kat && tanamanData[kat]) {
-        // Ambil Keys dari object (sebab struktur baru: {Durian: [...], Rambutan: [...]})
-        const crops = Object.keys(tanamanData[kat]); 
+       // --- HELPER FUNCTIONS BARU (Letak paling bawah script) ---
+
+    // 1. Update Dropdown Tanaman bila Kategori berubah
+    function fe_updateTanaman() {
+        const kat = document.getElementById('fe_kategori').value;
+        const target = document.getElementById('fe_tanaman');
+        target.innerHTML = '<option value="">- Pilih -</option>';
         
-        crops.sort().forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t; opt.innerText = t;
-            target.appendChild(opt);
+        // tanamanData sekarang struktur 3 tingkat: { Buah: { Durian: [Ulat] } }
+        if (kat && tanamanData[kat]) {
+            // Ambil Keys (Nama Tanaman)
+            const crops = Object.keys(tanamanData[kat]); 
+            
+            crops.sort().forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.innerText = t;
+                target.appendChild(opt);
+            });
+        }
+        // Reset pest options juga
+        fe_updatePestOptions(); 
+    }
+
+    // 2. Dapatkan Array Perosak untuk tanaman semasa
+    function getPestListForCurrentCrop() {
+        const kat = document.getElementById('fe_kategori').value;
+        const tan = document.getElementById('fe_tanaman').value;
+        
+        if (kat && tan && tanamanData[kat] && tanamanData[kat][tan]) {
+            return tanamanData[kat][tan]; // Return Array ["Ulat", "Kumbang"]
+        }
+        return [];
+    }
+
+    // 3. Update semua dropdown perosak dalam table
+    function fe_updatePestOptions() {
+        const list = getPestListForCurrentCrop();
+        
+        document.querySelectorAll('.p-name-select').forEach(sel => {
+            const curVal = sel.value;
+            sel.innerHTML = '<option value="">- Pilih Perosak -</option>';
+            list.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p; opt.innerText = p;
+                sel.appendChild(opt);
+            });
+            // Kekalkan value lama jika ada
+            if(list.includes(curVal)) {
+                sel.value = curVal;
+            } else if (curVal) {
+                // Jika perosak lama takde dalam list baru, tambah sebagai 'Lain-lain'
+                const opt = document.createElement('option');
+                opt.value = curVal; opt.innerText = curVal; opt.selected = true;
+                sel.appendChild(opt);
+            }
         });
     }
-    // Bila tanaman berubah list, reset juga pest list dalam row (optional logic)
-    fe_updatePestOptions(); 
-}
 
-// 2. DAPATKAN LIST PEROSAK UTK TANAMAN YG DIPILIH
-function getPestListForCurrentCrop() {
-    const kat = document.getElementById('fe_kategori').value;
-    const tan = document.getElementById('fe_tanaman').value;
-    
-    if (kat && tan && tanamanData[kat] && tanamanData[kat][tan]) {
-        return tanamanData[kat][tan]; // Return Array ["Ulat", "Kumbang"]
-    }
-    return [];
-}
-
-// 3. UPDATE SEMUA DROPDOWN PEROSAK DLM TABLE (Bila user tukar tanaman)
-function fe_updatePestOptions() {
-    const list = getPestListForCurrentCrop();
-    // Cari semua dropdown perosak dalam table
-    document.querySelectorAll('.p-name-select').forEach(sel => {
-        const curVal = sel.value; // Simpan value semasa kalau boleh
-        sel.innerHTML = '<option value="">- Pilih Perosak -</option>';
-        list.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p; opt.innerText = p;
-            sel.appendChild(opt);
+    // 4. Tambah Row Perosak (Guna Dropdown)
+    // INI MENGGANTIKAN addPestRow YANG LAMA
+    function addPestRow(name="", area="", sev="") {
+        const tbody = document.querySelector('#fe_pestTable tbody');
+        const tr = document.createElement('tr');
+        
+        // Ambil list perosak dari tanaman yg dipilih
+        const pestList = getPestListForCurrentCrop();
+        
+        let pestOptions = '<option value="">- Pilih -</option>';
+        pestList.forEach(p => {
+            const selected = (String(p).trim() === String(name).trim()) ? "selected" : "";
+            pestOptions += `<option value="${p}" ${selected}>${p}</option>`;
         });
-        // Cuba kekalkan value jika wujud dlm list baru, kalau tak reset
-        if(list.includes(curVal)) sel.value = curVal;
-    });
-}
 
-// 4. TAMBAH ROW PEROSAK (GUNA SELECT, BUKAN INPUT TEXT)
-function addPestRow(name="", area="", sev="") {
-    const tbody = document.querySelector('#fe_pestTable tbody');
-    const tr = document.createElement('tr');
-    
-    // Dapatkan list perosak semasa
-    const pestList = getPestListForCurrentCrop();
-    
-    let pestOptions = '<option value="">- Pilih -</option>';
-    pestList.forEach(p => {
-        // Check kalau name sama, auto select
-        const selected = (p === name) ? "selected" : "";
-        pestOptions += `<option value="${p}" ${selected}>${p}</option>`;
-    });
+        // Fallback untuk data lama
+        if(name && !pestList.includes(name)) {
+            pestOptions += `<option value="${name}" selected>${name}</option>`;
+        }
 
-    // Kalau "name" ada tapi tiada dalam list (contoh: data lama/custom), tambah dia sbg option extra
-    if(name && !pestList.includes(name)) {
-        pestOptions += `<option value="${name}" selected>${name} (Lain-lain)</option>`;
+        tr.innerHTML = `
+            <td>
+                <select class="form-select form-select-sm p-name p-name-select">
+                    ${pestOptions}
+                </select>
+            </td>
+            <td><input type="number" class="form-control form-control-sm p-area" value="${area}" step="0.01"></td>
+            <td>
+                <select class="form-select form-select-sm p-sev">
+                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                </select>
+            </td>
+            <td class="text-center"><button class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove()"><i class="bi bi-x-circle"></i></button></td>
+        `;
+        
+        if(sev) tr.querySelector('.p-sev').value = sev;
+        tbody.appendChild(tr);
     }
-
-    // Guna class 'p-name-select' supaya senang update nanti
-    // Note: Saya tukar input class 'p-name' jadi select class 'p-name-select p-name'
-    tr.innerHTML = `
-        <td>
-            <select class="form-select form-select-sm p-name p-name-select">
-                ${pestOptions}
-            </select>
-        </td>
-        <td><input type="number" class="form-control form-control-sm p-area" value="${area}" step="0.01"></td>
-        <td>
-            <select class="form-select form-select-sm p-sev">
-                <option value="1">1</option><option value="2">2</option>
-                <option value="3">3</option><option value="4">4</option><option value="5">5</option>
-            </select>
-        </td>
-        <td class="text-center"><button class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove()"><i class="bi bi-x-circle"></i></button></td>
-    `;
-    
-    if(sev) tr.querySelector('.p-sev').value = sev;
-    tbody.appendChild(tr);
-}
     </script>
 </body>
 </html>
