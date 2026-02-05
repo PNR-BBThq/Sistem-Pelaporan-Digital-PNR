@@ -956,7 +956,8 @@
                     const email = getVal('Email') || "-"; 
                     const negeri = getVal('Negeri') || "-"; 
                     const daerah = getVal('Daerah') || "-"; 
-                    const lokasi = getVal('Lokasi') || getVal('Kebun') || "-"; 
+                    const lokasi = getVal('Lokasi') || getVal('Kebun') || "-";
+                    const tarikhbancian = getVal('tarikh bancian') || "-";
                     const koordinat = getVal('Koordinat') || "-"; 
                     const tanaman = getVal('Nama Tanaman') || getVal('Tanaman') || "-"; 
                     const varieti = getVal('Varieti') || "-"; 
@@ -1015,7 +1016,8 @@
                     container.innerHTML += cardHTML; 
                 }); 
             } catch(e) { console.error(e); container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; } 
-        }        async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
+        }       
+        async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
         async function approveAll() { if(!currentPendingRows || currentPendingRows.length === 0) { alert("Tiada data."); return; } if(!confirm(`Sahkan SEMUA ${currentPendingRows.length} rekod?`)) return; const prog = document.getElementById('bulkProgress'); const bar = document.getElementById('progBar'); const txt = document.getElementById('progText'); prog.style.display = 'block'; let count = 0; for (const r of currentPendingRows) { await postData('submitVerify', {row: r.row, act: 'APPROVE', reason: 'Bulk Approval', name: uProf.name}); count++; let pct = Math.round((count / currentPendingRows.length) * 100); bar.style.width = pct + "%"; txt.innerText = `${count} / ${currentPendingRows.length}`; } alert("✅ Selesai!"); prog.style.display = 'none'; loadPend(); initDash(); checkPendingCount(); }
 
         async function downloadDualExcel() { 
