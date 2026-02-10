@@ -507,8 +507,8 @@
                if(d.c && d.c.includes(',')) { 
     let p = d.c.split(',').map(Number); 
     if(p.length===2 && !isNaN(p[0])) {
-        // Simpan koordinat DAN data rekod tersebut
-        pts.push({ coord: p, data: d });
+        // Kita simpan koordinat (p) DAN keseluruhan data (d)
+        pts.push({ coord: p, data: d }); 
     }
 }
                 if(d.ls > 0 && d.d !== "-") hData[d.d] = (hData[d.d]||0) + d.ls;
@@ -549,45 +549,89 @@
         }
 
         function updateCharts(pm, km) { const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); if(charts.b) charts.b.destroy(); charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); if(charts.p) charts.p.destroy(); charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); }
-        function updateMap(pts) { 
-    // Buang layer lama jika ada
+       function updateMap(pts) { 
+    // 1. Buang layer lama supaya peta tak berat bila filter
     if(layer) map.removeLayer(layer); 
-    
-    if(pts.length) { 
-        // Proses setiap titik
-        const markers = pts.map(item => {
-            const p = item.coord; // Koordinat
-            const d = item.data;  // Maklumat Data
-            
-            // Cipta Marker
-            const marker = L.circleMarker(p, {
-                radius: 6, 
-                color: '#dc2626', 
-                fillOpacity: 0.7, 
-                stroke: true, 
-                weight: 1, 
-                color: 'white', 
-                fillColor: '#dc2626'
-            });
 
-            // Kandungan Popup (HTML)
-            // Anda boleh ubah design dalam ni
+    if(pts.length) { 
+        // 2. Loop setiap titik data
+        const markers = pts.map(item => {
+            const p = item.coord; // Koordinat Lat,Long
+            const d = item.data;  // Data penuh rekod
+            
+            // --- PROSES DATA PEROSAK ---
+            let pestHTML = "";
+            let pestObj = {};
+
+            // Cuba baca data perosak (sebab kadang ia string JSON, kadang objek)
+            try { 
+                pestObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p; 
+            } catch(e) { pestObj = {}; }
+
+            // Susun senarai perosak dalam bentuk HTML
+            if (pestObj && Object.keys(pestObj).length > 0) {
+                pestHTML = `<div style="margin-top:5px; border-top:1px dashed #ccc; padding-top:5px;">
+                                <small class="fw-bold text-muted">PERINCIAN PEROSAK:</small>
+                                <ul style="padding-left: 15px; margin-bottom: 0; font-size: 0.8rem;">`;
+                
+                Object.entries(pestObj).forEach(([nama, luas]) => {
+                    pestHTML += `<li>${nama}: <b class="text-danger">${parseFloat(luas).toFixed(2)} Ha</b></li>`;
+                });
+                
+                pestHTML += `</ul></div>`;
+            } else {
+                pestHTML = `<div class="mt-2 text-muted small fst-italic">- Tiada data perosak terperinci -</div>`;
+            }
+
+            // --- CIPTA POPUP HTML ---
             const popupContent = `
-                <div style="font-size:0.85rem; line-height:1.4;">
-                    <b class="text-success text-uppercase">${d.tn}</b><br>
-                    <span class="fw-bold">${d.l}</span><br>
-                    <span class="text-muted" style="font-size:0.75rem">${d.d}, ${d.n}</span>
-                    <hr class="my-1">
-                    Luas Serangan: <b class="text-danger">${d.ls.toFixed(2)} Ha</b><br>
-                    <small class="text-muted">Tarikh: ${d.t}</small>
+                <div style="font-family: sans-serif; font-size: 0.85rem; min-width: 200px;">
+                    <div style="background-color: #f8f9fa; padding: 5px; border-bottom: 1px solid #ddd; margin-bottom: 5px;">
+                        <b class="text-success text-uppercase">${d.tn}</b>
+                    </div>
+                    
+                    <div class="mb-1">
+                        <i class="bi bi-geo-alt-fill text-danger"></i> <b>${d.l}</b><br>
+                        <span class="text-muted small">${d.d}, ${d.n}</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between bg-light border rounded p-1 mb-2" style="font-size: 0.8rem;">
+                        <div>
+                            <span class="d-block text-muted" style="font-size:0.7rem">LUAS TANAM</span>
+                            <b>${d.lt.toFixed(2)} Ha</b>
+                        </div>
+                        <div class="text-end border-start ps-2">
+                            <span class="d-block text-muted" style="font-size:0.7rem">JUMLAH SERANGAN</span>
+                            <b class="text-danger">${d.ls.toFixed(2)} Ha</b>
+                        </div>
+                    </div>
+
+                    ${pestHTML}
+                    
+                    <div class="text-end mt-2">
+                        <small class="text-muted" style="font-size: 0.7rem;">Tarikh: ${d.t}</small>
+                    </div>
                 </div>
             `;
+
+            // Cipta Marker Bulatan
+            const marker = L.circleMarker(p, {
+                radius: 6, 
+                color: 'white',       // Warna border putih
+                weight: 1, 
+                fillColor: '#dc2626', // Warna merah
+                fillOpacity: 0.8
+            });
 
             // Bind Popup (Keluar bila Click)
             marker.bindPopup(popupContent);
 
-            // Bind Tooltip (Keluar bila Hover - Optional)
-            marker.bindTooltip(d.l, {direction: 'top', offset: [0, -5]});
+            // Bind Tooltip (Keluar bila Hover - Nama Lokasi sahaja)
+            marker.bindTooltip(`<b>${d.tn}</b>: ${d.l}`, {
+                direction: 'top', 
+                offset: [0, -5],
+                opacity: 0.9
+            });
 
             return marker;
         });
@@ -595,7 +639,7 @@
         // Masukkan ke dalam map
         layer = L.layerGroup(markers).addTo(map); 
         
-        // Zoom map supaya muat semua titik (ambil coord sahaja)
+        // Zoom map supaya muat semua titik
         map.fitBounds(L.latLngBounds(pts.map(x => x.coord))); 
     } 
 }
