@@ -504,7 +504,13 @@
                 tt += (d.lt||0); ts += (d.ls||0);
                 try{ let p=typeof d.p==='string'?JSON.parse(d.p):d.p; if(p) Object.entries(p).forEach(([k,v])=>pm[k]=(pm[k]||0)+parseFloat(v)); else if(d.ls>0) pm["Umum"]=(pm["Umum"]||0)+d.ls; }catch(e){ if(d.ls>0) pm["Umum"]=(pm["Umum"]||0)+d.ls; }
                 let l = parseInt(d.k)||0; if(l>0 && l<=5) km[l]++;
-                if(d.c && d.c.includes(',')) { let p = d.c.split(',').map(Number); if(p.length===2 && !isNaN(p[0])) pts.push(p); }
+               if(d.c && d.c.includes(',')) { 
+    let p = d.c.split(',').map(Number); 
+    if(p.length===2 && !isNaN(p[0])) {
+        // Simpan koordinat DAN data rekod tersebut
+        pts.push({ coord: p, data: d });
+    }
+}
                 if(d.ls > 0 && d.d !== "-") hData[d.d] = (hData[d.d]||0) + d.ls;
             });
             document.getElementById('k1').innerText = tt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -543,7 +549,56 @@
         }
 
         function updateCharts(pm, km) { const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); if(charts.b) charts.b.destroy(); charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); if(charts.p) charts.p.destroy(); charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); }
-        function updateMap(pts) { if(layer) map.removeLayer(layer); if(pts.length) { layer = L.layerGroup(pts.map(p => L.circleMarker(p, {radius:6, color:'#dc2626', fillOpacity:0.7, stroke:true, weight:1, color:'white', fillColor:'#dc2626'}))).addTo(map); map.fitBounds(L.latLngBounds(pts)); } }
+        function updateMap(pts) { 
+    // Buang layer lama jika ada
+    if(layer) map.removeLayer(layer); 
+    
+    if(pts.length) { 
+        // Proses setiap titik
+        const markers = pts.map(item => {
+            const p = item.coord; // Koordinat
+            const d = item.data;  // Maklumat Data
+            
+            // Cipta Marker
+            const marker = L.circleMarker(p, {
+                radius: 6, 
+                color: '#dc2626', 
+                fillOpacity: 0.7, 
+                stroke: true, 
+                weight: 1, 
+                color: 'white', 
+                fillColor: '#dc2626'
+            });
+
+            // Kandungan Popup (HTML)
+            // Anda boleh ubah design dalam ni
+            const popupContent = `
+                <div style="font-size:0.85rem; line-height:1.4;">
+                    <b class="text-success text-uppercase">${d.tn}</b><br>
+                    <span class="fw-bold">${d.l}</span><br>
+                    <span class="text-muted" style="font-size:0.75rem">${d.d}, ${d.n}</span>
+                    <hr class="my-1">
+                    Luas Serangan: <b class="text-danger">${d.ls.toFixed(2)} Ha</b><br>
+                    <small class="text-muted">Tarikh: ${d.t}</small>
+                </div>
+            `;
+
+            // Bind Popup (Keluar bila Click)
+            marker.bindPopup(popupContent);
+
+            // Bind Tooltip (Keluar bila Hover - Optional)
+            marker.bindTooltip(d.l, {direction: 'top', offset: [0, -5]});
+
+            return marker;
+        });
+
+        // Masukkan ke dalam map
+        layer = L.layerGroup(markers).addTo(map); 
+        
+        // Zoom map supaya muat semua titik (ambil coord sahaja)
+        map.fitBounds(L.latLngBounds(pts.map(x => x.coord))); 
+    } 
+}
         function updateHotspot(hData) { const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; }
         
         function renTab() { 
