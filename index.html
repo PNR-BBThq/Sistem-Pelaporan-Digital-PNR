@@ -1031,12 +1031,7 @@ function viewRec(idx) {
         
         async function doDeleteRec(rowID) { if(!confirm("Padam rekod ini?")) return; const btn = event.target.closest('button'); btn.innerHTML='...'; btn.disabled=true; const r = await postData('deleteEntry', {row:rowID}); alert(r.message); if(r.success) location.reload(); }
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
-// --- LOAD PENDING (KEMASKINI: TAMBAH KATEGORI) ---
-       // --- KEMASKINI: LOAD PENDING (DENGAN TARIKH BANCIAN + UMUR TANAMAN) ---
-// --- KEMASKINI: LOAD PENDING (FORMAT TARIKH DD/MM/YYYY FIXED) ---
-// --- KEMASKINI: VIEW REC (FORMAT TARIKH DD/MM/YYYY FIXED) ---
-// --- KEMASKINI: LOAD PENDING (DENGAN TARIKH BANCIAN & UMUR) ---
-// --- KEMASKINI TERBARU: LOAD PENDING (DENGAN REKA BENTUK LEBIH KEMAS & TARIKH DD/MM/YY) ---
+// --- KEMASKINI: LOAD PENDING (DESIGN ASAL + FULL TEXT + TARIKH DD/MM/YY) ---
 async function loadPend() { 
     const container = document.getElementById('verifyContainer'); 
     container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>'; 
@@ -1049,25 +1044,14 @@ async function loadPend() {
         const cleanImageLink = (raw) => { if (!raw) return []; let str = String(raw).trim(); if(str.length < 5) return []; str = str.replace(/[\[\]"'\\]/g, ''); return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http')); }; 
         const toViewLink = (link) => { const idMatch = link.match(/[-\w]{25,}/); if(idMatch) return `https://drive.google.com/file/d/${idMatch[0]}/view?usp=sharing`; return link; };
         
-        // [FIX] FORMAT TARIKH KEPADA DD/MM/YY (2 Digit Tahun)
-        const formatTkhPendek = (t) => {
+        // FORMAT TARIKH: DD/MM/YY (2 Digit Tahun)
+        const formatTkh = (t) => {
             if(!t) return "-";
             const d = new Date(t);
             if (isNaN(d)) return t;
             const day = d.getDate().toString().padStart(2, '0');
             const month = (d.getMonth() + 1).toString().padStart(2, '0');
-            const year = d.getFullYear().toString().slice(-2); // Ambil 2 digit terakhir tahun
-            return `${day}/${month}/${year}`;
-        };
-
-        // Format DD/MM/YYYY (4 Digit Tahun - Untuk Tarikh Bancian lebih elok penuh)
-        const formatTkhPenuh = (t) => {
-            if(!t) return "-";
-            const d = new Date(t);
-            if (isNaN(d)) return t;
-            const day = d.getDate().toString().padStart(2, '0');
-            const month = (d.getMonth() + 1).toString().padStart(2, '0');
-            const year = d.getFullYear();
+            const year = d.getFullYear().toString().slice(-2); 
             return `${day}/${month}/${year}`;
         };
 
@@ -1075,8 +1059,8 @@ async function loadPend() {
             const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }; 
             
             const timestamp = getVal('Timestamp'); 
-            const tkhHantar = formatTkhPendek(timestamp); // Guna format pendek untuk header
-            const tarikhBancian = formatTkhPenuh(getVal('Tarikh Bancian') || getVal('Tarikh') || getVal('Date')); 
+            const tkhHantar = formatTkh(timestamp);
+            const tarikhBancian = formatTkh(getVal('Tarikh Bancian') || getVal('Tarikh') || getVal('Date')); 
             
             const nama = getVal('Nama') || getVal('Pegawai'); 
             const email = getVal('Email') || "-"; 
@@ -1091,7 +1075,6 @@ async function loadPend() {
             const luasTanam = getVal('Luas Bertanam') || getVal('Luas') || "-"; 
             const syor = getVal('Syor') || "-"; 
             
-            // Logic Table Pest (Dikemaskan)
             let pestRows = ""; 
             try { 
                 const lsObj = JSON.parse(getVal('Luas Serangan') || "{}"); 
@@ -1101,17 +1084,16 @@ async function loadPend() {
                     Object.keys(lsObj).forEach(k => { 
                         let level = kObj[k] || 0; 
                         let badgeColor = level < 3 ? 'success' : (level < 4 ? 'warning' : 'danger'); 
-                        // Baris Jadual yang lebih kemas
                         pestRows += `
                         <tr>
-                            <td class="text-start text-uppercase fw-bold" style="font-size:0.75rem; vertical-align:middle;">${k}</td>
-                            <td class="text-center" style="vertical-align:middle;">${lsObj[k]}</td>
-                            <td class="text-center" style="vertical-align:middle;">${pctObj[k]||0}%</td>
-                            <td class="text-center" style="vertical-align:middle;"><span class="badge bg-${badgeColor}" style="min-width:30px;">T${level}</span></td>
+                            <td class="text-start text-uppercase" style="font-size:0.8rem; vertical-align:middle;">${k}</td>
+                            <td class="text-center fw-bold" style="vertical-align:middle;">${lsObj[k]}</td>
+                            <td class="text-center small" style="vertical-align:middle;">${pctObj[k]||0}%</td>
+                            <td class="text-center" style="vertical-align:middle;"><span class="badge bg-${badgeColor}">T${level}</span></td>
                         </tr>`; 
                     }); 
                 } else { 
-                    pestRows = `<tr><td colspan="4" class="text-center text-muted fst-italic py-2" style="font-size:0.8rem">Tiada serangan dilaporkan.</td></tr>`; 
+                    pestRows = `<tr><td colspan="4" class="text-center text-muted fst-italic small">Tiada Serangan</td></tr>`; 
                 } 
             } catch(e) { pestRows = `<tr><td colspan="4" class="text-center text-muted small">Ralat Data</td></tr>`; } 
             
@@ -1119,103 +1101,105 @@ async function loadPend() {
             const imgLinks = cleanImageLink(rawImg); 
             let imgHTML = imgLinks.length > 0 ? 
                 `<div class="mt-3 pt-2 border-top">
-                    <h6 class="fw-bold text-secondary" style="font-size:0.75rem; letter-spacing:0.5px;"><i class="bi bi-images me-1"></i> LAMPIRAN GAMBAR (${imgLinks.length})</h6>
-                    <div class="d-flex flex-wrap gap-2 mt-2">` + imgLinks.map((lnk, i) => `<a href="${toViewLink(lnk)}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate fw-bold" style="max-width: 120px; font-size:0.75rem;"><i class="bi bi-eye me-1"></i> Gambar ${i+1}</a>`).join('') + `</div>
+                    <h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-images me-1"></i> LAMPIRAN GAMBAR (${imgLinks.length})</h6>
+                    <div class="d-flex flex-wrap gap-2">` + imgLinks.map((lnk, i) => `<a href="${toViewLink(lnk)}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate fw-bold" style="max-width: 140px; font-size:0.75rem"><i class="bi bi-eye me-1"></i> Gambar ${i+1}</a>`).join('') + `</div>
                 </div>` : 
-                `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic" style="font-size:0.75rem"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR</small></div>`; 
+                `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic small text-uppercase"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR</small></div>`; 
             
-            // HTML CARD YANG DIKEMASKINI (STYLE LEBIH KEMAS)
+            // HTML CARD (GRID ASAL + KEMAS)
             const cardHTML = `
             <div class="col-md-6 col-xl-4">
                 <div class="verify-card bg-white rounded-3 shadow-sm border mb-3 h-100 d-flex flex-column">
-                    <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-center">
-                        <div style="line-height:1.2;">
-                            <div class="text-muted" style="font-size:0.7rem; margin-bottom:2px;"><i class="bi bi-clock me-1"></i> Hantar: <strong>${tkhHantar}</strong></div>
-                            <div class="fw-bold text-uppercase text-dark text-truncate" style="max-width:200px;">${nama}</div>
-                            <div class="text-muted fst-italic text-truncate" style="font-size:0.7rem; max-width:200px;">${email}</div>
+                    
+                    <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-start">
+                        <div style="overflow:hidden;">
+                            <div class="small text-muted mb-1"><i class="bi bi-clock me-1"></i> Tarikh Hantar: ${tkhHantar}</div>
+                            <div class="fw-bold text-uppercase text-dark text-truncate">${nama}</div>
+                            <div class="small text-muted fst-italic text-truncate">${email}</div>
                         </div>
-                        <span class="badge bg-warning text-dark shadow-sm" style="font-size:0.7rem;">BARU</span>
+                        <span class="badge bg-warning text-dark shadow-sm flex-shrink-0 ms-2">BARU</span>
                     </div>
 
                     <div class="p-3 flex-grow-1">
-                        <div class="mb-3">
-                            <h6 class="fw-bold text-success border-bottom pb-1 mb-2" style="font-size:0.75rem; letter-spacing:0.5px;">
-                                <i class="bi bi-geo-alt-fill me-1"></i> LOKASI & TANAMAN
-                            </h6>
-                            
-                            <div class="d-flex justify-content-between border-bottom border-light pb-1 mb-1">
-                                <span class="text-secondary fw-bold" style="font-size:0.75rem;">TARIKH BANCIAN</span>
-                                <span class="fw-bold text-primary text-end" style="font-size:0.8rem;">${tarikhBancian}</span>
-                            </div>
-                            <div class="d-flex justify-content-between border-bottom border-light pb-1 mb-1">
-                                <span class="text-secondary fw-bold" style="font-size:0.75rem;">NEGERI</span>
-                                <span class="fw-bold text-dark text-end" style="font-size:0.8rem;">${negeri}</span>
-                            </div>
-                            <div class="d-flex justify-content-between border-bottom border-light pb-1 mb-1">
-                                <span class="text-secondary fw-bold" style="font-size:0.75rem;">DAERAH</span>
-                                <span class="fw-bold text-dark text-end" style="font-size:0.8rem;">${daerah}</span>
-                            </div>
-                            <div class="d-flex justify-content-between border-bottom border-light pb-1 mb-1">
-                                <span class="text-secondary fw-bold" style="font-size:0.75rem;">LOKASI</span>
-                                <span class="fw-bold text-dark text-end text-truncate" style="font-size:0.8rem; max-width:150px;">${lokasi}</span>
-                            </div>
-                            
-                            <div class="mt-2 pt-1 border-top border-dashed"></div>
-
-                            <div class="d-flex justify-content-between border-bottom border-light pb-1 mb-1">
-                                <span class="text-secondary fw-bold" style="font-size:0.75rem;">TANAMAN</span>
-                                <span class="fw-bold text-success text-end" style="font-size:0.8rem;">${tanaman}</span>
-                            </div>
-                            <div class="d-flex justify-content-between border-bottom border-light pb-1 mb-1">
-                                <span class="text-secondary fw-bold" style="font-size:0.75rem;">KATEGORI TANAMAN</span>
-                                <span class="fw-bold text-dark text-end" style="font-size:0.8rem;">${kategori}</span>
-                            </div>
-                            <div class="d-flex justify-content-between border-bottom border-light pb-1 mb-1">
-                                <span class="text-secondary fw-bold" style="font-size:0.75rem;">VARIETI</span>
-                                <span class="fw-bold text-dark text-end" style="font-size:0.8rem;">${varieti}</span>
-                            </div>
-                            <div class="d-flex justify-content-between border-bottom border-light pb-1 mb-1">
-                                <span class="text-secondary fw-bold" style="font-size:0.75rem;">UMUR TANAMAN</span>
-                                <span class="fw-bold text-dark text-end" style="font-size:0.8rem;">${umur}</span>
-                            </div>
-                            <div class="d-flex justify-content-between pb-1 mb-1">
-                                <span class="text-secondary fw-bold" style="font-size:0.75rem;">LUAS TANAMAN</span>
-                                <span class="fw-bold text-dark text-end" style="font-size:0.8rem;">${luasTanam} HA</span>
-                            </div>
+                        <h6 class="fw-bold text-success mb-3 small border-bottom pb-2 text-uppercase">
+                            <i class="bi bi-info-circle-fill me-1"></i> LOKASI & TANAMAN
+                        </h6>
+                        
+                        <div class="row g-2 mb-1" style="font-size:0.85rem">
+                            <div class="col-4 fw-bold text-secondary text-uppercase">TARIKH BANCIAN:</div>
+                            <div class="col-8 fw-bold text-primary">${tarikhBancian}</div>
                         </div>
-
-                        <div>
-                            <h6 class="fw-bold text-danger border-bottom pb-1 mb-2" style="font-size:0.75rem; letter-spacing:0.5px;">
-                                <i class="bi bi-bug-fill me-1"></i> DATA SERANGAN
-                            </h6>
-                            <div class="table-responsive border rounded bg-white">
-                                <table class="table table-sm table-striped mb-0 w-100" style="font-size:0.7rem;">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th class="text-start ps-2" style="width:40%;">PEROSAK</th>
-                                            <th class="text-center text-nowrap">LUAS SERANGAN (HA)</th>
-                                            <th class="text-center">PERATUS SERANGAN</th>
-                                            <th class="text-center">KETERUKAN SERANGAN</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>${pestRows}</tbody>
-                                </table>
-                            </div>
-                            ${imgHTML}
+                        <div class="row g-2 mb-1" style="font-size:0.85rem">
+                            <div class="col-4 fw-bold text-secondary text-uppercase">NEGERI:</div>
+                            <div class="col-8 fw-bold text-dark">${negeri}</div>
+                        </div>
+                        <div class="row g-2 mb-1" style="font-size:0.85rem">
+                            <div class="col-4 fw-bold text-secondary text-uppercase">DAERAH:</div>
+                            <div class="col-8 fw-bold text-dark">${daerah}</div>
+                        </div>
+                        <div class="row g-2 mb-1" style="font-size:0.85rem">
+                            <div class="col-4 fw-bold text-secondary text-uppercase">LOKASI:</div>
+                            <div class="col-8 fw-bold text-dark text-break">${lokasi}</div> </div>
+                        <div class="row g-2 mb-1" style="font-size:0.85rem">
+                            <div class="col-4 fw-bold text-secondary text-uppercase">KOORDINAT:</div>
+                            <div class="col-8 font-monospace text-muted small">${koordinat}</div>
+                        </div>
+                        
+                        <hr class="my-2 text-muted opacity-25">
+                        
+                        <div class="row g-2 mb-1" style="font-size:0.85rem">
+                            <div class="col-4 fw-bold text-secondary text-uppercase">KATEGORI TANAMAN:</div>
+                            <div class="col-8 fw-bold text-dark text-uppercase">${kategori}</div>
+                        </div>
+                        <div class="row g-2 mb-1" style="font-size:0.85rem">
+                            <div class="col-4 fw-bold text-secondary text-uppercase">TANAMAN:</div>
+                            <div class="col-8 fw-bold text-success text-uppercase">${tanaman}</div>
+                        </div>
+                        <div class="row g-2 mb-1" style="font-size:0.85rem">
+                            <div class="col-4 fw-bold text-secondary text-uppercase">VARIETI:</div>
+                            <div class="col-8 text-uppercase">${varieti}</div>
+                        </div>
+                        <div class="row g-2 mb-1" style="font-size:0.85rem">
+                            <div class="col-4 fw-bold text-secondary text-uppercase">UMUR TANAMAN:</div>
+                            <div class="col-8 text-uppercase">${umur}</div>
+                        </div>
+                        <div class="row g-2 mb-3" style="font-size:0.85rem">
+                            <div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAMAN:</div>
+                            <div class="col-8 text-dark fw-bold">${luasTanam} HA</div>
                         </div>
                     </div>
 
-                    <div class="p-3 bg-white border-top">
-                        <div class="alert alert-warning border-warning mb-3 py-2 px-3 shadow-sm d-flex align-items-start" style="font-size:0.75rem;">
-                            <i class="bi bi-lightbulb-fill text-warning me-2 mt-1"></i>
+                    <div class="px-3">
+                        <h6 class="fw-bold text-danger mb-2 small border-bottom pb-1 text-uppercase">
+                            <i class="bi bi-bug-fill me-1"></i> DATA SERANGAN
+                        </h6>
+                        <div class="table-responsive border rounded bg-white">
+                            <table class="table table-sm table-striped mb-0" style="font-size:0.75rem">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="text-start ps-2 text-uppercase">PEROSAK</th>
+                                        <th class="text-center text-nowrap text-uppercase">LUAS SERANGAN (HA)</th>
+                                        <th class="text-center text-uppercase">PERATUS SERANGAN</th>
+                                        <th class="text-center text-uppercase">KETERUKAN SERANGAN</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${pestRows}</tbody>
+                            </table>
+                        </div>
+                        ${imgHTML}
+                    </div>
+
+                    <div class="p-3 mt-auto border-top">
+                        <div class="alert alert-warning border-warning mb-3 py-2 px-3 small d-flex align-items-start">
+                            <i class="bi bi-lightbulb-fill text-warning me-2 mt-1"></i> 
                             <div>
-                                <strong class="text-uppercase text-dark d-block mb-1">SYOR KAWALAN:</strong>
+                                <strong class="text-uppercase d-block mb-1">SYOR KAWALAN:</strong>
                                 <span class="text-dark">${syor}</span>
                             </div>
                         </div>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-outline-danger flex-grow-1 fw-bold text-uppercase btn-sm py-2" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-circle me-1"></i> TOLAK</button>
-                            <button class="btn btn-success flex-grow-1 fw-bold shadow-sm text-uppercase btn-sm py-2" onclick="subVer(${r.row},'APPROVE')"><i class="bi bi-check-circle me-1"></i> SAHKAN</button>
+                            <button class="btn btn-outline-danger flex-grow-1 fw-bold text-uppercase btn-sm py-2" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-lg me-1"></i> TOLAK</button>
+                            <button class="btn btn-success flex-grow-1 fw-bold shadow-sm text-uppercase btn-sm py-2" onclick="subVer(${r.row},'APPROVE')"><i class="bi bi-check-lg me-1"></i> SAHKAN</button>
                         </div>
                     </div>
                 </div>
@@ -1224,6 +1208,7 @@ async function loadPend() {
         }); 
     } catch(e) { console.error(e); container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; } 
 }
+        
         async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan data ini?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
         async function approveAll() { if(!currentPendingRows || currentPendingRows.length === 0) { alert("Tiada data."); return; } if(!confirm(`Sahkan SEMUA ${currentPendingRows.length} rekod?`)) return; const prog = document.getElementById('bulkProgress'); const bar = document.getElementById('progBar'); const txt = document.getElementById('progText'); prog.style.display = 'block'; let count = 0; for (const r of currentPendingRows) { await postData('submitVerify', {row: r.row, act: 'APPROVE', reason: 'Bulk Approval', name: uProf.name}); count++; let pct = Math.round((count / currentPendingRows.length) * 100); bar.style.width = pct + "%"; txt.innerText = `${count} / ${currentPendingRows.length}`; } alert("✅ Selesai!"); prog.style.display = 'none'; loadPend(); initDash(); checkPendingCount(); }
 
