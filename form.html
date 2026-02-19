@@ -425,13 +425,15 @@
 
     function recalcAllPercent() { document.querySelectorAll('.perosak-luas').forEach(el => calcPercent(el)); }
 
-    function previewImages() {
+        function previewImages() {
         const c = document.getElementById('imagePreviewContainer'); 
         const files = document.getElementById('imageInput').files;
         
         if(files.length > 0) {
-            c.innerHTML = "";
-            document.getElementById('noImgText').style.display = 'none';
+            // Kita padam isi kotak, automatik tulisan "Tiada gambar" tu pun hilang.
+            // TAK PERLU LAGI guna style.display = 'none'
+            c.innerHTML = ""; 
+            
             filesToUpload = Array.from(files);
             filesToUpload.forEach(f => {
                 const r = new FileReader(); 
@@ -440,8 +442,10 @@
             });
         } else {
             c.innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
+            filesToUpload = []; // PENTING: Untuk elak gambar lama tersangkut
         }
     }
+
 
     function limitCaption(el) { 
         if (el.value.length > 30) el.value = el.value.substring(0, 30); 
