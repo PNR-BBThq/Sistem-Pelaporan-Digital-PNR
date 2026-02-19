@@ -430,8 +430,9 @@
         const files = document.getElementById('imageInput').files;
         
         if(files.length > 0) {
-            c.innerHTML = "";
-            document.getElementById('noImgText').style.display = 'none';
+            // Cuma perlu kosongkan container, automatik text "Tiada gambar" hilang
+            c.innerHTML = ""; 
+            
             filesToUpload = Array.from(files);
             filesToUpload.forEach(f => {
                 const r = new FileReader(); 
@@ -439,7 +440,9 @@
                 r.readAsDataURL(f);
             });
         } else {
+            // Jika user 'cancel' pilih gambar
             c.innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
+            filesToUpload = []; // Kosongkan array gambar
         }
     }
 
@@ -553,6 +556,7 @@
             }).then(() => {
                 f.reset(); document.getElementById('perosakList').innerHTML=""; addPerosakField(); updateQueueBadge();
                 document.getElementById('imagePreviewContainer').innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
+                filesToUpload = []; // <--- PENTING: Kosongkan memori gambar
             });
 
         } else {
@@ -567,6 +571,7 @@
                     Swal.fire('Berjaya!', 'Laporan dihantar.', 'success').then(() => {
                         f.reset(); document.getElementById('perosakList').innerHTML=""; addPerosakField(); window.scrollTo(0,0);
                         document.getElementById('imagePreviewContainer').innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
+                        filesToUpload = []; // <--- PENTING: Kosongkan memori gambar
                         updateQueueBadge();
                     });
                 } else { throw new Error(result.message); }
@@ -576,10 +581,13 @@
                 document.getElementById('loader').style.visibility = 'hidden';
                 document.getElementById('submitBtn').disabled = false;
                 Swal.fire('Ralat Sambungan', 'Data disimpan di telefon untuk percubaan semula.', 'info');
+                
+                // Tambahan: Kosongkan borang walaupun error masuk queue
+                f.reset(); document.getElementById('perosakList').innerHTML=""; addPerosakField(); window.scrollTo(0,0);
+                document.getElementById('imagePreviewContainer').innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
+                filesToUpload = [];
             }
         }
-    }
-
     // --- RSO CONVERSION ---
     async function executeRSOConversion() {
         const east = document.getElementById('rsoEast').value;
