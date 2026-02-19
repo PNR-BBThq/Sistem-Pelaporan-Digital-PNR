@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Borang PNR Digital</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <style>
+    body { background-color: #f0f2f5; padding-bottom: 80px; font-family: 'Segoe UI', sans-serif; }
+    
+    /* Container Utama - Design Kad */
+    .container { 
+        max-width: 600px; 
+        background: white; 
+        padding: 25px; 
+        border-radius: 15px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
+        margin-top: 20px; 
+        margin-bottom: 20px;
+    }
+
+    /* Tajuk Seksyen */
+    h5.text-primary {
+        font-weight: 700;
+        margin-top: 20px;
+        color: #064e3b !important; /* Hijau Gelap PNR */
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 10px;
+    }
+
+    /* Item Perosak */
+    .perosak-item { 
+        border: 1px solid #dee2e6; 
+        padding: 15px; 
+        border-radius: 10px; 
+        margin-bottom: 15px; 
+        background-color: #f8f9fa; 
+        position: relative; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    /* Loader Overlay */
+    .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.9); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; visibility: hidden; }
+    
+    /* Gambar Preview */
+    .preview-img { width: 70px; height: 70px; margin: 5px; border-radius: 5px; border: 1px solid #ddd; object-fit: cover; }
+    
+    /* Butang Close Custom */
+    .btn-close-custom { position: absolute; top: 10px; right: 10px; background-color: white; border-radius: 50%; padding: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    
+    /* Validation Error */
+    .is-invalid { border-color: #dc3545 !important; background-image: none; }
+    
+    /* Status Bar Offline (Footer) */
+    .offline-status { position: fixed; bottom: 0; left: 0; right: 0; background: #343a40; color: white; text-align: center; padding: 12px; font-weight: bold; font-size: 0.9rem; z-index: 1000; display: none; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); }
+    .offline-status.active { display: block; background: #dc3545; }
+    
+    /* Coordinate Styles */
+    .coord-mode-selector .btn-check:checked + .btn { font-weight: bold; border-width: 2px; }
+    .rso-container { background-color: #e9f7ef; border: 1px solid #c3e6cb; border-radius: 8px; padding: 15px; margin-bottom: 15px; display: none; }
+  </style>
+</head>
+<body>
+
+  <div id="connectionStatus" class="offline-status">
+      <i class="bi bi-wifi-off"></i> ANDA SEDANG OFFLINE. Data disimpan di telefon.
+  </div>
+
+  <div id="loader" class="loading-overlay">
+      <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;"></div>
+      <p class="mt-3 fw-bold text-success" id="loaderText">Memproses Data...</p>
+  </div>
+
+  <div class="container">
+    <div id="alertArea"></div> 
+    
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h3 class="text-success m-0 fw-bold"><i class="bi bi-flower1"></i> PNR Digital</h3>
+            <small class="text-muted">Borang Pemantauan Perosak</small>
+        </div>
+        
+        <div id="queueBadge" style="display:none">
+            <button type="button" class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="syncOfflineData()">
+                <i class="bi bi-cloud-upload-fill"></i> Sync (<span id="qCount">0</span>)
+            </button>
+        </div>
+    </div>
+    
+    <form id="monitorForm" onsubmit="handleFormSubmit(event)">
+      
+      <h5 class="text-primary">A. Maklumat Am</h5>
+      
+      <div class="mb-3">
+          <label class="fw-bold form-label">Nama Pegawai <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="namaPegawai" id="namaPegawai" list="userListSuggestions" required placeholder="Taip nama anda...">
+          <datalist id="userListSuggestions"></datalist>
+      </div>
+
+      <div class="mb-3">
+          <label class="fw-bold form-label">Email <span class="text-danger">*</span></label>
+          <input type="email" class="form-control" name="email" id="email" required placeholder="email@jabatan.gov.my">
+      </div>
+      
+      <div class="mb-3">
+          <label class="fw-bold form-label">Tarikh Bancian <span class="text-danger">*</span></label>
+          <input type="date" class="form-control" name="tarikhBancian" id="tarikhBancian" required>
+      </div>
+      
+      <div class="row">
+        <div class="col-6 mb-3">
+            <label class="fw-bold form-label">Negeri <span class="text-danger">*</span></label>
+            <select class="form-select" name="negeri" id="negeriSelect" onchange="updateDaerah()" required>
+                </select>
+        </div>
+        <div class="col-6 mb-3">
+            <label class="fw-bold form-label">Daerah <span class="text-danger">*</span></label>
+            <select class="form-select" name="daerah" id="daerahSelect" required><option value="">- Pilih Negeri -</option></select>
+        </div>
+      </div>
+      
+      <div class="mb-3">
+          <label class="fw-bold form-label">Nama Lokasi/Kebun <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="lokasi" id="lokasi" required placeholder="Contoh: Kebun Pak Ali, Kg. Baru">
+      </div>
+      
+      <div class="mb-3">
+        <label class="fw-bold d-block mb-2">Format Koordinat</label>
+        <div class="btn-group w-100 coord-mode-selector shadow-sm" role="group">
+            <input type="radio" class="btn-check" name="coordMode" id="modeWGS" autocomplete="off" checked onclick="toggleCoordMode('wgs')">
+            <label class="btn btn-outline-success" for="modeWGS">Lat, Long (WGS84)</label>
+          
+            <input type="radio" class="btn-check" name="coordMode" id="modeRSO" autocomplete="off" onclick="toggleCoordMode('rso')">
+            <label class="btn btn-outline-primary" for="modeRSO">RSO Malaya (m)</label>
+        </div>
+      </div>
+
+      <div id="rsoInputArea" class="rso-container">
+         <div class="alert alert-warning py-1 small mb-2"><i class="bi bi-info-circle"></i> Penukar RSO memerlukan internet.</div>
+         <h6 class="text-primary fw-bold small">Penukar RSO ke WGS84</h6>
+         <div class="row g-2">
+             <div class="col-6"><input type="number" id="rsoEast" class="form-control form-control-sm" placeholder="Easting (X)"></div>
+             <div class="col-6"><input type="number" id="rsoNorth" class="form-control form-control-sm" placeholder="Northing (Y)"></div>
+         </div>
+         <button type="button" class="btn btn-primary btn-sm w-100 mt-2" id="btnConvert" onclick="executeRSOConversion()">🔄 Tukar (Online Only)</button>
+      </div>
+
+      <div class="mb-3">
+        <label class="fw-bold form-label">Koordinat GPS (WGS84) <span class="text-danger">*</span></label>
+        <div class="input-group">
+            <input type="text" class="form-control" name="koordinat" id="gpsInput" placeholder="Contoh: 4.2105, 101.9758" onblur="validateCoord(this)" required>
+            <button type="button" class="btn btn-secondary" onclick="getLocation()"><i class="bi bi-geo-alt-fill"></i> Lokasi Saya</button>
+        </div>
+        <div id="coordError" class="text-danger mt-1 fw-bold small" style="display:none;"></div>
+      </div>
+
+      <h5 class="text-primary mt-4">B. Maklumat Tanaman</h5>
+      <div class="mb-3">
+        <label class="fw-bold form-label">Kategori <span class="text-danger">*</span></label>
+        <select class="form-select" name="kategori" id="kategoriSelect" onchange="updateTanamanList()" required>
+            <option value="" disabled selected>- Loading Data... -</option>
+        </select>
+      </div>
+      
+      <div class="row">
+          <div class="col-6 mb-3">
+            <label class="fw-bold form-label">Nama Tanaman <span class="text-danger">*</span></label>
+            <select class="form-select" name="namaTanaman" id="tanamanSelect" required onchange="updatePestDatalist()"><option value="">- Pilih Kategori -</option></select>
+          </div>
+          <div class="col-6 mb-3">
+            <label class="fw-bold form-label">Varieti <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="varieti" id="varieti" required>
+          </div>
+      </div>
+      
+      <div class="row">
+          <div class="col-6 mb-3">
+            <label class="fw-bold form-label">Umur Tanaman <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="umurTanaman" id="umurTanaman" required>
+          </div>
+          <div class="col-6 mb-3">
+            <label class="fw-bold form-label">Luas Tanam (Ha) <span class="text-danger">*</span></label>
+            <input type="number" step="0.001" class="form-control" name="luasBertanam" id="luasBertanamInput" required oninput="recalcAllPercent()">
+          </div>
+      </div>
+
+      <h5 class="text-primary mt-4">C. Perosak & Penyakit</h5>
+      <datalist id="existingPestList"></datalist>
+      
+      <div id="perosakList"></div>
+      
+      <button type="button" class="btn btn-outline-primary w-100 mb-4 fw-bold dashed-border" onclick="addPerosakField()">
+          <i class="bi bi-plus-circle"></i> Tambah Perosak
+      </button>
+      
+      <div class="mb-3">
+        <label class="fw-bold text-success mb-2">Syor Kawalan</label>
+        <div id="syorCheckboxContainer" class="border p-3 rounded bg-white mb-2" style="max-height: 180px; overflow-y: auto;">
+            <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-muted"></div> <small>Memuatkan syor...</small></div>
+        </div>
+        <textarea class="form-control mt-2" id="syorTambahan" name="syor" rows="2" placeholder="Taip syor kawalan tambahan di sini..."></textarea>
+      </div>
+
+      <h5 class="text-primary mt-4">D. Gambar (Pilihan)</h5>
+      <div class="mb-3">
+          <label class="form-label fw-bold">Tajuk Gambar</label>
+          <input type="text" class="form-control" name="captionGambar" id="captionInput" oninput="limitCaption(this)" placeholder="Maksimum 30 huruf">
+          <div class="form-text text-muted text-end" id="captionCount" style="font-size: 11px;">0/30</div>
+      </div>
+
+      <div class="mb-3">
+          <input type="file" class="form-control" id="imageInput" multiple onchange="previewImages()" accept="image/*">
+          <div id="imagePreviewContainer" class="d-flex flex-wrap mt-2 p-2 border rounded bg-light">
+              <small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>
+          </div>
+      </div>
+
+      <div class="d-grid gap-2 mt-5">
+          <button type="submit" class="btn btn-success btn-lg fw-bold shadow" id="submitBtn">
+              <i class="bi bi-send-fill"></i> HANTAR LAPORAN
+          </button>
+      </div>
+      
+      <div id="queueInfo" class="alert alert-warning mt-3 small text-center shadow-sm" style="display:none">
+          <i class="bi bi-hdd-network"></i> Data akan disimpan di telefon kerana tiada internet.
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // --- KONFIGURASI API (GANTI URL JIKA DEPLOY BARU) ---
+    const API_URL = "https://script.google.com/macros/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
+    
+    // --- DATA STATIK NEGERI ---
+    const districtData = {"Johor": ["Batu Pahat", "Johor Bahru", "Kluang", "Kota Tinggi", "Kulai", "Mersing", "Muar", "Pontian", "Segamat", "Tangkak"], "Kedah": ["Baling", "Bandar Baharu", "Kota Setar", "Kuala Muda", "Kubang Pasu", "Kulim", "Langkawi", "Padang Terap", "Pendang", "Pokok Sena", "Sik", "Yan"], "Kelantan": ["Bachok", "Gua Musang", "Jeli", "Kota Bharu", "Kuala Krai", "Machang", "Pasir Mas", "Pasir Puteh", "Tanah Merah", "Tumpat"], "Melaka": ["Alor Gajah", "Jasin", "Melaka Tengah"], "Negeri Sembilan": ["Jelebu", "Jempol", "Kuala Pilah", "Port Dickson", "Rembau", "Seremban", "Tampin"], "Pahang": ["Bentong", "Bera", "Cameron Highlands", "Jerantut", "Kuantan", "Lipis", "Maran", "Pekan", "Raub", "Rompin", "Temerloh"], "Perak": ["Bagan Datuk", "Batang Padang", "Hilir Perak", "Hulu Perak", "Kampar", "Kerian", "Kinta", "Kuala Kangsar", "Larut, Matang dan Selama", "Manjung", "Muallim", "Perak Tengah"], "Perlis": ["Perlis"], "Pulau Pinang": ["Barat Daya", "Seberang Perai Selatan", "Seberang Perai Tengah", "Seberang Perai Utara", "Timur Laut"], "Sabah": ["Beaufort", "Beluran", "Kalabakan", "Keningau", "Kinabatangan", "Kota Belud", "Kota Kinabalu", "Kota Marudu", "Kuala Penyu", "Kudat", "Kunak", "Lahad Datu", "Nabawan", "Papar", "Penampang", "Pitas", "Putatan", "Ranau", "Sandakan", "Semporna", "Sipitang", "Tambunan", "Tawau", "Telupid", "Tenom", "Tongod", "Tuaran"], "Sarawak": ["Asajaya", "Bau", "Belaga", "Beluru", "Betong", "Bintulu", "Bukit Mabong", "Dalat", "Daro", "Julau", "Kabong", "Kanowit", "Kapit", "Kuching", "Lawas", "Limbang", "Lubok Antu", "Lundu", "Marudi", "Matu", "Meradong", "Miri", "Mukah", "Pakan", "Pusa", "Samarahan", "Saratok", "Sarikei", "Sebauh", "Selangau", "Serian", "Sibu", "Simunjan", "Song", "Sri Aman", "Subis", "Tanjung Manis", "Tatau", "Tebedu", "Telang Usan"], "Selangor": ["Gombak", "Hulu Langat", "Hulu Selangor", "Klang", "Kuala Langat", "Kuala Selangor", "Petaling", "Sabak Bernam", "Sepang"], "Terengganu": ["Besut", "Dungun", "Hulu Terengganu", "Kemaman", "Kuala Nerus", "Kuala Terengganu", "Marang", "Setiu"], "W.P. Kuala Lumpur": ["Kuala Lumpur"], "W.P. Labuan": ["Labuan"], "W.P. Putrajaya": ["Putrajaya"]};
+    const stateBounds = { "Johor": { minLat: 1.2, maxLat: 2.9, minLng: 102.4, maxLng: 104.6 }, "Kedah": { minLat: 5.0, maxLat: 6.6, minLng: 99.5, maxLng: 101.2 }, "Kelantan": { minLat: 4.5, maxLat: 6.3, minLng: 101.3, maxLng: 102.7 }, "Melaka": { minLat: 2.0, maxLat: 2.5, minLng: 101.9, maxLng: 102.6 }, "Negeri Sembilan": { minLat: 2.3, maxLat: 3.2, minLng: 101.8, maxLng: 102.7 }, "Pahang": { minLat: 2.4, maxLat: 4.9, minLng: 101.3, maxLng: 104.3 }, "Perak": { minLat: 3.5, maxLat: 6.0, minLng: 100.3, maxLng: 101.8 }, "Perlis": { minLat: 6.2, maxLat: 6.75, minLng: 100.0, maxLng: 100.4 }, "Pulau Pinang": { minLat: 5.1, maxLat: 5.6, minLng: 100.1, maxLng: 100.6 }, "Sabah": { minLat: 4.0, maxLat: 7.5, minLng: 115.0, maxLng: 119.5 }, "Sarawak": { minLat: 0.8, maxLat: 5.0, minLng: 109.0, maxLng: 115.6 }, "Selangor": { minLat: 2.6, maxLat: 3.9, minLng: 100.7, maxLng: 102.0 }, "Terengganu": { minLat: 3.9, maxLat: 5.9, minLng: 102.3, maxLng: 103.6 }, "W.P. Kuala Lumpur": { minLat: 3.0, maxLat: 3.25, minLng: 101.6, maxLng: 101.8 }, "W.P. Putrajaya": { minLat: 2.85, maxLat: 3.0, minLng: 101.6, maxLng: 101.75 }, "W.P. Labuan": { minLat: 5.2, maxLat: 5.4, minLng: 115.1, maxLng: 115.3 } };
+
+    let cachedMasterData = {}; 
+    let filesToUpload = [];
+    let isOffline = !navigator.onLine;
+
+    // --- INITIALIZE ---
+    window.onload = function() {
+        checkConnectivity();
+        loadDropdowns();
+        addPerosakField(); 
+        
+        // Minta izin notification
+        if ('Notification' in window && Notification.permission !== 'granted') {
+            Notification.requestPermission();
+        }
+        
+        updateQueueBadge(); // Init badge button
+    };
+
+    window.addEventListener('online', () => { checkConnectivity(); syncOfflineData(); });
+    window.addEventListener('offline', checkConnectivity);
+
+    function checkConnectivity() {
+        isOffline = !navigator.onLine;
+        const banner = document.getElementById('connectionStatus');
+        const qInfo = document.getElementById('queueInfo');
+        const btn = document.getElementById('submitBtn');
+        
+        if (isOffline) {
+            banner.classList.add('active');
+            banner.innerHTML = "<i class='bi bi-wifi-off'></i> ANDA SEDANG OFFLINE. Data akan disimpan di telefon.";
+            qInfo.style.display = 'block';
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-warning');
+            btn.innerHTML = "<i class='bi bi-sd-card-fill'></i> SIMPAN DATA (OFFLINE)";
+        } else {
+            banner.classList.remove('active');
+            qInfo.style.display = 'none';
+            btn.classList.remove('btn-warning');
+            btn.classList.add('btn-success');
+            btn.innerHTML = "<i class='bi bi-send-fill'></i> HANTAR LAPORAN";
+        }
+    }
+
+    function loadDropdowns() {
+        const nSelect = document.getElementById('negeriSelect');
+        nSelect.innerHTML = '<option value="">- Pilih -</option>';
+        Object.keys(districtData).sort().forEach(n => nSelect.add(new Option(n, n)));
+
+        const cached = localStorage.getItem('pnr_masterData');
+        if (cached) {
+            cachedMasterData = JSON.parse(cached);
+            populateMasterData(cachedMasterData);
+        }
+        
+        if(!isOffline) fetchMasterData();
+    }
+
+    // --- PENTING: Guna POST untuk tarik data dari doPost(e) ---
+    async function fetchMasterData() {
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({ action: 'getTanamanList' })
+            });
+            const json = await res.json();
+            const cleanData = json.data || json;
+            
+            if (cleanData && Object.keys(cleanData).length > 0) {
+                cachedMasterData = cleanData;
+                localStorage.setItem('pnr_masterData', JSON.stringify(cleanData));
+                populateMasterData(cleanData);
+            }
+        } catch(e) { console.error("Gagal tarik data master", e); }
+    }
+
+    function populateMasterData(data) {
+        const pestTree = data.pestTree || {};
+        const kSelect = document.getElementById('kategoriSelect');
+        const currentKat = kSelect.value;
+        kSelect.innerHTML = '<option value="">- Pilih Kategori -</option>';
+        Object.keys(pestTree).sort().forEach(kat => kSelect.add(new Option(kat, kat)));
+        if(currentKat) kSelect.value = currentKat;
+
+        const userList = data.userList || [];
+        const uList = document.getElementById('userListSuggestions');
+        uList.innerHTML = "";
+        userList.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            uList.appendChild(opt);
+        });
+
+        const syorList = data.syorList || [];
+        const sContainer = document.getElementById('syorCheckboxContainer');
+        if (syorList.length > 0) {
+            sContainer.innerHTML = "";
+            syorList.forEach((s, i) => {
+                sContainer.innerHTML += `
+                <div class="form-check">
+                    <input class="form-check-input syor-checkbox" type="checkbox" value="${s}" id="s${i}">
+                    <label class="form-check-label" for="s${i}">${s}</label>
+                </div>`;
+            });
+        } else {
+            sContainer.innerHTML = "<small class='text-muted'>Tiada senarai syor.</small>";
+        }
+    }
+
+    // --- LOGIK UI BORANG ---
+    function updateDaerah() { 
+        const n = document.getElementById('negeriSelect').value; 
+        const d = document.getElementById('daerahSelect');
+        d.innerHTML = "<option value=''>- Pilih -</option>";
+        if(n && districtData[n]) districtData[n].forEach(x => d.add(new Option(x, x)));
+    }
+
+    function updateTanamanList() {
+        const kat = document.getElementById('kategoriSelect').value;
+        const tanSelect = document.getElementById('tanamanSelect');
+        tanSelect.innerHTML = '<option value="">- Pilih Kategori Dulu -</option>';
+        const tree = cachedMasterData.pestTree || {};
+        if (kat && tree[kat]) {
+            tanSelect.innerHTML = '<option value="">- Pilih Tanaman -</option>';
+            Object.keys(tree[kat]).sort().forEach(tan => tanSelect.add(new Option(tan, tan)));
+        }
+        updatePestDatalist(); 
+    }
+
+    function updatePestDatalist() {
+        const kat = document.getElementById('kategoriSelect').value;
+        const tan = document.getElementById('tanamanSelect').value;
+        const dl = document.getElementById('existingPestList');
+        dl.innerHTML = ""; 
+        const tree = cachedMasterData.pestTree || {};
+        if(kat && tan && tree[kat] && tree[kat][tan]) {
+            tree[kat][tan].forEach(p => { 
+                const opt = document.createElement('option'); opt.value = p; dl.appendChild(opt); 
+            });
+        }
+    }
+
+    function toggleCoordMode(mode) {
+        const area = document.getElementById('rsoInputArea');
+        const gpsInput = document.getElementById('gpsInput');
+        if (mode === 'rso') {
+            area.style.display = 'block';
+            gpsInput.readOnly = true; 
+            gpsInput.placeholder = "Tekan butang 'Tukar' di atas";
+        } else {
+            area.style.display = 'none';
+            gpsInput.readOnly = false;
+            gpsInput.placeholder = "Contoh: 4.2105, 101.9758";
+        }
+    }
+
+    function addPerosakField() {
+        const div = document.createElement('div'); div.className = "perosak-item";
+        div.innerHTML = `
+            <button type="button" class="btn-close btn-close-custom" onclick="this.parentElement.remove()"></button>
+            <div class="mb-2"><label class="small fw-bold">Nama Perosak</label><input type="text" class="form-control perosak-name" list="existingPestList" placeholder="Pilih atau taip..."></div>
+            <div class="row g-2">
+                <div class="col-4"><label class="small">Luas Serangan(ha)</label><input type="number" step="0.001" class="form-control perosak-luas" oninput="calcPercent(this)"></div>
+                <div class="col-4"><label class="small">% serangan</label><input type="text" class="form-control perosak-percent" readonly></div>
+                <div class="col-4"><label class="small">Keterukan</label>
+                    <select class="form-select perosak-severity">
+                        <option value="1">1 - Sgt Rendah</option><option value="2">2 - Rendah</option><option value="3">3 - Sederhana</option><option value="4">4 - Teruk</option><option value="5">5 - Sgt Teruk</option>
+                    </select>
+                </div>
+            </div>`;
+        document.getElementById('perosakList').appendChild(div);
+    }
+
+    function calcPercent(el) {
+        const luasKebun = parseFloat(document.getElementById('luasBertanamInput').value) || 0;
+        const luasSakit = parseFloat(el.value) || 0;
+        const pctField = el.closest('.perosak-item').querySelector('.perosak-percent');
+        if (luasSakit > luasKebun) {
+            Swal.fire({ icon: 'error', title: 'Ralat', text: "Luas serangan melebihi luas tanaman!" });
+            el.value = ""; pctField.value = 0; return;
+        }
+        pctField.value = (luasKebun > 0) ? ((luasSakit / luasKebun) * 100).toFixed(2) : 0;
+    }
+
+    function recalcAllPercent() { document.querySelectorAll('.perosak-luas').forEach(el => calcPercent(el)); }
+
+    function previewImages() {
+        const c = document.getElementById('imagePreviewContainer'); 
+        const files = document.getElementById('imageInput').files;
+        
+        if(files.length > 0) {
+            c.innerHTML = "";
+            document.getElementById('noImgText').style.display = 'none';
+            filesToUpload = Array.from(files);
+            filesToUpload.forEach(f => {
+                const r = new FileReader(); 
+                r.onload = e => { c.innerHTML += `<img src="${e.target.result}" class="preview-img">`; }; 
+                r.readAsDataURL(f);
+            });
+        } else {
+            c.innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
+        }
+    }
+
+    function limitCaption(el) { 
+        if (el.value.length > 30) el.value = el.value.substring(0, 30); 
+        document.getElementById('captionCount').innerText = el.value.length + "/30"; 
+    }
+
+    function getLocation() { 
+        if(navigator.geolocation) navigator.geolocation.getCurrentPosition(p => { 
+            const gpsBox = document.getElementById('gpsInput');
+            gpsBox.value = p.coords.latitude.toFixed(5) + ", " + p.coords.longitude.toFixed(5); 
+            validateCoord(gpsBox);
+        }, (err) => {
+            Swal.fire('Gagal', 'Sila hidupkan GPS. ' + err.message, 'error');
+        }); 
+    }
+
+    function validateCoord(input) {
+        const val = input.value.trim();
+        const errDiv = document.getElementById('coordError');
+        const negeriDipilih = document.getElementById('negeriSelect').value;
+        const match = val.match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
+
+        if(errDiv) errDiv.style.display = 'none';
+        input.classList.remove('is-invalid');
+        if (val === "") return true;
+
+        if (!match) { showError(input, "Format salah! Guna: Lat, Long (4.2105, 101.9758)"); return false; }
+        const lat = parseFloat(match[1]); const lng = parseFloat(match[3]);
+
+        if (lat < 0.8 || lat > 7.5 || lng < 99.0 || lng > 120.0) { showError(input, "Koordinat LUAR MALAYSIA."); return false; }
+        if (negeriDipilih && stateBounds[negeriDipilih]) {
+            const b = stateBounds[negeriDipilih]; const buffer = 0.05;
+            if (lat < (b.minLat-buffer) || lat > (b.maxLat+buffer) || lng < (b.minLng-buffer) || lng > (b.maxLng+buffer)) {
+                showError(input, `Koordinat tidak sepadan dengan negeri ${negeriDipilih}.`); return false;
+            }
+        }
+        return true;
+    }
+
+    function showError(input, msg) {
+        const errDiv = document.getElementById('coordError');
+        if(errDiv) { errDiv.innerText = msg; errDiv.style.display = 'block'; }
+        input.classList.add('is-invalid');
+    }
+
+    // --- SUBMIT LOGIC ---
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        if (!e.target.checkValidity()) { e.target.reportValidity(); return; }
+        if (!validateCoord(document.getElementById('gpsInput'))) return;
+
+        const f = e.target; const fd = new FormData(f);
+        const luasS={}, pctS={}, sevS={};
+        const names=[]; 
+        let errorPest = false;
+
+        document.querySelectorAll('.perosak-item').forEach(row => { 
+            const n = row.querySelector('.perosak-name').value; 
+            const valStr = row.querySelector('.perosak-luas').value;
+            if(n && valStr === "") errorPest = true; 
+            if(n && valStr !== "") { 
+                names.push(n); luasS[n]=parseFloat(valStr); pctS[n]=row.querySelector('.perosak-percent').value; sevS[n]=row.querySelector('.perosak-severity').value; 
+            } 
+        });
+
+        if(errorPest) { Swal.fire('Ralat','Sila isi luas serangan bagi perosak yang dipilih.','warning'); return; }
+
+        const imgStr = await Promise.all(filesToUpload.map(file => new Promise((res) => { 
+            const r = new FileReader(); r.onload = () => res({name:file.name, dataUrl:r.result}); r.readAsDataURL(file); 
+        }))).then(JSON.stringify);
+
+        const syors = Array.from(document.querySelectorAll('.syor-checkbox:checked')).map(c => c.value);
+        const extraSyor = document.getElementById('syorTambahan').value;
+        if(extraSyor) syors.push(extraSyor);
+
+        const payload = {
+            action: 'submitNew', 
+            namaPegawai: fd.get('namaPegawai'),
+            email: fd.get('email'),
+            tarikhBancian: fd.get('tarikhBancian'),
+            negeri: fd.get('negeri'),
+            daerah: fd.get('daerah'),
+            lokasi: fd.get('lokasi'),
+            koordinat: fd.get('koordinat'),
+            kategori: fd.get('kategori'),
+            namaTanaman: fd.get('namaTanaman'),
+            varieti: fd.get('varieti'),
+            umurTanaman: fd.get('umurTanaman'),
+            luasBertanam: fd.get('luasBertanam'),
+            senaraiPerosak: names.join(', '),
+            syor: syors.join('. '),
+            luasSerangan: luasS,
+            peratusSerangan: pctS,
+            keterukan: sevS,
+            images: imgStr,
+            captionGambar: fd.get('captionGambar')
+        };
+
+        document.getElementById('loader').style.visibility = 'visible';
+        document.getElementById('submitBtn').disabled = true;
+
+        if (isOffline) {
+            saveToQueue(payload);
+            document.getElementById('loader').style.visibility = 'hidden';
+            document.getElementById('submitBtn').disabled = false;
+            
+            Swal.fire({
+                icon: 'warning', title: 'Disimpan (Offline)', text: 'Data telah disimpan di telefon.', confirmButtonText: 'OK'
+            }).then(() => {
+                f.reset(); document.getElementById('perosakList').innerHTML=""; addPerosakField(); updateQueueBadge();
+                document.getElementById('imagePreviewContainer').innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
+            });
+
+        } else {
+            try {
+                const res = await fetch(API_URL, { method: 'POST', headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
+                const result = await res.json();
+                
+                document.getElementById('loader').style.visibility = 'hidden';
+                document.getElementById('submitBtn').disabled = false;
+
+                if(result.success) {
+                    Swal.fire('Berjaya!', 'Laporan dihantar.', 'success').then(() => {
+                        f.reset(); document.getElementById('perosakList').innerHTML=""; addPerosakField(); window.scrollTo(0,0);
+                        document.getElementById('imagePreviewContainer').innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
+                        updateQueueBadge();
+                    });
+                } else { throw new Error(result.message); }
+            } catch(e) {
+                console.warn("Gagal hantar, simpan ke queue.", e);
+                saveToQueue(payload);
+                document.getElementById('loader').style.visibility = 'hidden';
+                document.getElementById('submitBtn').disabled = false;
+                Swal.fire('Ralat Sambungan', 'Data disimpan di telefon untuk percubaan semula.', 'info');
+            }
+        }
+    }
+
+    // --- RSO CONVERSION ---
+    async function executeRSOConversion() {
+        const east = document.getElementById('rsoEast').value;
+        const north = document.getElementById('rsoNorth').value;
+        const btn = document.getElementById('btnConvert');
+
+        if(!east || !north) { Swal.fire('Ralat','Sila isi Easting & Northing','warning'); return; }
+        if(isOffline) { Swal.fire('Offline','Penukaran koordinat perlukan internet.','error'); return; }
+
+        btn.disabled = true; btn.innerText = "Menukar...";
+        
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({ action: 'convertCoord', easting: east, northing: north })
+            });
+            const json = await res.json();
+            
+            if(json.status === 'success') {
+                const val = `${json.converted.latitude.toFixed(5)}, ${json.converted.longitude.toFixed(5)}`;
+                document.getElementById('gpsInput').value = val;
+                validateCoord(document.getElementById('gpsInput'));
+                Swal.fire({icon:'success', title:'Berjaya', text:'Koordinat telah ditukar.', timer:1500, showConfirmButton:false});
+            } else {
+                Swal.fire('Gagal', json.message, 'error');
+            }
+        } catch(e) { Swal.fire('Error', e.toString(), 'error'); }
+        btn.disabled = false; btn.innerText = "🔄 Tukar (Online Only)";
+    }
+
+    // --- PUSH NOTIFICATION & SYNC ---
+    function hantarNotification() {
+        if (Notification.permission === 'granted') {
+            navigator.serviceWorker.ready.then(function(registration) {
+                registration.showNotification('Sistem PNR Digital', {
+                    body: '✅ Tahniah! Semua data offline telah berjaya disinkronasi ke server.',
+                    icon: 'icon-192.png',
+                    vibrate: [200, 100, 200],
+                    tag: 'sync-complete'
+                });
+            });
+        }
+    }
+
+    function saveToQueue(data) {
+        let q = JSON.parse(localStorage.getItem('pnr_queue') || "[]");
+        q.push(data);
+        localStorage.setItem('pnr_queue', JSON.stringify(q));
+        updateQueueBadge();
+    }
+
+    function updateQueueBadge() {
+        let q = JSON.parse(localStorage.getItem('pnr_queue') || "[]");
+        const container = document.getElementById('queueBadge');
+        const countSpan = document.getElementById('qCount');
+        
+        if(q.length > 0) { 
+            container.style.display = 'block'; 
+            countSpan.innerText = q.length; 
+        } else { 
+            container.style.display = 'none'; 
+        }
+    }
+
+    async function syncOfflineData() {
+        let q = JSON.parse(localStorage.getItem('pnr_queue') || "[]");
+        if (q.length === 0) return;
+
+        Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, title: 'Menghantar data offline...', icon: 'info' });
+
+        let newQ = [];
+        let successCount = 0;
+
+        for (let item of q) {
+            try {
+                const res = await fetch(API_URL, { method: 'POST', headers: {"Content-Type": "text/plain"}, body: JSON.stringify(item) });
+                const json = await res.json();
+                if(!json.success) {
+                     newQ.push(item); 
+                } else {
+                    successCount++;
+                }
+            } catch (e) { newQ.push(item); }
+        }
+
+        localStorage.setItem('pnr_queue', JSON.stringify(newQ));
+        updateQueueBadge();
+        
+        if (newQ.length === 0 && successCount > 0) {
+            Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, title: 'Semua data offline berjaya dihantar!', icon: 'success' });
+            hantarNotification(); 
+        } else if (successCount > 0) {
+             Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, title: `${successCount} data berjaya dihantar!`, icon: 'success' });
+        } else {
+             Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, title: 'Gagal hantar data. Sila cuba lagi.', icon: 'error' });
+        }
+    }
+  </script>
+</body>
+</html>
