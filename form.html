@@ -219,8 +219,12 @@
           </div>
       </div>
 
-      <div class="d-grid gap-2 mt-5">
-          <button type="submit" class="btn btn-success btn-lg fw-bold shadow" id="submitBtn">
+    <div class="d-flex flex-column flex-md-row gap-2 mt-5">
+          <button type="submit" name="submitMode" value="DRAF" class="btn btn-secondary btn-lg fw-bold shadow-sm flex-grow-1" id="draftBtn" formnovalidate>
+              <i class="bi bi-save"></i> SIMPAN DRAF
+          </button>
+          
+          <button type="submit" name="submitMode" value="BARU" class="btn btn-success btn-lg fw-bold shadow flex-grow-1" id="submitBtn">
               <i class="bi bi-send-fill"></i> HANTAR LAPORAN
           </button>
       </div>
@@ -244,6 +248,7 @@
     let isOffline = !navigator.onLine;
 
     // --- INITIALIZE ---
+        // --- INITIALIZE & AUTO-SAVE SETUP ---
     window.onload = function() {
         checkConnectivity();
         loadDropdowns();
@@ -255,10 +260,75 @@
         }
         
         updateQueueBadge(); // Init badge button
+
+        // --- PASANG CCTV UNTUK AUTO-SAVE ---
+        const form = document.getElementById('monitorForm');
+        if (form) {
+            form.addEventListener('input', autoSaveBorang);
+            form.addEventListener('change', autoSaveBorang);
+        }
+        
+        // --- SEMAK JIKA ADA DATA TERGANTUNG ---
+        setTimeout(semakAutoSave, 1000); // Tunggu 1 saat supaya dropdown negeri/tanaman siap di-load
     };
 
-    window.addEventListener('online', () => { checkConnectivity(); syncOfflineData(); });
-    window.addEventListener('offline', checkConnectivity);
+    // ==========================================
+    // CIRI GEMPAK: PENYELAMAT DATA (AUTO-RECOVER)
+    // ==========================================
+    function autoSaveBorang() {
+        const form = document.getElementById('monitorForm');
+        if (!form) return;
+        
+        const formData = new FormData(form);
+        const dataObj = Object.fromEntries(formData.entries());
+        
+        // Simpan maklumat asas borang ke memori telefon
+        localStorage.setItem('pnrAutoSaveDraf', JSON.stringify(dataObj));
+    }
+
+    function semakAutoSave() {
+        const savedStr = localStorage.getItem('pnrAutoSaveDraf');
+        
+        if (savedStr) {
+            const savedData = JSON.parse(savedStr);
+            // Kalau setakat ada tarikh, kita abaikan. Kita nak prompt kalau dia dah isi benda lain
+            if (Object.keys(savedData).length <= 1) return; 
+
+            Swal.fire({
+                title: 'Sambung Borang Tergantung?',
+                text: 'Kami mengesan anda ada menaip borang sebelum ini tetapi belum dihantar. Mahu pulihkan data tersebut?',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: '<i class="bi bi-pencil-square"></i> Ya, Pulihkan',
+                cancelButtonText: '<i class="bi bi-trash"></i> Buang',
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#d33',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.getElementById('monitorForm');
+                    
+                    // Masukkan semula data ke dalam kotak input
+                    for (let key in savedData) {
+                        const input = form.querySelector(`[name="${key}"]`);
+                        if (input && input.type !== 'file') {
+                            input.value = savedData[key];
+                        }
+                    }
+                    
+                    // Trigger update dropdown secara manual supaya Daerah/Tanaman muncul
+                    if (savedData['negeri']) { updateDaerah(); setTimeout(() => { form.querySelector(`[name="daerah"]`).value = savedData['daerah']; }, 200); }
+                    if (savedData['kategori']) { updateTanamanList(); setTimeout(() => { form.querySelector(`[name="namaTanaman"]`).value = savedData['namaTanaman']; }, 200); }
+
+                    Swal.fire('Dipulihkan!', 'Data asas anda telah dikembalikan. Sila sambung mengisi.', 'success');
+                } else {
+                    // Staf pilih 'Buang'
+                    localStorage.removeItem('pnrAutoSaveDraf');
+                }
+            });
+        }
+    }
+    // ==========================================
 
     function checkConnectivity() {
         isOffline = !navigator.onLine;
@@ -425,7 +495,7 @@
 
     function recalcAllPercent() { document.querySelectorAll('.perosak-luas').forEach(el => calcPercent(el)); }
 
-        function previewImages() {
+    function previewImages() {
         const c = document.getElementById('imagePreviewContainer'); 
         const files = document.getElementById('imageInput').files;
         
@@ -491,13 +561,30 @@
         input.classList.add('is-invalid');
     }
 
-    // --- SUBMIT LOGIC ---
     async function handleFormSubmit(e) {
         e.preventDefault();
-        if (!e.target.checkValidity()) { e.target.reportValidity(); return; }
-        if (!validateCoord(document.getElementById('gpsInput'))) return;
+        
+        // Kenal pasti butang mana yang ditekan
+        const mode = e.submitter ? e.submitter.value : 'BARU'; 
+        const f = e.target; 
+        
+        // ==========================================
+        // KAWALAN WAJIB ISI (HANYA UNTUK HANTAR BARU)
+        // ==========================================
+        if (mode === 'BARU') {
+            // 1. Check form HTML required
+            if (!f.checkValidity()) { 
+                f.reportValidity(); 
+                return; 
+            }
+            // 2. Check koordinat GPS betul atau tak
+            if (!validateCoord(document.getElementById('gpsInput'))) {
+                return;
+            }
+        }
+        // ==========================================
 
-        const f = e.target; const fd = new FormData(f);
+        const fd = new FormData(f);
         const luasS={}, pctS={}, sevS={};
         const names=[]; 
         let errorPest = false;
@@ -505,13 +592,21 @@
         document.querySelectorAll('.perosak-item').forEach(row => { 
             const n = row.querySelector('.perosak-name').value; 
             const valStr = row.querySelector('.perosak-luas').value;
-            if(n && valStr === "") errorPest = true; 
+            
+            // 3. Check Perosak (Hanya jika HANTAR BARU)
+            if(mode === 'BARU' && n && valStr === "") errorPest = true; 
+            
             if(n && valStr !== "") { 
                 names.push(n); luasS[n]=parseFloat(valStr); pctS[n]=row.querySelector('.perosak-percent').value; sevS[n]=row.querySelector('.perosak-severity').value; 
             } 
         });
 
-        if(errorPest) { Swal.fire('Ralat','Sila isi luas serangan bagi perosak yang dipilih.','warning'); return; }
+        if(errorPest) { 
+            Swal.fire('Ralat','Sila isi luas serangan bagi perosak yang dipilih.','warning'); 
+            return; 
+        }
+
+        // ... (KOD SETERUSNYA KEKAL SAMA MACAM ASAL: const imgStr = await Promise.all...)
 
         const imgStr = await Promise.all(filesToUpload.map(file => new Promise((res) => { 
             const r = new FileReader(); r.onload = () => res({name:file.name, dataUrl:r.result}); r.readAsDataURL(file); 
@@ -522,7 +617,8 @@
         if(extraSyor) syors.push(extraSyor);
 
         const payload = {
-            action: 'submitNew', 
+            action: 'submitNew',
+            statusRekod: mode,
             namaPegawai: fd.get('namaPegawai'),
             email: fd.get('email'),
             tarikhBancian: fd.get('tarikhBancian'),
@@ -547,7 +643,7 @@
         document.getElementById('loader').style.visibility = 'visible';
         document.getElementById('submitBtn').disabled = true;
 
-        if (isOffline) {
+                if (isOffline) {
             saveToQueue(payload);
             document.getElementById('loader').style.visibility = 'hidden';
             document.getElementById('submitBtn').disabled = false;
@@ -555,6 +651,7 @@
             Swal.fire({
                 icon: 'warning', title: 'Disimpan (Offline)', text: 'Data telah disimpan di telefon.', confirmButtonText: 'OK'
             }).then(() => {
+                localStorage.removeItem('pnrAutoSaveDraf'); // <-- TAMBAH INI
                 f.reset(); document.getElementById('perosakList').innerHTML=""; addPerosakField(); updateQueueBadge();
                 document.getElementById('imagePreviewContainer').innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
             });
@@ -569,12 +666,15 @@
 
                 if(result.success) {
                     Swal.fire('Berjaya!', 'Laporan dihantar.', 'success').then(() => {
+                        localStorage.removeItem('pnrAutoSaveDraf'); // <-- TAMBAH INI
                         f.reset(); document.getElementById('perosakList').innerHTML=""; addPerosakField(); window.scrollTo(0,0);
                         document.getElementById('imagePreviewContainer').innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
                         updateQueueBadge();
                     });
                 } else { throw new Error(result.message); }
             } catch(e) {
+                // ... biarkan kod catch error yang sedia ada ...
+
                 console.warn("Gagal hantar, simpan ke queue.", e);
                 saveToQueue(payload);
                 document.getElementById('loader').style.visibility = 'hidden';
