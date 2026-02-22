@@ -54,6 +54,58 @@
             .sidebar.active { transform: translateX(0); }
             .main-content { margin-left: 0; padding: 15px; }
         }
+        /* =========================================
+           MOBILE APP UI (BOTTOM NAVIGATION BAR)
+           ========================================= */
+        .mobile-bottom-nav { display: none; }
+        .mobile-overlay { display: none; }
+
+        @media (max-width: 768px) {
+            /* 1. Sembunyikan Butang Menu Atas Lama */
+            .d-md-none.mb-3 { display: none !important; }
+            
+            /* 2. Ubah Sidebar jadi "Offcanvas" (Hanya buka bila ditekan) */
+            .sidebar { 
+                transform: translateX(-100%); 
+                z-index: 1050; 
+                box-shadow: 5px 0 15px rgba(0,0,0,0.2); 
+            }
+            .sidebar.active { transform: translateX(0); }
+            
+            /* 3. Ruang bernafas untuk main content (elak tertutup dengan menu bawah) */
+            .main-content { padding: 15px; padding-bottom: 90px; margin-left: 0; }
+            
+            /* 4. Bar Navigasi Bawah (Macam App Sebenar) */
+            .mobile-bottom-nav {
+                display: flex; position: fixed; bottom: 0; left: 0; right: 0;
+                background: #ffffff; box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
+                z-index: 1040; padding: 10px 10px 15px 10px; justify-content: space-between;
+                align-items: flex-end; border-top-left-radius: 20px; border-top-right-radius: 20px;
+            }
+            .nav-bot-item {
+                text-align: center; color: #9ca3af; font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+                flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                cursor: pointer; transition: 0.3s;
+            }
+            .nav-bot-item i { font-size: 1.4rem; margin-bottom: 2px; }
+            .nav-bot-item.active { color: #064e3b; }
+            
+            /* 5. Butang Tambah Data Besar (Tengah) */
+            .nav-bot-fab {
+                background: linear-gradient(135deg, #10b981, #059669); color: white !important;
+                width: 55px; height: 55px; border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 2rem; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+                transform: translateY(-20px); border: 4px solid #f3f4f6;
+            }
+            
+            /* 6. Latar Hitam Gelap bila Filter dibuka */
+            .mobile-overlay {
+                position: fixed; top:0; left:0; right:0; bottom:0;
+                background: rgba(0,0,0,0.6); z-index: 1045; display: none;
+            }
+            .mobile-overlay.active { display: block; }
+        }
     </style>
 </head>
 <body>
@@ -298,6 +350,39 @@
         </div>
     </div>
 
+    <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileFilter()"></div>
+
+    <div class="mobile-bottom-nav d-md-none">
+       <div class="mobile-bottom-nav d-md-none">
+        
+        <div class="nav-bot-item active" onclick="switchTab('main', this)">
+            <i class="bi bi-grid-1x2-fill text-primary fs-4"></i>
+            <span>Utama</span>
+        </div>
+        
+        <div class="nav-bot-item" id="mobNavTasks" onclick="switchTab('tasks', this)" style="display:none;">
+            <i class="bi bi-list-task text-warning fs-4"></i>
+            <span>Tugas</span>
+        </div>
+        
+        <div class="nav-bot-item" id="mobNavVerify" onclick="switchTab('verify', this)" style="display:none;">
+            <i class="bi bi-check-circle-fill text-info fs-4"></i>
+            <span>Sahkan</span>
+        </div>
+        
+        <div class="nav-bot-item" onclick="switchTab('form', this)">
+            <i class="bi bi-plus-lg text-success" style="font-size: 2rem; -webkit-text-stroke: 2px;"></i>
+            <span class="text-success fw-bold">Borang</span>
+        </div>
+        
+        <div class="nav-bot-item" onclick="toggleMobileFilter()">
+            <i class="bi bi-funnel-fill text-danger fs-4"></i>
+            <span>Tapisan</span>
+        </div>
+        
+    </div>
+
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -399,15 +484,27 @@
             document.getElementById('uDisp').innerText = r.name; 
             document.getElementById('loginOverlay').style.display = 'none';
             
+            // Logik Paparan Navigasi berdasarkan Role
             if(["ADMIN","PENYELIA"].includes((r.role||"").toUpperCase())) { 
                 document.getElementById('navVerify').style.display = "flex"; 
+                if(document.getElementById('mobNavVerify')) document.getElementById('mobNavVerify').style.display = "flex";
                 checkPendingCount(); 
+            } else {
+                // Untuk staff biasa, paparkan butang tugas di phone
+                if(document.getElementById('mobNavTasks')) document.getElementById('mobNavTasks').style.display = "flex";
             }
+            
             document.getElementById('navTasks').style.display = "flex";
             
             loadMasterData(); 
             loadMyTasks();
             initDash();
+        }
+        // Fungsi untuk buka/tutup Tapisan di Telefon
+        function toggleMobileFilter() {
+            document.getElementById('sidebar').classList.toggle('active');
+            const overlay = document.getElementById('mobileOverlay');
+            if(overlay) overlay.classList.toggle('active');
         }
 
        // --- CHECK SESSION (OFFLINE FRIENDLY) ---
@@ -440,13 +537,33 @@
         window.onload = checkSession;
         
         function switchTab(t, el) {
+            // Logik buang aktif untuk PC & Mobile
             document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active')); 
-            if(el && !el.classList.contains('bg-success')) el.classList.add('active');
-            ['view-main','view-verify','view-tasks','view-form'].forEach(v => document.getElementById(v).style.display = 'none');
-            document.getElementById('view-'+t).style.display = 'block';
+            document.querySelectorAll('.nav-bot-item').forEach(x => x.classList.remove('active'));
+            
+            // Tambah warna aktif pada butang yang ditekan
+            if(el) {
+                if(!el.classList.contains('bg-success') && el.classList.contains('nav-item')) el.classList.add('active');
+                if(el.classList.contains('nav-bot-item')) el.classList.add('active');
+            }
+
+            // Tukar skrin utama
+            ['view-main','view-verify','view-tasks','view-form'].forEach(v => {
+                const view = document.getElementById(v);
+                if(view) view.style.display = 'none';
+            });
+            
+            const targetView = document.getElementById('view-'+t);
+            if(targetView) targetView.style.display = 'block';
+
             if(t==='verify') loadPend();
             if(t==='tasks') loadMyTasks();
             if(t==='main' && map) setTimeout(() => map.invalidateSize(), 300);
+            
+            // Tutup sidebar filter di telefon (kalau tengah terbuka)
+            document.getElementById('sidebar').classList.remove('active');
+            const overlay = document.getElementById('mobileOverlay');
+            if(overlay) overlay.classList.remove('active');
         }
 
                 // --- FUNGSI TARIKH MUKTAMAD (MANUAL PARSING) ---
@@ -810,21 +927,56 @@
             } catch(e) { console.error(e); container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; } 
         }
 
-        function renderCard(r, container, type) {
+       function renderCard(r, container, type) {
             const getV = (key) => { const i = currentHeaders.findIndex(h => h.toUpperCase().includes(key.toUpperCase())); return i > -1 ? r.data[i] : ""; };
             const lokasi = getV('LOKASI') || getV('KEBUN');
             const tanaman = getV('NAMA TANAMAN') || getV('TANAMAN');
             const kategori = getV('KATEGORI') || "-";
             const tarikh = formatDateDisplay(getV('TARIKH') || getV('DATE'));
+            const statusRekod = getV('STATUS') || ""; // Tarik status sebenar dari sheet
             const log = getV('LOG') || "";
+            
             let btnAction = "";
+            let badgeHtml = "";
+            let cardBorder = "primary";
+            let bgHeader = "light";
+
             if (type === 'TASK') {
-                let reason = log.includes("DITOLAK") ? log.split("Sebab:").pop() : "Sila semak log.";
-                btnAction = `<div class="task-reject-box p-2 mb-2 small"><i class="bi bi-exclamation-triangle-fill"></i> ${reason}</div><button class="btn btn-danger w-100 fw-bold btn-sm" onclick="openTaskEdit(${r.row})">KEMASKINI</button>`;
+                if (statusRekod.toUpperCase() === 'DRAF') {
+                    // PAPARAN UNTUK DRAF
+                    badgeHtml = `<span class="badge bg-secondary">DRAF</span>`;
+                    cardBorder = "secondary";
+                    btnAction = `<button class="btn btn-success w-100 fw-bold btn-sm shadow-sm" onclick="openTaskEdit(${r.row})"><i class="bi bi-pencil-square"></i> SAMBUNG ISI / HANTAR</button>`;
+                } else {
+                    // PAPARAN UNTUK DITOLAK
+                    badgeHtml = `<span class="badge bg-danger">DITOLAK</span>`;
+                    cardBorder = "danger";
+                    bgHeader = "danger bg-opacity-10";
+                    let reason = log.includes("DITOLAK") ? log.split("Sebab:").pop() : "Sila semak log.";
+                    btnAction = `<div class="task-reject-box p-2 mb-2 small"><i class="bi bi-exclamation-triangle-fill"></i> ${reason}</div><button class="btn btn-danger w-100 fw-bold btn-sm" onclick="openTaskEdit(${r.row})">KEMASKINI & HANTAR</button>`;
+                }
             } else {
+                // PAPARAN UNTUK ADMIN/PENYELIA (BARU)
+                badgeHtml = `<span class="badge bg-warning text-dark">BARU</span>`;
                 btnAction = `<div class="d-flex gap-2"><button class="btn btn-outline-danger flex-grow-1 btn-sm fw-bold" onclick="subVer(${r.row},'REJECT')">TOLAK</button><button class="btn btn-success flex-grow-1 btn-sm fw-bold" onclick="subVer(${r.row},'APPROVE')">SAHKAN</button></div>`;
             }
-            container.innerHTML += `<div class="col-md-6 col-xl-4"><div class="verify-card bg-white rounded-3 shadow-sm border mb-3 h-100 border-${type==='TASK'?'danger':'primary'}"><div class="p-3 border-bottom bg-${type==='TASK'?'danger':'light'} bg-opacity-10 d-flex justify-content-between"><div><div class="fw-bold text-dark">${lokasi}</div><div class="small text-muted">${kategori} - ${tanaman}</div><div class="small text-muted mt-1">${tarikh}</div></div><span class="badge bg-${type==='TASK'?'danger':'warning text-dark'}">${type==='TASK'?'DITOLAK':'BARU'}</span></div><div class="p-3">${btnAction}</div></div></div>`;
+
+            container.innerHTML += `
+            <div class="col-md-6 col-xl-4">
+                <div class="verify-card bg-white rounded-3 shadow-sm border mb-3 h-100 border-${cardBorder}">
+                    <div class="p-3 border-bottom bg-${bgHeader} d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-bold text-dark">${lokasi}</div>
+                            <div class="small text-muted">${kategori} - ${tanaman}</div>
+                            <div class="small text-muted mt-1"><i class="bi bi-calendar-event"></i> ${tarikh}</div>
+                        </div>
+                        ${badgeHtml}
+                    </div>
+                    <div class="p-3 mt-auto">
+                        ${btnAction}
+                    </div>
+                </div>
+            </div>`;
         }
 
         async function openTaskEdit(rowId) {
@@ -910,8 +1062,33 @@
             const savedNegeri = getV('NEGERI');
             const savedDaerah = getV('DAERAH');
             const savedKat = getV('KATEGORI');
-            const savedTan = getV('NAMA TANAMAN') || getV('TANAMAN');
-
+           const savedTan = getV('NAMA TANAMAN') || getV('TANAMAN');
+            
+            // --- KOD BARU: TARIK, TUKAR LINK & LUKIS GAMBAR LAMA ---
+            const savedImg = getV('IMAGE LINKS (COMMA SEPARATED)') || getV('GAMBAR') || getV('IMAGE') || getV('FOTO') || "";
+            let oldImgPreviewHTML = "";
+            
+            if(savedImg && savedImg.trim() !== "") {
+                const arr = savedImg.split(',');
+                oldImgPreviewHTML = `<div class="mt-2 pt-2 border-top"><small class="text-success fw-bold d-block mb-1"><i class="bi bi-images"></i> Gambar Sedia Ada:</small>` +
+                arr.map(lnk => {
+                    let cleanLnk = lnk.trim().replace(/[\[\]"'\\]/g, '');
+                    if(!cleanLnk) return "";
+                    
+                    // Magik: Cari ID Google Drive dan tukar ke direct link (thumbnail)
+                    let directSrc = cleanLnk;
+                    const idMatch = cleanLnk.match(/[-\w]{25,}/);
+                    if (idMatch) {
+                        // Guna sz=w200 supaya gambar ringan & terus keluar dalam tag <img>
+                        directSrc = `https://drive.google.com/thumbnail?id=${idMatch[0]}&sz=w200`;
+                    }
+                    
+                    return `<a href="${cleanLnk}" target="_blank" title="Klik untuk lihat saiz penuh">
+                                <img src="${directSrc}" style="width: 60px; height: 60px; object-fit: cover; margin-right: 5px; border-radius: 5px; border: 1px solid #ccc; display: inline-block;">
+                            </a>`;
+                }).join('') + `</div>`;
+            }
+            // ---------------------------------------------
             let html = `
             <div id="fullEditForm">
                 <input type="hidden" id="fe_row" value="${rowID}">
@@ -945,12 +1122,17 @@
                 <button type="button" class="btn btn-outline-primary btn-sm w-100 mb-3" onclick="addPestRow()">+ Tambah Perosak</button>
                 <h6 class="text-primary border-bottom pb-2 mt-3">D. Gambar & Kapsyen</h6>
                 <div class="mb-3 p-3 bg-white border rounded">
+                    <input type="hidden" id="fe_gambarLama" value="${savedImg}">
+                    
                     <label class="small fw-bold mb-1">Tajuk Gambar</label>
                     <input type="text" id="fe_caption" class="form-control form-control-sm mb-2" value="${valCaption}" placeholder="Masukkan tajuk gambar...">
                     <label class="small fw-bold mb-1">Muat Naik (Optional)</label>
                     <input type="file" id="fe_fileInput" class="form-control form-control-sm" accept="image/*" onchange="handleFileSelect(this)">
-                    <small class="text-muted d-block fst-italic mt-1" style="font-size:0.75rem">Biarkan kosong jika tidak mahu tukar gambar.</small>
+                    <small class="text-muted d-block fst-italic mt-1" style="font-size:0.75rem">Biarkan kosong jika tidak mahu tukar gambar asal.</small>
+                    
                     <img id="fe_imgPreview" src="" style="max-height: 100px; display: none; margin-top:5px; border:1px solid #ccc">
+                    
+                    ${oldImgPreviewHTML}
                 </div>
                 <div class="mb-3"><label class="small fw-bold text-success">Syor Kawalan</label><textarea id="fe_syor" class="form-control" rows="3">${getV('SYOR')}</textarea></div>
                 <button class="btn btn-success w-100 py-2 fw-bold" onclick="saveFullEdit()">SIMPAN PERUBAHAN</button>
@@ -997,12 +1179,15 @@
                 const s = tr.querySelector('.p-sev').value;
                 if(n) { luasS[n]=a; sevS[n]=s; pctS[n] = luasT>0 ? ((a/luasT)*100).toFixed(2):0; }
             });
-            const payload = {
+           const payload = {
                 row: rowID, tarikh: document.getElementById('fe_tarikh').value, pegawai: document.getElementById('fe_pegawai').value,
                 negeri: document.getElementById('fe_negeri').value, daerah: document.getElementById('fe_daerah').value, lokasi: document.getElementById('fe_lokasi').value,
                 coord: document.getElementById('fe_coord').value, kategori: document.getElementById('fe_kategori').value, tanaman: document.getElementById('fe_tanaman').value,
                 varieti: document.getElementById('fe_varieti').value, umurT: document.getElementById('fe_umur').value, luasT: luasT,
-                luasS: luasS, keterukan: sevS, peratus: pctS, syor: document.getElementById('fe_syor').value, name: uProf.name, caption: captionVal 
+                luasS: luasS, keterukan: sevS, peratus: pctS, syor: document.getElementById('fe_syor').value, name: uProf.name, caption: captionVal,
+                
+                // TAMBAHAN: Tarik gambar lama supaya backend dapat selamatkannya
+                gambarLama: document.getElementById('fe_gambarLama').value 
             };
             if (currentFile) {
                 payload.imgData = currentFile.data; payload.imgType = currentFile.type;
@@ -1075,7 +1260,7 @@
         async function downloadDualExcel() { if (!fData.length) { alert("Tiada data!"); return; } const workbook = new ExcelJS.Workbook(); const worksheet = workbook.addWorksheet('Laporan Penuh'); worksheet.columns = [{ header: 'ID', key: 'id', width: 6 }, { header: 'Nama Pegawai', key: 'pg', width: 25 }, { header: 'Tarikh', key: 't', width: 12 }, { header: 'Negeri', key: 'n', width: 15 }, { header: 'Daerah', key: 'd', width: 15 }, { header: 'Lokasi', key: 'l', width: 22 }, { header: 'Koordinat', key: 'c', width: 22 }, { header: 'Kategori', key: 'kt', width: 18 }, { header: 'Tanaman', key: 'tn', width: 18 }, { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, { header: 'Perosak', key: 'p', width: 20 }, { header: 'Keterukan', key: 'k', width: 15 }, { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, { header: '% Serangan', key: 'pct', width: 15 }, { header: 'Syor Kawalan', key: 's', width: 50 }]; worksheet.getRow(1).font = { bold: true }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }; let rowIndex = 2; fData.forEach(d => { let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]]; let startRow = rowIndex; let luasTanam = parseFloat(d.lt) || 0; pestEntries.forEach(([pName, pArea]) => { let luasSerang = parseFloat(pArea) || 0; let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%"; const row = worksheet.getRow(rowIndex); row.values = { id: d.id, pg: d.pg || "-", t: d.t, n: d.n, d: d.d, l: d.l, c: d.c || "-", kt: d.kt || "-", tn: d.tn, lt: luasTanam, p: pName, k: d.k, ls: luasSerang, pct: pctVal, s: d.s }; row.eachCell({ includeEmpty: true }, (cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; }); rowIndex++; }); if (pestEntries.length > 1) { for (let c = 1; c <= 10; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); } worksheet.mergeCells(startRow, 15, rowIndex - 1, 15); } }); const buffer = await workbook.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = window.URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'PNR_Laporan_Lengkap.xlsx'; anchor.click(); window.URL.revokeObjectURL(url); }
         async function dlPDF() { const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Jana...'; btn.disabled = true; let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length - 1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length - 1])}`; } try { let targetName = document.getElementById('selNegeri').value; if (uProf && uProf.state === "CAMERON HIGHLANDS") { targetName = "PAHANG"; } else if (uProf && uProf.state !== "ALL") { targetName = uProf.state; } if (!targetName) targetName = "SEMUA"; const m = { user: uProf.name, negeri: targetName, dates: dateLabel }; const r = await postData('genPDF', { data: fData, meta: m }); if (r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } else { alert("Gagal menjana PDF: " + r.message); } } catch (e) { console.error(e); alert("Ralat sistem semasa menjana PDF."); } btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false; }
      
-       // --- FUNGSI KLIK MUAT TURUN PDF (KALIS POPUP BLOCKER) ---
+     // --- FUNGSI KLIK MUAT TURUN PDF (AUTO-DOWNLOAD BASE64) ---
         async function klikJanaPDF(btnElement) {
             // Cek jika tiada internet
             if (!navigator.onLine) {
@@ -1099,29 +1284,32 @@
                 // Panggil backend API
                 const r = await postData('janaPDFBaris', { lokasi: lokasiStr, pegawai: pegawaiStr });
                 
-                if (r.success && r.url) {
-                    // Berjaya! Papar butang untuk user klik (Ini memintas Popup Blocker)
+                // Semak jika backend memulangkan status success dan data base64
+                if ((r.success || r.status === 'success') && r.base64) {
+                    
+                    // Proses Muat Turun Terus (Auto-Download) ke Peranti
+                    const link = document.createElement('a');
+                    link.href = "data:application/pdf;base64," + r.base64;
+                    
+                    // Guna nama fail dari backend, atau buat nama default jika tiada
+                    link.download = r.fileName || ("Laporan_" + lokasiStr.replace(/[^a-zA-Z0-9]/g, "_") + ".pdf");
+                    
+                    // Simulasikan butang ditekan oleh pengguna (tanpa nampak di skrin)
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Tutup loading dan tunjuk mesej Berjaya
                     Swal.fire({
                         icon: 'success',
-                        title: 'PDF Sedia!',
-                        text: 'Laporan anda telah berjaya dijana.',
-                        confirmButtonText: '<i class="bi bi-box-arrow-up-right"></i> Buka / Muat Turun',
-                        showCancelButton: true,
-                        cancelButtonText: 'Tutup',
-                        confirmButtonColor: '#10b981'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            // Cara paling selamat untuk buka tab di peranti mobile / PWA
-                            const a = document.createElement('a');
-                            a.href = r.url;
-                            a.target = '_blank';
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                        }
+                        title: 'Berjaya!',
+                        text: 'Laporan PDF telah disimpan ke dalam peranti anda.',
+                        timer: 3000,
+                        showConfirmButton: false
                     });
+
                 } else {
-                    Swal.fire('Ralat', r.message || 'Gagal memuatkan pautan PDF.', 'error');
+                    Swal.fire('Ralat', r.message || r.error || 'Gagal memuatkan data PDF.', 'error');
                 }
             } catch (err) {
                 Swal.fire('Ralat API', 'Gagal berhubung dengan pelayan. Sila cuba lagi.', 'error');
