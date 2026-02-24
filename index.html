@@ -1018,29 +1018,34 @@
             }
         }
 
-        function getPestOptionsHTML(selectedValue) {
+       function getPestOptionsHTML(selectedValue) {
             const kat = document.getElementById('fe_kategori').value;
             const tan = document.getElementById('fe_tanaman').value;
             let pests = [];
-            if(kat && tan && pestMasterData[kat] && pestMasterData[kat][tan]) { pests = pestMasterData[kat][tan]; }
-            let html = '<option value="">- Pilih Perosak -</option>';
-            pests.forEach(p => {
-                const isSel = (String(p).toUpperCase() === String(selectedValue).toUpperCase()) ? "selected" : "";
-                html += `<option value="${p}" ${isSel}>${p}</option>`;
-            });
-            if (selectedValue && !pests.some(p => String(p).toUpperCase() === String(selectedValue).toUpperCase())) {
-                html += `<option value="${selectedValue}" selected>${selectedValue} (Asal)</option>`;
+            
+            if(kat && tan && pestMasterData[kat] && pestMasterData[kat][tan]) { 
+                pests = pestMasterData[kat][tan]; 
             }
+            
+            let html = ''; 
+            pests.forEach(p => {
+                html += `<option value="${p}">`;
+            });
+            
             return html;
         }
-
-        function updatePestRowsOnCropChange() {
-            document.querySelectorAll('.p-name').forEach(select => {
-                const currentVal = select.value; 
-                select.innerHTML = getPestOptionsHTML(currentVal);
+        
+       function updatePestRowsOnCropChange() {
+            document.querySelectorAll('.p-name').forEach(input => {
+                // Cari datalist yang berada tepat di sebelah kotak input
+                const datalist = input.nextElementSibling; 
+                if(datalist && datalist.tagName === 'DATALIST') {
+                    datalist.innerHTML = getPestOptionsHTML(input.value);
+                }
             });
         }
 
+        
         function setDropdownValue(el, val) {
             if(!val) return;
             for(let i=0; i<el.options.length; i++) { 
@@ -1104,7 +1109,7 @@
                 <h6 class="text-primary border-bottom pb-2 mt-3">B. Tanaman</h6>
                 <div class="row g-2 mb-2">
                     <div class="col-6"><label class="small fw-bold">Kategori</label><select id="fe_kategori" class="form-select form-select-sm" onchange="updateTanamanList()"><option value="">- Pilih -</option>${Object.keys(pestMasterData).sort().map(k => `<option value="${k}">${k}</option>`).join('')}</select></div>
-                    <div class="col-6"><label class="small fw-bold">Tanaman</label><select id="fe_tanaman" class="form-select form-select-sm" onchange="updatePestRowsOnCropChange()"><option value="">- Pilih Kategori Dulu -</option></select></div>
+                    <div class="col-6"><label class="small fw-bold">Tanaman</label><select id="fe_tanaman" class="form-select form-select-sm" onchange="()"><option value="">- Pilih Kategori Dulu -</option></select></div>
                 </div>
                 <div class="row g-2 mb-2">
                     <div class="col-6"><label class="small fw-bold">Varieti</label><input type="text" id="fe_varieti" class="form-control form-control-sm" value="${getV('VARIETI')}"></div>
@@ -1154,11 +1159,29 @@
             new bootstrap.Modal(document.getElementById('detailModal')).show();
         }
 
-        function addPestRow(name="", area="", sev="") {
+       function addPestRow(name="", area="", sev="") {
             const tbody = document.querySelector('#fe_pestTable tbody');
             const tr = document.createElement('tr');
+            
+            // Cipta ID unik untuk datalist supaya tak bertembung jika ada banyak baris perosak
+            const uniqueId = 'dl_pest_' + Math.floor(Math.random() * 10000); 
             const pestOptions = getPestOptionsHTML(name);
-            tr.innerHTML = `<td><select class="form-select form-select-sm p-name">${pestOptions}</select></td><td><input type="number" class="form-control form-control-sm p-area" value="${area}" step="0.01"></td><td><select class="form-select form-select-sm p-sev"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td><td class="text-center"><button class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove()"><i class="bi bi-x-circle"></i></button></td>`;
+            
+            tr.innerHTML = `
+                <td>
+                    <input type="text" class="form-control form-control-sm p-name" list="${uniqueId}" value="${name}" placeholder="Pilih atau Taip...">
+                    <datalist id="${uniqueId}">${pestOptions}</datalist>
+                </td>
+                <td><input type="number" class="form-control form-control-sm p-area" value="${area}" step="0.01"></td>
+                <td>
+                    <select class="form-select form-select-sm p-sev">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                    </select>
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove()"><i class="bi bi-x-circle"></i></button>
+                </td>`;
+                
             if(sev) tr.querySelector('.p-sev').value = sev;
             tbody.appendChild(tr);
         }
