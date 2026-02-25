@@ -240,9 +240,42 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
     
     // --- DATA STATIK NEGERI ---
-    const districtData = {"Johor": ["Batu Pahat", "Johor Bahru", "Kluang", "Kota Tinggi", "Kulai", "Mersing", "Muar", "Pontian", "Segamat", "Tangkak"], "Kedah": ["Baling", "Bandar Baharu", "Kota Setar", "Kuala Muda", "Kubang Pasu", "Kulim", "Langkawi", "Padang Terap", "Pendang", "Pokok Sena", "Sik", "Yan"], "Kelantan": ["Bachok", "Gua Musang", "Jeli", "Kota Bharu", "Kuala Krai", "Machang", "Pasir Mas", "Pasir Puteh", "Tanah Merah", "Tumpat"], "Melaka": ["Alor Gajah", "Jasin", "Melaka Tengah"], "Negeri Sembilan": ["Jelebu", "Jempol", "Kuala Pilah", "Port Dickson", "Rembau", "Seremban", "Tampin"], "Pahang": ["Bentong", "Bera", "Cameron Highlands", "Jerantut", "Kuantan", "Lipis", "Maran", "Pekan", "Raub", "Rompin", "Temerloh"], "Perak": ["Bagan Datuk", "Batang Padang", "Hilir Perak", "Hulu Perak", "Kampar", "Kerian", "Kinta", "Kuala Kangsar", "Larut, Matang dan Selama", "Manjung", "Muallim", "Perak Tengah"], "Perlis": ["Perlis"], "Pulau Pinang": ["Barat Daya", "Seberang Perai Selatan", "Seberang Perai Tengah", "Seberang Perai Utara", "Timur Laut"], "Sabah": ["Beaufort", "Beluran", "Kalabakan", "Keningau", "Kinabatangan", "Kota Belud", "Kota Kinabalu", "Kota Marudu", "Kuala Penyu", "Kudat", "Kunak", "Lahad Datu", "Nabawan", "Papar", "Penampang", "Pitas", "Putatan", "Ranau", "Sandakan", "Semporna", "Sipitang", "Tambunan", "Tawau", "Telupid", "Tenom", "Tongod", "Tuaran"], "Sarawak": ["Asajaya", "Bau", "Belaga", "Beluru", "Betong", "Bintulu", "Bukit Mabong", "Dalat", "Daro", "Julau", "Kabong", "Kanowit", "Kapit", "Kuching", "Lawas", "Limbang", "Lubok Antu", "Lundu", "Marudi", "Matu", "Meradong", "Miri", "Mukah", "Pakan", "Pusa", "Samarahan", "Saratok", "Sarikei", "Sebauh", "Selangau", "Serian", "Sibu", "Simunjan", "Song", "Sri Aman", "Subis", "Tanjung Manis", "Tatau", "Tebedu", "Telang Usan"], "Selangor": ["Gombak", "Hulu Langat", "Hulu Selangor", "Klang", "Kuala Langat", "Kuala Selangor", "Petaling", "Sabak Bernam", "Sepang"], "Terengganu": ["Besut", "Dungun", "Hulu Terengganu", "Kemaman", "Kuala Nerus", "Kuala Terengganu", "Marang", "Setiu"], "W.P. Kuala Lumpur": ["Kuala Lumpur"], "W.P. Labuan": ["Labuan"], "W.P. Putrajaya": ["Putrajaya"]};
-    const stateBounds = { "Johor": { minLat: 1.2, maxLat: 2.9, minLng: 102.4, maxLng: 104.6 }, "Kedah": { minLat: 5.0, maxLat: 6.6, minLng: 99.5, maxLng: 101.2 }, "Kelantan": { minLat: 4.5, maxLat: 6.3, minLng: 101.3, maxLng: 102.7 }, "Melaka": { minLat: 2.0, maxLat: 2.5, minLng: 101.9, maxLng: 102.6 }, "Negeri Sembilan": { minLat: 2.3, maxLat: 3.2, minLng: 101.8, maxLng: 102.7 }, "Pahang": { minLat: 2.4, maxLat: 4.9, minLng: 101.3, maxLng: 104.3 }, "Perak": { minLat: 3.5, maxLat: 6.0, minLng: 100.3, maxLng: 101.8 }, "Perlis": { minLat: 6.2, maxLat: 6.75, minLng: 100.0, maxLng: 100.4 }, "Pulau Pinang": { minLat: 5.1, maxLat: 5.6, minLng: 100.1, maxLng: 100.6 }, "Sabah": { minLat: 4.0, maxLat: 7.5, minLng: 115.0, maxLng: 119.5 }, "Sarawak": { minLat: 0.8, maxLat: 5.0, minLng: 109.0, maxLng: 115.6 }, "Selangor": { minLat: 2.6, maxLat: 3.9, minLng: 100.7, maxLng: 102.0 }, "Terengganu": { minLat: 3.9, maxLat: 5.9, minLng: 102.3, maxLng: 103.6 }, "W.P. Kuala Lumpur": { minLat: 3.0, maxLat: 3.25, minLng: 101.6, maxLng: 101.8 }, "W.P. Putrajaya": { minLat: 2.85, maxLat: 3.0, minLng: 101.6, maxLng: 101.75 }, "W.P. Labuan": { minLat: 5.2, maxLat: 5.4, minLng: 115.1, maxLng: 115.3 } };
-
+const districtData = {
+  "JOHOR": ["BATU PAHAT", "JOHOR BAHRU", "KLUANG", "KOTA TINGGI", "KULAI", "MERSING", "MUAR", "PONTIAN", "SEGAMAT", "TANGKAK"],
+  "KEDAH": ["BALING", "BANDAR BAHARU", "KOTA SETAR", "KUALA MUDA", "KUBANG PASU", "KULIM", "LANGKAWI", "PADANG TERAP", "PENDANG", "POKOK SENA", "SIK", "YAN"],
+  "KELANTAN": ["BACHOK", "GUA MUSANG", "JELI", "KOTA BHARU", "KUALA KRAI", "MACHANG", "PASIR MAS", "PASIR PUTEH", "TANAH MERAH", "TUMPAT"],
+  "MELAKA": ["ALOR GAJAH", "JASIN", "MELAKA TENGAH"],
+  "NEGERI SEMBILAN": ["JELEBU", "JEMPOL", "KUALA PILAH", "PORT DICKSON", "REMBAU", "SEREMBAN", "TAMPIN"],
+  "PAHANG": ["BENTONG", "BERA", "CAMERON HIGHLANDS", "JERANTUT", "KUANTAN", "LIPIS", "MARAN", "PEKAN", "RAUB", "ROMPIN", "TEMERLOH"],
+  "PERAK": ["BAGAN DATUK", "BATANG PADANG", "HILIR PERAK", "HULU PERAK", "KAMPAR", "KERIAN", "KINTA", "KUALA KANGSAR", "LARUT, MATANG DAN SELAMA", "MANJUNG", "MUALLIM", "PERAK TENGAH"],
+  "PERLIS": ["PERLIS"],
+  "PULAU PINANG": ["BARAT DAYA", "SEBERANG PERAI SELATAN", "SEBERANG PERAI TENGAH", "SEBERANG PERAI UTARA", "TIMUR LAUT"],
+  "SABAH": ["BEAUFORT", "BELURAN", "KALABAKAN", "KENINGAU", "KINABATANGAN", "KOTA BELUD", "KOTA KINABALU", "KOTA MARUDU", "KUALA PENYU", "KUDAT", "KUNAK", "LAHAD DATU", "NABAWAN", "PAPAR", "PENAMPANG", "PITAS", "PUTATAN", "RANAU", "SANDAKAN", "SEMPORNA", "SIPITANG", "TAMBUNAN", "TAWAU", "TELUPID", "TENOM", "TONGOD", "TUARAN"],
+  "SARAWAK": ["ASAJAYA", "BAU", "BELAGA", "BELURU", "BETONG", "BINTULU", "BUKIT MABONG", "DALAT", "DARO", "JULAU", "KABONG", "KANOWIT", "KAPIT", "KUCHING", "LAWAS", "LIMBANG", "LUBOK ANTU", "LUNDU", "MARUDI", "MATU", "MERADONG", "MIRI", "MUKAH", "PAKAN", "PUSA", "SAMARAHAN", "SARATOK", "SARIKEI", "SEBAUH", "SELANGAU", "SERIAN", "SIBU", "SIMUNJAN", "SONG", "SRI AMAN", "SUBIS", "TANJUNG MANIS", "TATAU", "TEBEDU", "TELANG USAN"],
+  "SELANGOR": ["GOMBAK", "HULU LANGAT", "HULU SELANGOR", "KLANG", "KUALA LANGAT", "KUALA SELANGOR", "PETALING", "SABAK BERNAM", "SEPANG"],
+  "TERENGGANU": ["BESUT", "DUNGUN", "HULU TERENGGANU", "KEMAMAN", "KUALA NERUS", "KUALA TERENGGANU", "MARANG", "SETIU"],
+  "W.P. KUALA LUMPUR": ["KUALA LUMPUR"],
+  "W.P. LABUAN": ["LABUAN"],
+  "W.P. PUTRAJAYA": ["PUTRAJAYA"]
+};
+const stateBounds = { 
+  "JOHOR": { minLat: 1.2, maxLat: 2.9, minLng: 102.4, maxLng: 104.6 }, 
+  "KEDAH": { minLat: 5.0, maxLat: 6.6, minLng: 99.5, maxLng: 101.2 }, 
+  "KELANTAN": { minLat: 4.5, maxLat: 6.3, minLng: 101.3, maxLng: 102.7 }, 
+  "MELAKA": { minLat: 2.0, maxLat: 2.5, minLng: 101.9, maxLng: 102.6 }, 
+  "NEGERI SEMBILAN": { minLat: 2.3, maxLat: 3.2, minLng: 101.8, maxLng: 102.7 }, 
+  "PAHANG": { minLat: 2.4, maxLat: 4.9, minLng: 101.3, maxLng: 104.3 }, 
+  "PERAK": { minLat: 3.5, maxLat: 6.0, minLng: 100.3, maxLng: 101.8 }, 
+  "PERLIS": { minLat: 6.2, maxLat: 6.75, minLng: 100.0, maxLng: 100.4 }, 
+  "PULAU PINANG": { minLat: 5.1, maxLat: 5.6, minLng: 100.1, maxLng: 100.6 }, 
+  "SABAH": { minLat: 4.0, maxLat: 7.5, minLng: 115.0, maxLng: 119.5 }, 
+  "SARAWAK": { minLat: 0.8, maxLat: 5.0, minLng: 109.0, maxLng: 115.6 }, 
+  "SELANGOR": { minLat: 2.6, maxLat: 3.9, minLng: 100.7, maxLng: 102.0 }, 
+  "TERENGGANU": { minLat: 3.9, maxLat: 5.9, minLng: 102.3, maxLng: 103.6 }, 
+  "W.P. KUALA LUMPUR": { minLat: 3.0, maxLat: 3.25, minLng: 101.6, maxLng: 101.8 }, 
+  "W.P. PUTRAJAYA": { minLat: 2.85, maxLat: 3.0, minLng: 101.6, maxLng: 101.75 }, 
+  "W.P. LABUAN": { minLat: 5.2, maxLat: 5.4, minLng: 115.1, maxLng: 115.3 } 
+};
     let cachedMasterData = {}; 
     let filesToUpload = [];
     let isOffline = !navigator.onLine;
