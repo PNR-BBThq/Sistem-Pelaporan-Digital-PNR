@@ -1055,6 +1055,7 @@
         }
 
         // --- RENDER EDIT FORM ---
+       // --- RENDER EDIT FORM (GALERI PINTAR) ---
         function renderEditForm(rowID, rowData) {
             currentFile = null;
             const d = rowData;
@@ -1065,33 +1066,10 @@
             const savedNegeri = getV('NEGERI');
             const savedDaerah = getV('DAERAH');
             const savedKat = getV('KATEGORI');
-           const savedTan = getV('NAMA TANAMAN') || getV('TANAMAN');
+            const savedTan = getV('NAMA TANAMAN') || getV('TANAMAN');
             
-            // --- KOD BARU: TARIK, TUKAR LINK & LUKIS GAMBAR LAMA ---
             const savedImg = getV('IMAGE LINKS (COMMA SEPARATED)') || getV('GAMBAR') || getV('IMAGE') || getV('FOTO') || "";
-            let oldImgPreviewHTML = "";
-            
-            if(savedImg && savedImg.trim() !== "") {
-                const arr = savedImg.split(',');
-                oldImgPreviewHTML = `<div class="mt-2 pt-2 border-top"><small class="text-success fw-bold d-block mb-1"><i class="bi bi-images"></i> Gambar Sedia Ada:</small>` +
-                arr.map(lnk => {
-                    let cleanLnk = lnk.trim().replace(/[\[\]"'\\]/g, '');
-                    if(!cleanLnk) return "";
-                    
-                    // Magik: Cari ID Google Drive dan tukar ke direct link (thumbnail)
-                    let directSrc = cleanLnk;
-                    const idMatch = cleanLnk.match(/[-\w]{25,}/);
-                    if (idMatch) {
-                        // Guna sz=w200 supaya gambar ringan & terus keluar dalam tag <img>
-                        directSrc = `https://drive.google.com/thumbnail?id=${idMatch[0]}&sz=w200`;
-                    }
-                    
-                    return `<a href="${cleanLnk}" target="_blank" title="Klik untuk lihat saiz penuh">
-                                <img src="${directSrc}" style="width: 60px; height: 60px; object-fit: cover; margin-right: 5px; border-radius: 5px; border: 1px solid #ccc; display: inline-block;">
-                            </a>`;
-                }).join('') + `</div>`;
-            }
-            // ---------------------------------------------
+
             let html = `
             <div id="fullEditForm">
                 <input type="hidden" id="fe_row" value="${rowID}">
@@ -1106,16 +1084,18 @@
                     <div class="col-6"><label class="small fw-bold">Tarikh</label><input type="date" id="fe_tarikh" class="form-control form-control-sm" value="${formatDateForInput(getV('TARIKH'))}"></div>
                     <div class="col-6"><label class="small fw-bold">Pegawai</label><input type="text" id="fe_pegawai" class="form-control form-control-sm" readonly value="${getV('NAMA')||getV('PEGAWAI')}"></div>
                 </div>
+                
                 <h6 class="text-primary border-bottom pb-2 mt-3">B. Tanaman</h6>
                 <div class="row g-2 mb-2">
                     <div class="col-6"><label class="small fw-bold">Kategori</label><select id="fe_kategori" class="form-select form-select-sm" onchange="updateTanamanList()"><option value="">- Pilih -</option>${Object.keys(pestMasterData).sort().map(k => `<option value="${k}">${k}</option>`).join('')}</select></div>
-                    <div class="col-6"><label class="small fw-bold">Tanaman</label><select id="fe_tanaman" class="form-select form-select-sm" onchange="()"><option value="">- Pilih Kategori Dulu -</option></select></div>
+                    <div class="col-6"><label class="small fw-bold">Tanaman</label><select id="fe_tanaman" class="form-select form-select-sm" onchange="updatePestRowsOnCropChange()"><option value="">- Pilih Kategori Dulu -</option></select></div>
                 </div>
                 <div class="row g-2 mb-2">
                     <div class="col-6"><label class="small fw-bold">Varieti</label><input type="text" id="fe_varieti" class="form-control form-control-sm" value="${getV('VARIETI')}"></div>
                     <div class="col-6"><label class="small fw-bold">Umur</label><input type="text" id="fe_umur" class="form-control form-control-sm" value="${getV('UMUR')}"></div>
                 </div>
                 <div class="mb-2"><label class="small fw-bold">Luas Tanam (Ha)</label><input type="number" id="fe_luasT" class="form-control form-control-sm" value="${getV('LUAS')}"></div>
+                
                 <h6 class="text-primary border-bottom pb-2 mt-3">C. Data Serangan</h6>
                 <div class="alert alert-info py-1 px-2 mb-2 small"><i class="bi bi-info-circle"></i> Pilihan perosak bergantung kepada Tanaman.</div>
                 <table class="table table-sm table-bordered" id="fe_pestTable">
@@ -1123,25 +1103,26 @@
                     <tbody></tbody>
                 </table>
                 <button type="button" class="btn btn-outline-primary btn-sm w-100 mb-3" onclick="addPestRow()">+ Tambah Perosak</button>
+                
                 <h6 class="text-primary border-bottom pb-2 mt-3">D. Gambar & Kapsyen</h6>
                 <div class="mb-3 p-3 bg-white border rounded">
-                    <input type="hidden" id="fe_gambarLama" value="${savedImg}">
+                    <label class="form-label fw-bold small">Gambar Laporan Sedia Ada</label>
+                    <div id="edit_image_preview" class="d-flex flex-wrap gap-2 mb-3"></div>
                     
-                    <label class="small fw-bold mb-1">Tajuk Gambar</label>
+                    <label class="small fw-bold mb-1">Tambah Gambar Baru (Optional)</label>
+                    <input type="file" id="fe_img" class="form-control form-control-sm" accept="image/*" multiple>
+                    <small class="text-muted d-block fst-italic mt-1" style="font-size:0.75rem">Pilih lebih dari 1 gambar jika perlu. Gambar lama boleh dipadam dengan butang X merah di atas.</small>
+
+                    <label class="small fw-bold mb-1 mt-3">Tajuk Gambar / Kapsyen</label>
                     <input type="text" id="fe_caption" class="form-control form-control-sm mb-2" value="${valCaption}" placeholder="Masukkan tajuk gambar...">
-                    <label class="small fw-bold mb-1">Muat Naik (Optional)</label>
-                    <input type="file" id="fe_fileInput" class="form-control form-control-sm" accept="image/*" onchange="handleFileSelect(this)">
-                    <small class="text-muted d-block fst-italic mt-1" style="font-size:0.75rem">Biarkan kosong jika tidak mahu tukar gambar asal.</small>
-                    
-                    <img id="fe_imgPreview" src="" style="max-height: 100px; display: none; margin-top:5px; border:1px solid #ccc">
-                    
-                    ${oldImgPreviewHTML}
                 </div>
+                
                 <div class="mb-3"><label class="small fw-bold text-success">Syor Kawalan</label><textarea id="fe_syor" class="form-control" rows="3">${getV('SYOR')}</textarea></div>
                 <button class="btn btn-success w-100 py-2 fw-bold" onclick="saveFullEdit()">SIMPAN PERUBAHAN</button>
             </div>`;
 
             document.getElementById('detailBody').innerHTML = html;
+            
             const elNeg = document.getElementById('fe_negeri'); setDropdownValue(elNeg, savedNegeri); updateDistricts('fe_negeri','fe_daerah'); 
             const elDae = document.getElementById('fe_daerah'); setDropdownValue(elDae, savedDaerah);
             const elKat = document.getElementById('fe_kategori'); setDropdownValue(elKat, savedKat); updateTanamanList();
@@ -1155,8 +1136,13 @@
             if(pests.length > 0) { pests.forEach(p => addPestRow(p, luasObj[p], sevObj[p])); } 
             else if (pestManual) { addPestRow(pestManual, getV('LUAS SERANGAN'), getV('KETERUKAN')); } 
             else { addPestRow(); }
+            
+            // LUKIS GAMBAR LAMA
+            renderEditImages(savedImg); 
+
             document.getElementById('modalTitle').innerText = "KEMASKINI DATA";
             new bootstrap.Modal(document.getElementById('detailModal')).show();
+        }
 
         // --- PANGGIL FUNGSI BLOK 2 DI SINI UNTUK LUKIS GAMBAR LAMA ---
             renderEditImages(savedImg); 
@@ -1239,42 +1225,83 @@
 
         function formatDateForInput(dateStr) { if(!dateStr) return ""; const d = new Date(dateStr); return isNaN(d) ? "" : d.toISOString().split('T')[0]; }
 
-        async function saveFullEdit() {
+       async function saveFullEdit() {
             if(!confirm("Hantar kemaskini?")) return;
+            
+            const btn = event.target; 
+            btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> Memproses...'; 
+            btn.disabled=true;
+
             const rowID = document.getElementById('fe_row').value;
             const captionVal = document.getElementById('fe_caption').value.trim();
             const luasT = parseFloat(document.getElementById('fe_luasT').value) || 0;
             const luasS = {}, sevS = {}, pctS = {};
+            
             document.querySelectorAll('#fe_pestTable tbody tr').forEach(tr => {
                 const n = tr.querySelector('.p-name').value;
                 const a = parseFloat(tr.querySelector('.p-area').value) || 0;
                 const s = tr.querySelector('.p-sev').value;
                 if(n) { luasS[n]=a; sevS[n]=s; pctS[n] = luasT>0 ? ((a/luasT)*100).toFixed(2):0; }
             });
-           const payload = {
+
+            // --- KUTIP GAMBAR LAMA & BARU ---
+            const finalRetainedImages = typeof retainedImagesGlobal !== 'undefined' ? retainedImagesGlobal.filter(link => link !== null) : [];
+            const fileInput = document.getElementById('fe_img');
+            const files = fileInput ? fileInput.files : [];
+            let newImagesArray = [];
+
+            if (files.length > 0) {
+                Swal.fire({ title: 'Memproses Gambar...', html: 'Sila tunggu sebentar...', showConfirmButton: false, allowOutsideClick: false });
+                
+                const readPromises = Array.from(files).map(file => {
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            let ext = ".jpg"; 
+                            if(file.name.includes('.')) ext = file.name.substring(file.name.lastIndexOf('.'));
+                            let finalName = captionVal ? (captionVal + ext) : file.name;
+                            
+                            resolve({ imgName: finalName, imgType: file.type, imgData: e.target.result.split(',')[1] });
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                });
+                newImagesArray = await Promise.all(readPromises);
+            } else {
+                Swal.fire({ title: 'Menghantar Data...', showConfirmButton: false, allowOutsideClick: false });
+            }
+
+            const payload = {
+                action: 'updateEntry',
                 row: rowID, tarikh: document.getElementById('fe_tarikh').value, pegawai: document.getElementById('fe_pegawai').value,
                 negeri: document.getElementById('fe_negeri').value, daerah: document.getElementById('fe_daerah').value, lokasi: document.getElementById('fe_lokasi').value,
                 coord: document.getElementById('fe_coord').value, kategori: document.getElementById('fe_kategori').value, tanaman: document.getElementById('fe_tanaman').value,
                 varieti: document.getElementById('fe_varieti').value, umurT: document.getElementById('fe_umur').value, luasT: luasT,
                 luasS: luasS, keterukan: sevS, peratus: pctS, syor: document.getElementById('fe_syor').value, name: uProf.name, caption: captionVal,
-                
-                // TAMBAHAN: Tarik gambar lama supaya backend dapat selamatkannya
-                gambarLama: document.getElementById('fe_gambarLama').value 
+                retainedImages: finalRetainedImages,
+                newImages: newImagesArray
             };
-            if (currentFile) {
-                payload.imgData = currentFile.data; payload.imgType = currentFile.type;
-                let ext = ".jpg"; if(currentFile.name.includes('.')) ext = currentFile.name.substring(currentFile.name.lastIndexOf('.'));
-                payload.imgName = captionVal ? (captionVal + ext) : currentFile.name;
-            }
-            const btn = event.target; btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> Menghantar...'; btn.disabled=true;
-            const r = await postData('updateEntry', payload);
-            if(r.success) {
-                alert("✅ Berjaya!"); bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
-                if(document.getElementById('view-tasks').style.display !== 'none') loadMyTasks(); else if(document.getElementById('view-verify').style.display !== 'none') loadPend(); else initDash();
-                checkPendingCount();
-            } else { alert("❌ Ralat: "+r.message); btn.innerHTML="SIMPAN PERUBAHAN"; btn.disabled=false; }
-        }
 
+            try {
+                const r = await postData('updateEntry', payload); 
+                Swal.close(); 
+                if(r.success) {
+                    alert("✅ Berjaya!"); 
+                    bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
+                    if(document.getElementById('view-tasks').style.display !== 'none') loadMyTasks(); 
+                    else if(document.getElementById('view-verify').style.display !== 'none') loadPend(); 
+                    else initDash();
+                    checkPendingCount();
+                } else { 
+                    alert("❌ Ralat: "+r.message); 
+                    btn.innerHTML="SIMPAN PERUBAHAN"; btn.disabled=false; 
+                }
+            } catch(err) {
+                Swal.close();
+                alert("❌ Gagal berhubung dengan pelayan.");
+                btn.innerHTML="SIMPAN PERUBAHAN"; btn.disabled=false;
+            }
+        }
         // --- DASHBOARD VIEW MODAL ---
         function viewRec(idx) {
             const d = fData[idx]; if (!d) return;
