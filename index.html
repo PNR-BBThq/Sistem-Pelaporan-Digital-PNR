@@ -1054,7 +1054,6 @@
             let opt = document.createElement('option'); opt.value = val; opt.innerText = val + " (Data Asal)"; opt.selected = true; el.appendChild(opt);
         }
 
-        // --- RENDER EDIT FORM ---
        // --- RENDER EDIT FORM (GALERI PINTAR) ---
         function renderEditForm(rowID, rowData) {
             currentFile = null;
@@ -1066,11 +1065,34 @@
             const savedNegeri = getV('NEGERI');
             const savedDaerah = getV('DAERAH');
             const savedKat = getV('KATEGORI');
-            const savedTan = getV('NAMA TANAMAN') || getV('TANAMAN');
+           const savedTan = getV('NAMA TANAMAN') || getV('TANAMAN');
             
+            // --- KOD BARU: TARIK, TUKAR LINK & LUKIS GAMBAR LAMA ---
             const savedImg = getV('IMAGE LINKS (COMMA SEPARATED)') || getV('GAMBAR') || getV('IMAGE') || getV('FOTO') || "";
-
-            let html = `
+            let oldImgPreviewHTML = "";
+            
+            if(savedImg && savedImg.trim() !== "") {
+                const arr = savedImg.split(',');
+                oldImgPreviewHTML = `<div class="mt-2 pt-2 border-top"><small class="text-success fw-bold d-block mb-1"><i class="bi bi-images"></i> Gambar Sedia Ada:</small>` +
+                arr.map(lnk => {
+                    let cleanLnk = lnk.trim().replace(/[\[\]"'\\]/g, '');
+                    if(!cleanLnk) return "";
+                    
+                    // Magik: Cari ID Google Drive dan tukar ke direct link (thumbnail)
+                    let directSrc = cleanLnk;
+                    const idMatch = cleanLnk.match(/[-\w]{25,}/);
+                    if (idMatch) {
+                        // Guna sz=w200 supaya gambar ringan & terus keluar dalam tag <img>
+                        directSrc = `https://drive.google.com/thumbnail?id=${idMatch[0]}&sz=w200`;
+                    }
+                    
+                    return `<a href="${cleanLnk}" target="_blank" title="Klik untuk lihat saiz penuh">
+                                <img src="${directSrc}" style="width: 60px; height: 60px; object-fit: cover; margin-right: 5px; border-radius: 5px; border: 1px solid #ccc; display: inline-block;">
+                            </a>`;
+                }).join('') + `</div>`;
+            }
+            // ---------------------------------------------
+          let html = `
             <div id="fullEditForm">
                 <input type="hidden" id="fe_row" value="${rowID}">
                 <h6 class="text-primary border-bottom pb-2">A. Lokasi</h6>
@@ -1115,7 +1137,7 @@
 
                     <label class="small fw-bold mb-1 mt-3">Tajuk Gambar / Kapsyen</label>
                     <input type="text" id="fe_caption" class="form-control form-control-sm mb-2" value="${valCaption}" placeholder="Masukkan tajuk gambar...">
-                </div>
+                    </div>
                 
                 <div class="mb-3"><label class="small fw-bold text-success">Syor Kawalan</label><textarea id="fe_syor" class="form-control" rows="3">${getV('SYOR')}</textarea></div>
                 <button class="btn btn-success w-100 py-2 fw-bold" onclick="saveFullEdit()">SIMPAN PERUBAHAN</button>
@@ -1137,19 +1159,14 @@
             else if (pestManual) { addPestRow(pestManual, getV('LUAS SERANGAN'), getV('KETERUKAN')); } 
             else { addPestRow(); }
             
-            // LUKIS GAMBAR LAMA
-            renderEditImages(savedImg); 
-
-            document.getElementById('modalTitle').innerText = "KEMASKINI DATA";
-            new bootstrap.Modal(document.getElementById('detailModal')).show();
-        }
-
-        // --- PANGGIL FUNGSI BLOK 2 DI SINI UNTUK LUKIS GAMBAR LAMA ---
+            // --- PANGGIL FUNGSI BLOK 2 DI SINI UNTUK LUKIS GAMBAR LAMA ---
             renderEditImages(savedImg); 
             // -------------------------------------------------------------
 
             document.getElementById('modalTitle').innerText = "KEMASKINI DATA";
             new bootstrap.Modal(document.getElementById('detailModal')).show();
+        }
+
 
         function renderEditImages(imgString) {
             const container = document.getElementById('edit_image_preview');
