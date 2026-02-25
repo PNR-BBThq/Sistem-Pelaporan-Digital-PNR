@@ -623,7 +623,7 @@ const stateBounds = {
         let errorPest = false;
 
         document.querySelectorAll('.perosak-item').forEach(row => { 
-            const n = row.querySelector('.perosak-name').value; 
+            const n = row.querySelector('.perosak-name').value.toUpperCase().trim();
             const valStr = row.querySelector('.perosak-luas').value;
             
             // 3. Check Perosak (Hanya jika HANTAR BARU)
