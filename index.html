@@ -1256,7 +1256,7 @@
             const luasS = {}, sevS = {}, pctS = {};
             
             document.querySelectorAll('#fe_pestTable tbody tr').forEach(tr => {
-                const n = tr.querySelector('.p-name').value;
+                const n = tr.querySelector('.p-name').value.toUpperCase().trim();
                 const a = parseFloat(tr.querySelector('.p-area').value) || 0;
                 const s = tr.querySelector('.p-sev').value;
                 if(n) { luasS[n]=a; sevS[n]=s; pctS[n] = luasT>0 ? ((a/luasT)*100).toFixed(2):0; }
