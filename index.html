@@ -141,15 +141,50 @@
             <hr class="my-4" style="color: #000;">
             
             <div class="mb-3 px-2">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <small class="fw-bold text-dark" style="font-size:0.85rem; letter-spacing: 0.5px;"><i class="bi bi-funnel-fill me-1"></i> TAPISAN DATA</small>
-                </div>
-                
-                <div class="mb-2"><label class="filter-label">Negeri</label><select id="selNegeri" class="form-select form-select-sm" onchange="runFilter('n')"></select></div>
-                <div class="mb-2"><label class="filter-label">Daerah</label><select id="selDaerah" class="form-select form-select-sm" onchange="runFilter('d')"></select></div>
-                <div class="mb-2"><label class="filter-label">Tanaman</label><select id="selTanaman" class="form-select form-select-sm" onchange="runFilter('t')"></select></div>
-                <div class="mb-2"><label class="filter-label">Perosak</label><select id="selPerosak" class="form-select form-select-sm" onchange="runFilter('p')"></select></div>
-                <div class="mb-2"><label class="filter-label">Kategori</label><select id="selKategori" class="form-select form-select-sm" onchange="runFilter('k')"></select></div>
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <small class="fw-bold text-dark" style="font-size:0.85rem; letter-spacing: 0.5px;"><i class="bi bi-funnel-fill me-1"></i> TAPISAN DATA</small>
+    </div>
+    
+    <div class="mb-2">
+        <label class="filter-label">Negeri</label>
+        <div class="dropdown d-grid">
+            <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselNegeri" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
+            <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselNegeri"></div>
+        </div>
+    </div>
+    
+    <div class="mb-2">
+        <label class="filter-label">Daerah</label>
+        <div class="dropdown d-grid">
+            <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselDaerah" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
+            <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselDaerah"></div>
+        </div>
+    </div>
+    
+    <div class="mb-2">
+        <label class="filter-label">Tanaman</label>
+        <div class="dropdown d-grid">
+            <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselTanaman" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
+            <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselTanaman"></div>
+        </div>
+    </div>
+    
+    <div class="mb-2">
+        <label class="filter-label">Perosak</label>
+        <div class="dropdown d-grid">
+            <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselPerosak" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
+            <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselPerosak"></div>
+        </div>
+    </div>
+    
+    <div class="mb-2">
+        <label class="filter-label">Kategori</label>
+        <div class="dropdown d-grid">
+            <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselKategori" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
+            <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselKategori"></div>
+        </div>
+    </div>
+</div>
                 
                 <div class="mb-3">
                     <label class="filter-label">Julat Tarikh</label>
@@ -643,11 +678,23 @@
 
         // --- FUNGSI BARU: PROSES UI (KALIS ERROR) ---
         function processDataToUI(dataList) {
-            // Setup Dropdown
-            const currentN = document.getElementById('selNegeri').value;
-            fillSel('selNegeri', dataList.map(d => d.n).filter((v, i, a) => a.indexOf(v) === i).sort());
-            if(currentN) document.getElementById('selNegeri').value = currentN;
-            if(uProf.state !== "ALL") { const s = document.getElementById('selNegeri'); s.value = uProf.state; s.disabled = true; }
+            // Setup Dropdown (Versi Checkbox)
+            const currentN = v('selNegeri'); 
+            fillSel('selNegeri', dataList.map(d => d.n).filter((val, i, a) => a.indexOf(val) === i).sort(), 'n');
+            
+            if(uProf.state !== "ALL") { 
+                // Kunci negeri jika dia bukan ADMIN
+                const cbList = document.querySelectorAll('.chk-selNegeri');
+                cbList.forEach(cb => {
+                    if(cb.value === uProf.state) { cb.checked = true; cb.disabled = true; }
+                    else { cb.checked = false; cb.disabled = true; } 
+                });
+                const btn = document.getElementById('btnselNegeri');
+                if(btn) { btn.innerText = uProf.state; btn.classList.add('disabled', 'bg-light'); }
+            } else if (currentN.length > 0) {
+                document.querySelectorAll('.chk-selNegeri').forEach(cb => { if(currentN.includes(cb.value)) cb.checked = true; }); 
+                updateBtnText('selNegeri');
+            }
 
             // LUKIS MAP (HANYA JIKA LEAFLET WUJUD)
             if (typeof L !== 'undefined') {
@@ -672,26 +719,92 @@
             }
         }
 
-        function runFilter(source) {
+      function runFilter(source) {
             const n=v('selNegeri'), d=v('selDaerah'), t=v('selTanaman'), p=v('selPerosak'), k=v('selKategori'), s=v('dS'), e=v('dE');
+            
             fData = mData.filter(r => { 
-                let pestOk = true; if(p && r.p) { try{ pestOk = (typeof r.p==='string'?JSON.parse(r.p):r.p)[p] }catch(err){ pestOk=false } }
-                return (n===""||r.n===n) && (d===""||r.d===d) && (t===""||r.tn===t) && (k===""||r.kt===k) && pestOk && (!s||r.t>=s) && (!e||r.t<=e);
+                let pestOk = true; 
+                if (p.length > 0) {
+                    pestOk = false;
+                    if (r.p) {
+                        try { 
+                            const pestObj = (typeof r.p==='string' ? JSON.parse(r.p) : r.p);
+                            pestOk = p.some(selectedPest => pestObj[selectedPest]);
+                        } catch(err) {}
+                    }
+                }
+                return (n.length===0 || n.includes(r.n)) && 
+                       (d.length===0 || d.includes(r.d)) && 
+                       (t.length===0 || t.includes(r.tn)) && 
+                       (k.length===0 || k.includes(r.kt)) && 
+                       pestOk && (!s||r.t>=s) && (!e||r.t<=e);
             });
-            if(source === 'n' || !source) { const dataD = mData.filter(r => n === "" || r.n === n); updateDropdown('selDaerah', [...new Set(dataD.map(x=>x.d).filter(x=>x))].sort(), d); }
-            if(source === 'd' || source === 'n' || !source) { const dataT = mData.filter(r => (n===""||r.n===n) && (d===""||r.d===d)); updateDropdown('selTanaman', [...new Set(dataT.map(x=>x.tn).filter(x=>x))].sort(), t); }
+
+            // Bekalkan parameter source code ('d', 't', 'k', 'p') supaya sistem tahu siapa yang trigger
+            if(source === 'n' || !source) { 
+                const dataD = mData.filter(r => n.length===0 || n.includes(r.n)); 
+                updateDropdown('selDaerah', [...new Set(dataD.map(x=>x.d).filter(x=>x))].sort(), d, 'd'); 
+            }
+            if(source === 'd' || source === 'n' || !source) { 
+                const dataT = mData.filter(r => (n.length===0 || n.includes(r.n)) && (d.length===0 || d.includes(r.d))); 
+                updateDropdown('selTanaman', [...new Set(dataT.map(x=>x.tn).filter(x=>x))].sort(), t, 't'); 
+            }
             if(source === 't' || source === 'd' || source === 'n' || !source) {
-                const dataRest = mData.filter(r => (n===""||r.n===n) && (d===""||r.d===d) && (t===""||r.tn===t));
-                updateDropdown('selKategori', [...new Set(dataRest.map(x=>x.kt).filter(x=>x))].sort(), k);
-                let allPests = new Set(); dataRest.forEach(r => { try{ let obj=typeof r.p==='string'?JSON.parse(r.p):r.p; if(obj) Object.keys(obj).forEach(x=>allPests.add(x)) }catch(e){} });
-                updateDropdown('selPerosak', [...allPests].sort(), p);
+                const dataRest = mData.filter(r => (n.length===0 || n.includes(r.n)) && (d.length===0 || d.includes(r.d)) && (t.length===0 || t.includes(r.tn)));
+                updateDropdown('selKategori', [...new Set(dataRest.map(x=>x.kt).filter(x=>x))].sort(), k, 'k');
+                
+                let allPests = new Set(); 
+                dataRest.forEach(r => { try { let obj=typeof r.p==='string'?JSON.parse(r.p):r.p; if(obj) Object.keys(obj).forEach(x=>allPests.add(x)); } catch(err){} });
+                updateDropdown('selPerosak', [...allPests].sort(), p, 'p');
             }
             pg = 1; calcUI();
         }
-        function updateDropdown(id, list, curVal) { const el = document.getElementById(id); el.innerHTML = '<option value="">Semua</option>'; list.forEach(x => { let opt=document.createElement('option'); opt.value=x; opt.innerText=x; el.appendChild(opt); }); if(list.includes(curVal)) el.value = curVal; else el.value = ""; }
-        function v(id){ return document.getElementById(id).value; }
-        function fillSel(id, arr) { updateDropdown(id, arr, ""); }
-        function resetFilter(){ document.querySelectorAll('select:not(:disabled), input[type=date]').forEach(e=>e.value=""); runFilter('n'); }
+      function updateDropdown(id, list, curValArray, srcCode) { 
+            const menu = document.getElementById('list' + id); 
+            if(!menu) return;
+            menu.innerHTML = ''; 
+            list.forEach(x => { 
+                const isChecked = (curValArray && curValArray.includes(x)) ? 'checked' : '';
+                const cleanId = 'chk_' + id + '_' + x.replace(/[^a-zA-Z0-9]/g, '');
+                const div = document.createElement('div');
+                div.className = 'form-check mb-1';
+                // Lukis Checkbox
+                div.innerHTML = `<input class="form-check-input chk-${id}" type="checkbox" value="${x}" id="${cleanId}" ${isChecked}>
+                                 <label class="form-check-label w-100 text-truncate" style="font-size:0.85rem; cursor:pointer;" for="${cleanId}">${x}</label>`;
+                
+                // Arahan bila di-tick: Tukar teks butang & jalankan tapisan
+                div.querySelector('input').addEventListener('change', () => {
+                    updateBtnText(id);
+                    runFilter(srcCode);
+                });
+                menu.appendChild(div);
+            }); 
+            updateBtnText(id);
+        }
+
+        function updateBtnText(id) {
+            const btn = document.getElementById('btn' + id);
+            if(!btn) return;
+            const checked = Array.from(document.querySelectorAll('.chk-' + id + ':checked')).map(cb => cb.value);
+            if (checked.length === 0) { btn.innerText = '- Semua -'; btn.classList.remove('fw-bold','text-primary'); }
+            else if (checked.length === 1) { btn.innerText = checked[0]; btn.classList.add('fw-bold','text-primary'); }
+            else { btn.innerText = checked.length + ' Dipilih'; btn.classList.add('fw-bold','text-primary'); }
+        }
+
+        function v(id){ 
+            if(id === 'dS' || id === 'dE') { const el = document.getElementById(id); return el ? el.value : ""; }
+            const checkboxes = document.querySelectorAll('.chk-' + id + ':checked');
+            return Array.from(checkboxes).map(cb => cb.value); // Pulangkan dalam bentuk Array
+        }
+
+        function fillSel(id, arr, srcCode) { updateDropdown(id, arr, [], srcCode); }
+
+        function resetFilter(){ 
+            document.querySelectorAll('.form-check-input').forEach(cb => { if(!cb.disabled) cb.checked = false; });
+            document.querySelectorAll('input[type=date]').forEach(e => e.value=""); 
+            ['selNegeri', 'selDaerah', 'selTanaman', 'selPerosak', 'selKategori'].forEach(id => updateBtnText(id));
+            runFilter('n'); 
+        }
         function calcUI() {
             let tt=0, ts=0, pm={}, km={1:0,2:0,3:0,4:0,5:0}, pts=[], hData={};
             fData.forEach(d => {
