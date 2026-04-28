@@ -565,28 +565,27 @@ const stateBounds = {
         }); 
     }
 
-    function validateCoord(input) {
-        const val = input.value.trim();
-        const errDiv = document.getElementById('coordError');
-        const negeriDipilih = document.getElementById('negeriSelect').value;
-        const match = val.match(/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/);
-
-        if(errDiv) errDiv.style.display = 'none';
-        input.classList.remove('is-invalid');
-        if (val === "") return true;
-
-        if (!match) { showError(input, "Format salah! Guna: Lat, Long (4.2105, 101.9758)"); return false; }
-        const lat = parseFloat(match[1]); const lng = parseFloat(match[3]);
-
-        if (lat < 0.8 || lat > 7.5 || lng < 99.0 || lng > 120.0) { showError(input, "Koordinat LUAR MALAYSIA."); return false; }
-        if (negeriDipilih && stateBounds[negeriDipilih]) {
-            const b = stateBounds[negeriDipilih]; const buffer = 0.05;
-            if (lat < (b.minLat-buffer) || lat > (b.maxLat+buffer) || lng < (b.minLng-buffer) || lng > (b.maxLng+buffer)) {
-                showError(input, `Koordinat tidak sepadan dengan negeri ${negeriDipilih}.`); return false;
+    function validateCoord(inputEl) {
+            if(!inputEl) return false;
+            const val = inputEl.value.trim();
+            
+            // 1. Cek kalau kotak kosong
+            if (!val) {
+                Swal.fire('Ralat GPS', 'Sila dapatkan koordinat GPS terlebih dahulu.', 'error');
+                return false;
             }
+            
+            // 2. Cek format guna Regex (Mesti ada format: nombor, koma, nombor)
+            // Contoh yang LULUS: "3.1234, 101.5678" atau "3.1234,101.5678"
+            const regexKetat = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/;
+            
+            if (!regexKetat.test(val)) {
+                Swal.fire('Format GPS Tidak Sah', 'Sila pastikan koordinat mempunyai Latitud dan Longitud yang dipisahkan dengan koma (,).<br><br>Contoh yang betul: <b>3.1234, 101.5678</b>', 'warning');
+                return false;
+            }
+            
+            return true;
         }
-        return true;
-    }
 
     function showError(input, msg) {
         const errDiv = document.getElementById('coordError');
