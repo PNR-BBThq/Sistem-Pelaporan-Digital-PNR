@@ -961,7 +961,7 @@
                     const negeri = getVal('Negeri') || "-"; 
                     const daerah = getVal('Daerah') || "-"; 
                     const lokasi = getVal('Lokasi') || getVal('Kebun') || "-"; 
-                    const koordinat = getVal('Koordinat') || "-"; 
+                    const koordinat = String(getVal('Koordinat') || "-"); 
                     const tanaman = getVal('Nama Tanaman') || getVal('Tanaman') || "-"; 
                     const varieti = getVal('Varieti') || "-"; 
                     const umur = getVal('Umur') || "-"; 
