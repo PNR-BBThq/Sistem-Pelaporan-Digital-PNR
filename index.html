@@ -878,7 +878,7 @@
         }
         function updateHotspot(hData) { const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; }
         
-       function renTab() { 
+      function renTab() { 
             const st = (pg-1)*pSize; 
             const dt = fData.slice(st, st+pSize); 
             document.getElementById('tBody').innerHTML = dt.length ? dt.map((d, i) => { 
@@ -893,10 +893,10 @@
                     <td onclick="viewRec(${realIndex})" class="text-danger fw-bold">${d.ls.toFixed(2)}</td>
                     <td class="text-center">
                       <button class="btn btn-sm btn-danger" 
-                        data-lokasi="${rekod.l}" 
-                        data-pegawai="${rekod.pg}" 
-                        data-coord="${rekod.c}" 
-                        data-tarikh="${rekod.t}" 
+                        data-lokasi="${d.l}" 
+                        data-pegawai="${d.pg}" 
+                        data-coord="${d.c}" 
+                        data-tarikh="${d.t}" 
                         onclick="event.stopPropagation(); klikJanaPDF(this)">
                         <i class="bi bi-file-earmark-pdf-fill"></i> PDF
                     </button>
