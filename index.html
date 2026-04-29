@@ -892,12 +892,14 @@
                     <td onclick="viewRec(${realIndex})">${d.lt.toFixed(2)}</td>
                     <td onclick="viewRec(${realIndex})" class="text-danger fw-bold">${d.ls.toFixed(2)}</td>
                     <td class="text-center">
-                        <button class="btn btn-sm btn-outline-danger" title="Jana PDF" 
-                                data-lokasi="${d.l}" 
-                                data-pegawai="${d.pg}" 
-                                onclick="event.stopPropagation(); klikJanaPDF(this)">
-                            <i class="bi bi-file-earmark-pdf-fill"></i> PDF
-                        </button>
+                      <button class="btn btn-sm btn-danger" 
+                        data-lokasi="${rekod.l}" 
+                        data-pegawai="${rekod.pg}" 
+                        data-coord="${rekod.c}" 
+                        data-tarikh="${rekod.t}" 
+                        onclick="event.stopPropagation(); klikJanaPDF(this)">
+                        <i class="bi bi-file-earmark-pdf-fill"></i> PDF
+                    </button>
                     </td>
                 </tr>`; 
             }).join('') : '<tr><td colspan="7" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; 
