@@ -318,16 +318,29 @@
             </div>
 
             <div class="row g-3 mb-4">
+                
                 <div class="col-md-8">
                     <div class="card h-100 shadow-sm border-0">
-                        <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0"><h6 class="fw-bold text-secondary m-0">Carta Serangan Perosak Tertinggi (Ha)</h6></div>
-                        <div class="card-body px-4 pb-4"><div style="height: 350px"> <canvas id="cBar"></canvas> </div></div>
+                        <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold text-secondary m-0">Carta Serangan Perosak Tertinggi (Ha)</h6>
+                            <button id="btnBackPest" class="btn btn-sm btn-outline-secondary shadow-sm" style="display:none;" onclick="patahBalikCarta()">
+                                <i class="bi bi-arrow-left"></i> Kembali
+                            </button>
+                        </div>
+                        <div class="card-body px-4 pb-4">
+                            <div style="height: 350px"> 
+                                <canvas id="cBar"></canvas> 
+                            </div>
+                        </div>
                     </div>
                 </div>
+
                 <div class="col-md-4">
                     <div class="card h-100 shadow-sm border-0">
                         <div class="card-header bg-transparent border-0 py-3 d-flex align-items-center px-4 pt-4">
-                            <div class="icon-shape bg-warning text-white rounded-3 p-2 me-3 shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="bi bi-pie-chart-fill"></i></div>
+                            <div class="icon-shape bg-warning text-white rounded-3 p-2 me-3 shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <i class="bi bi-pie-chart-fill"></i>
+                            </div>
                             <h6 class="m-0 fw-bold text-secondary">Tahap Keterukan</h6>
                         </div>
                         <div class="card-body text-center position-relative px-4 pb-4">
@@ -345,7 +358,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
             <div class="row g-3 mb-4">
                 <div class="col-md-8"><div class="map-box shadow-sm" id="map"></div></div>
@@ -920,7 +932,7 @@
             document.getElementById('k4').innerText = fData.length.toLocaleString('en-US');
             updateCharts(pm, km); updateMap(pts); updateHotspot(hData); genSummary(pm, tt, ts); renTab();
         } 
-        function genSummary(pm, tt, ts) {
+       function genSummary(pm, tt, ts) {
             const el = document.getElementById('smartSummary');
             if (!el) return;
             if (ts === 0 || fData.length === 0) { el.innerHTML = `<div class="d-flex align-items-center"><div class="bg-light rounded-circle p-3 me-3 text-secondary"><i class="bi bi-robot fs-2"></i></div><div><h6 class="text-primary fw-bold mb-1">Analisis Pintar</h6><span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Tiada rekod serangan dilaporkan setakat ini.</span></div></div>`; return; }
@@ -944,22 +956,102 @@
             let locPct = topLoc.totalLT > 0 ? ((topLoc.totalLS / topLoc.totalLT) * 100).toFixed(2) : "0.00";
             el.innerHTML = `<div class="d-flex align-items-start"><div class="d-none d-sm-flex bg-white shadow-sm border rounded-circle p-3 me-4 align-items-center justify-content-center" style="width: 60px; height: 60px; flex-shrink: 0;"><i class="bi bi-robot fs-3 text-primary"></i></div><div style="flex-grow: 1;"><h6 class="text-primary fw-bold mb-3">Analisis Pintar</h6><div class="mb-2" style="font-size: 0.95rem;"><i class="bi bi-geo-alt-fill text-danger me-2"></i> Lokasi Hotspot: <b class="text-uppercase text-dark">${topLoc.daerah}, ${topLoc.negeri}</b></div><div class="mb-2" style="font-size: 0.95rem; line-height: 1.5;"><i class="bi bi-flower1 text-success me-2"></i> Tanaman <b class="text-uppercase text-dark">${topCrop}</b> paling terkesan akibat serangan <b class="text-uppercase text-dark">${topPest}</b></div><div class="mb-2" style="font-size: 0.95rem;"><i class="bi bi-exclamation-circle-fill text-warning me-2"></i> Luas Serangan: <b class="text-dark">${topLoc.totalLS.toFixed(2)} Ha</b> <span class="text-muted">(${locPct}%)</span></div><div style="font-size: 0.95rem;"><i class="bi bi-bar-chart-fill me-2" style="color: ${sevColor}"></i> Indeks Keterukan: <b class="text-dark">${avgSev}</b> - <span style="color: ${sevColor}; font-weight: bold;">${sevText}</span></div></div></div>`;
         }
-        function updateCharts(pm, km) { 
-            // CEK DULU: ADAKAH CHART.JS WUJUD?
-            if (typeof Chart === 'undefined') {
-                console.log("Chart.js tidak dimuatkan (Offline). Skip graf.");
-                document.getElementById('cBar').parentElement.innerHTML = '<div class="alert alert-light text-center border mt-5">Grafik tidak tersedia dalam mod Offline</div>';
-                document.getElementById('cPie').parentElement.innerHTML = '<div class="alert alert-light text-center border mt-5">Carta tidak tersedia</div>';
-                return;
+        var myPestChart = null; 
+        var chartLevel = 1; // 1: Perosak, 2: Tanaman, 3: Daerah
+        var pilihanPerosak = "";
+        var pilihanTanaman = "";
+
+        function lukisCartaPerosak(level, namaPest = "", namaTanaman = "") {
+            if (typeof Chart === 'undefined') return;
+            const ctx = document.getElementById('cBar').getContext('2d'); 
+            if(myPestChart) myPestChart.destroy();
+
+            let labelX = [], dataY = [], tajuk = "", warna = "";
+
+            if (level === 1) {
+                // LEVEL 1: TOP 10 PEROSAK
+                let kiraPerosak = {};
+                fData.forEach(item => {
+                    try {
+                        let pObj = typeof item.p === 'string' ? JSON.parse(item.p) : item.p;
+                        if(pObj) Object.entries(pObj).forEach(([nPest, luas]) => {
+                            kiraPerosak[nPest] = (kiraPerosak[nPest]||0) + parseFloat(luas);
+                        });
+                    } catch(e){}
+                });
+                let top10 = Object.entries(kiraPerosak).sort((a,b)=>b[1]-a[1]).slice(0,10);
+                labelX = top10.map(x=>x[0]); dataY = top10.map(x=>x[1]);
+                tajuk = "Top 10 Perosak Tertinggi (Ha)"; warna = "#ef4444"; // Merah
+                
+                chartLevel = 1;
+                document.getElementById('btnBackPest').style.display = 'none';
+            } 
+            else if (level === 2) {
+                // LEVEL 2: PECAHAN TANAMAN UNTUK 1 PEROSAK
+                let kiraTanaman = {};
+                fData.forEach(item => {
+                    try {
+                        let pObj = typeof item.p === 'string' ? JSON.parse(item.p) : item.p;
+                        if(pObj && pObj[namaPest]) kiraTanaman[item.tn] = (kiraTanaman[item.tn]||0) + parseFloat(pObj[namaPest]);
+                    } catch(e){}
+                });
+                let susun = Object.entries(kiraTanaman).sort((a,b)=>b[1]-a[1]);
+                labelX = susun.map(x=>x[0]); dataY = susun.map(x=>x[1]);
+                tajuk = `Tanaman Diserang: ${namaPest} (Ha)`; warna = "#eab308"; // Kuning
+                
+                chartLevel = 2; pilihanPerosak = namaPest;
+                document.getElementById('btnBackPest').style.display = 'inline-block';
+            } 
+            else if (level === 3) {
+                // LEVEL 3: PECAHAN DAERAH UNTUK 1 TANAMAN
+                let kiraDaerah = {};
+                fData.forEach(item => {
+                    try {
+                        let pObj = typeof item.p === 'string' ? JSON.parse(item.p) : item.p;
+                        if(pObj && pObj[namaPest] && item.tn === namaTanaman) kiraDaerah[item.d] = (kiraDaerah[item.d]||0) + parseFloat(pObj[namaPest]);
+                    } catch(e){}
+                });
+                let susun = Object.entries(kiraDaerah).sort((a,b)=>b[1]-a[1]);
+                labelX = susun.map(x=>x[0]); dataY = susun.map(x=>x[1]);
+                tajuk = `Daerah Terlibat: ${namaTanaman} - ${namaPest} (Ha)`; warna = "#3b82f6"; // Biru
+                
+                chartLevel = 3; pilihanTanaman = namaTanaman;
+                document.getElementById('btnBackPest').style.display = 'inline-block';
             }
 
-            // Kalau ada, baru lukis
-            const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); 
-            if(charts.b) charts.b.destroy(); 
-            charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); 
+            myPestChart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: labelX, datasets: [{ label: 'Luas Serangan (Ha)', data: dataY, backgroundColor: warna, borderRadius: 4 }] },
+                options: {
+                    indexAxis: 'y', // Biar melintang supaya senang baca teks panjang
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { title: { display: true, text: tajuk }, legend: { display: false } },
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const labelDiKlik = myPestChart.data.labels[index];
+                            if (chartLevel === 1) lukisCartaPerosak(2, labelDiKlik);
+                            else if (chartLevel === 2) lukisCartaPerosak(3, pilihanPerosak, labelDiKlik);
+                        }
+                    }
+                }
+            });
+        }
+
+        function patahBalikCarta() {
+            if (chartLevel === 3) lukisCartaPerosak(2, pilihanPerosak);
+            else if (chartLevel === 2) lukisCartaPerosak(1);
+        }
+
+        function updateCharts(pm, km) { 
+            if (typeof Chart === 'undefined') return;
             
+            // 1. Lukis Carta Pie (Keterukan) - Kekal macam asal Tuan
             if(charts.p) charts.p.destroy(); 
             charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); 
+
+            // 2. Lukis Carta Bar Interaktif (Level 1)
+            lukisCartaPerosak(1);
         }
         
         function updateMap(pts) { 
