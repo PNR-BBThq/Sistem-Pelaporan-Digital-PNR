@@ -20,7 +20,6 @@
         
         /* LOGIN & LAYOUT */
         #loginOverlay { position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center; background: #064e3b; }
-        .swal2-container { z-index: 9999999 !important; } /* Ubat supaya pop-up duduk di lapisan paling depan */
         .login-box { background: white; padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
         .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: #e8f5e9; border-right: 1px solid #c6e7ce; padding: 20px; z-index: 100; transition: transform 0.3s; display: flex; flex-direction: column; }
         .brand { font-size: 1.3rem; font-weight: 900; color: #000; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding-left: 10px; flex-shrink: 0; }
@@ -111,66 +110,13 @@
 </head>
 <body>
 
-  <div id="loginOverlay">
-        <div class="login-box" id="formLogin">
+    <div id="loginOverlay">
+        <div class="login-box">
             <div class="brand justify-content-center mb-4"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
             <h6 class="text-muted mb-4">Log Masuk Sistem</h6>
             <input type="text" id="uid" class="form-control mb-3 p-3" placeholder="ID Pengguna">
             <input type="password" id="pwd" class="form-control mb-4 p-3" placeholder="Kata Laluan">
             <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold p-3" id="btnLogin">MASUK</button>
-            
-            <div class="d-flex justify-content-between mt-3 px-2">
-                <a href="javascript:void(0)" onclick="lupaKatalaluan()" class="text-decoration-none small text-secondary fw-bold hover-primary">
-                    <i class="bi bi-question-circle me-1"></i> Lupa Kata Laluan?
-                </a>
-                <a href="javascript:void(0)" onclick="toggleDaftar(true)" class="text-decoration-none small text-primary fw-bold">
-                    <i class="bi bi-person-plus-fill me-1"></i> Daftar Akaun
-                </a>
-            </div>
-            <small id="loginMsg" class="text-danger d-block mt-3 fw-bold"></small>
-        </div>
-
-        <div class="login-box" id="formDaftar" style="display:none; max-width: 450px;">
-            <div class="brand justify-content-center mb-2"><i class="bi bi-person-badge me-2"></i> DAFTAR PENGGUNA</div>
-            <p class="text-muted small mb-4" style="line-height:1.2;">Isi maklumat di bawah. Akaun perlu diaktifkan oleh Admin sebelum boleh digunakan.</p>
-            
-            <div class="row g-2 text-start">
-                <div class="col-12"><label class="small fw-bold">Nama Penuh</label><input type="text" id="regNama" class="form-control form-control-sm text-uppercase"></div>
-                <div class="col-6"><label class="small fw-bold">No. K/P (Tanpa Sengkang)</label><input type="number" id="regIC" class="form-control form-control-sm" placeholder="Cth: 900101011234"></div>
-                <div class="col-6"><label class="small fw-bold">Jawatan</label><input type="text" id="regJawatan" class="form-control form-control-sm text-uppercase" placeholder="Cth: PEGAWAI PERTANIAN"></div>
-                
-                <div class="col-12"><label class="small fw-bold mt-1">Negeri Bertugas</label>
-                    <select id="regNegeri" class="form-select form-select-sm">
-                        <option value="">- Pilih Negeri -</option>
-                        <option value="HQ / IBU PEJABAT">HQ / IBU PEJABAT</option>
-                        <option value="Johor">Johor</option>
-                        <option value="Kedah">Kedah</option>
-                        <option value="Kelantan">Kelantan</option>
-                        <option value="Melaka">Melaka</option>
-                        <option value="Negeri Sembilan">Negeri Sembilan</option>
-                        <option value="Pahang">Pahang</option>
-                        <option value="Perak">Perak</option>
-                        <option value="Perlis">Perlis</option>
-                        <option value="Pulau Pinang">Pulau Pinang</option>
-                        <option value="Sabah">Sabah</option>
-                        <option value="Sarawak">Sarawak</option>
-                        <option value="Selangor">Selangor</option>
-                        <option value="Terengganu">Terengganu</option>
-                        <option value="W.P. Kuala Lumpur">W.P. Kuala Lumpur</option>
-                        <option value="W.P. Labuan">W.P. Labuan</option>
-                        <option value="W.P. Putrajaya">W.P. Putrajaya</option>
-                    </select>
-                </div>
-                
-                <div class="col-6 mt-3"><label class="small fw-bold text-success">Username Pilihan</label><input type="text" id="regUid" class="form-control form-control-sm"></div>
-                <div class="col-6 mt-3"><label class="small fw-bold text-success">Kata Laluan</label><input type="password" id="regPwd" class="form-control form-control-sm"></div>
-            </div>
-            
-            <button type="button" onclick="doRegister()" class="btn btn-primary w-100 fw-bold p-2 mt-4 shadow-sm" id="btnReg">HANTAR PENDAFTARAN</button>
-            <button type="button" onclick="toggleDaftar(false)" class="btn btn-light text-secondary border w-100 fw-bold p-2 mt-2">KEMBALI KE LOG MASUK</button>
-        </div>
-    </div>
-
             <small id="loginMsg" class="text-danger d-block mt-3 fw-bold"></small>
         </div>
     </div>
@@ -192,11 +138,6 @@
                 <span><i class="bi bi-check-circle-fill me-2"></i> Pengesahan</span>
                 <span class="badge-pending" id="badgePending">0</span>
             </div>
-            
-            <div class="nav-item bg-dark text-white shadow-sm mt-2" id="navUsers" style="display:none" onclick="switchTab('users', this)">
-                <span><i class="bi bi-people-fill me-2 text-warning"></i> Urus Pengguna</span>
-            </div>
-            
             <hr class="my-4" style="color: #000;">
             
             <div class="mb-3 px-2">
@@ -318,29 +259,16 @@
             </div>
 
             <div class="row g-3 mb-4">
-                
                 <div class="col-md-8">
                     <div class="card h-100 shadow-sm border-0">
-                        <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
-                            <h6 class="fw-bold text-secondary m-0">Carta Serangan Perosak Tertinggi (Ha)</h6>
-                            <button id="btnBackPest" class="btn btn-sm btn-outline-secondary shadow-sm" style="display:none;" onclick="patahBalikCarta()">
-                                <i class="bi bi-arrow-left"></i> Kembali
-                            </button>
-                        </div>
-                        <div class="card-body px-4 pb-4">
-                            <div style="height: 350px"> 
-                                <canvas id="cBar"></canvas> 
-                            </div>
-                        </div>
+                        <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0"><h6 class="fw-bold text-secondary m-0">Carta Serangan Perosak Tertinggi (Ha)</h6></div>
+                        <div class="card-body px-4 pb-4"><div style="height: 350px"> <canvas id="cBar"></canvas> </div></div>
                     </div>
                 </div>
-
                 <div class="col-md-4">
                     <div class="card h-100 shadow-sm border-0">
                         <div class="card-header bg-transparent border-0 py-3 d-flex align-items-center px-4 pt-4">
-                            <div class="icon-shape bg-warning text-white rounded-3 p-2 me-3 shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                <i class="bi bi-pie-chart-fill"></i>
-                            </div>
+                            <div class="icon-shape bg-warning text-white rounded-3 p-2 me-3 shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="bi bi-pie-chart-fill"></i></div>
                             <h6 class="m-0 fw-bold text-secondary">Tahap Keterukan</h6>
                         </div>
                         <div class="card-body text-center position-relative px-4 pb-4">
@@ -358,6 +286,7 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
             <div class="row g-3 mb-4">
                 <div class="col-md-8"><div class="map-box shadow-sm" id="map"></div></div>
@@ -436,35 +365,7 @@
     allow="geolocation">
 </iframe>
         </div>
-<div id="view-users" style="display:none">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold m-0 text-dark"><i class="bi bi-people-fill me-2"></i>Pengurusan Pengguna</h4>
-                <button class="btn btn-primary btn-sm px-3 shadow-sm" onclick="loadUsers()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
-            </div>
-            
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body p-4">
-                    <input type="text" id="searchUser" class="form-control form-control-lg mb-4 bg-light border-0" placeholder="Cari Nama / No K/P / Username..." onkeyup="filterUsers()">
-                    
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle" style="font-size: 0.85rem;">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-uppercase">Nama Pegawai & Jawatan</th>
-                                    <th class="text-uppercase">No. K/P</th>
-                                    <th class="text-uppercase">Akses Login (ID/Pass)</th>
-                                    <th class="text-uppercase">Peranan</th>
-                                    <th class="text-uppercase text-center">Status</th>
-                                    <th class="text-uppercase text-center">Tindakan</th>
-                                </tr>
-                            </thead>
-                            <tbody id="userTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
+
     </div>
 
     <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
@@ -551,26 +452,17 @@
         let currentHeaders = []; 
         let pestMasterData = {}; 
 
-       async function postData(act, load) {
+        async function postData(act, load) {
             try {
                 let payload;
-                // Laluan Bebas (Tanpa Token)
-                const laluanBebas = ['login', 'registerUser', 'verifyForgotPwd', 'updateMyAccess'];
-                
-                if (laluanBebas.includes(act)) { 
-                    payload = { action: act, ...load }; 
-                } else { 
-                    payload = { action: act, token: userToken, u: currentUserID, ...load }; 
-                }
+                if (act === 'login') { payload = { action: act, ...load }; } 
+                else { payload = { action: act, token: userToken, u: currentUserID, ...load }; }
                 
                 const res = await fetch(`${API_URL}?action=${act}`, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
                 const r = JSON.parse(await res.text());
 
-                if (!laluanBebas.includes(act) && r.success === false && r.message && (r.message.includes("sesi") || r.message.includes("token"))) {
-                    alert("⛔ Sesi tamat. Sila log masuk semula."); 
-                    localStorage.removeItem('pnr_session'); 
-                    location.reload(); 
-                    return { success: false }; 
+                if (r.success === false && r.message && (r.message.includes("sesi") || r.message.includes("token"))) {
+                    alert("⛔ Sesi tamat. Sila log masuk semula."); localStorage.removeItem('pnr_session'); location.reload(); return { success: false }; 
                 }
                 return r;
             } catch(e) { console.error(e); return {success:false, message:"Ralat sambungan."}; }
@@ -621,7 +513,7 @@
             }
         }
 
-          function applyLogin(r, token, uid) {
+        function applyLogin(r, token, uid) {
             uProf = r; userToken = token; currentUserID = uid;
             document.getElementById('uDisp').innerText = r.name; 
             document.getElementById('loginOverlay').style.display = 'none';
@@ -636,9 +528,6 @@
                 if(document.getElementById('mobNavTasks')) document.getElementById('mobNavTasks').style.display = "flex";
             }
             
-            if((r.role||"").toUpperCase() === "ADMIN") {
-                document.getElementById('navUsers').style.display = "flex";
-            }
             document.getElementById('navTasks').style.display = "flex";
             
             loadMasterData(); 
@@ -693,8 +582,7 @@
             }
 
             // Tukar skrin utama
-           // Tukar skrin utama (TAMBAH 'view-users' DALAM SENARAI)
-            ['view-main','view-verify','view-tasks','view-form', 'view-users'].forEach(v => {
+            ['view-main','view-verify','view-tasks','view-form'].forEach(v => {
                 const view = document.getElementById(v);
                 if(view) view.style.display = 'none';
             });
@@ -704,7 +592,6 @@
 
             if(t==='verify') loadPend();
             if(t==='tasks') loadMyTasks();
-            if(t==='users') loadUsers();
             if(t==='main' && map) setTimeout(() => map.invalidateSize(), 300);
             
             // Tutup sidebar filter di telefon (kalau tengah terbuka)
@@ -932,7 +819,7 @@
             document.getElementById('k4').innerText = fData.length.toLocaleString('en-US');
             updateCharts(pm, km); updateMap(pts); updateHotspot(hData); genSummary(pm, tt, ts); renTab();
         } 
-       function genSummary(pm, tt, ts) {
+        function genSummary(pm, tt, ts) {
             const el = document.getElementById('smartSummary');
             if (!el) return;
             if (ts === 0 || fData.length === 0) { el.innerHTML = `<div class="d-flex align-items-center"><div class="bg-light rounded-circle p-3 me-3 text-secondary"><i class="bi bi-robot fs-2"></i></div><div><h6 class="text-primary fw-bold mb-1">Analisis Pintar</h6><span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Tiada rekod serangan dilaporkan setakat ini.</span></div></div>`; return; }
@@ -956,102 +843,22 @@
             let locPct = topLoc.totalLT > 0 ? ((topLoc.totalLS / topLoc.totalLT) * 100).toFixed(2) : "0.00";
             el.innerHTML = `<div class="d-flex align-items-start"><div class="d-none d-sm-flex bg-white shadow-sm border rounded-circle p-3 me-4 align-items-center justify-content-center" style="width: 60px; height: 60px; flex-shrink: 0;"><i class="bi bi-robot fs-3 text-primary"></i></div><div style="flex-grow: 1;"><h6 class="text-primary fw-bold mb-3">Analisis Pintar</h6><div class="mb-2" style="font-size: 0.95rem;"><i class="bi bi-geo-alt-fill text-danger me-2"></i> Lokasi Hotspot: <b class="text-uppercase text-dark">${topLoc.daerah}, ${topLoc.negeri}</b></div><div class="mb-2" style="font-size: 0.95rem; line-height: 1.5;"><i class="bi bi-flower1 text-success me-2"></i> Tanaman <b class="text-uppercase text-dark">${topCrop}</b> paling terkesan akibat serangan <b class="text-uppercase text-dark">${topPest}</b></div><div class="mb-2" style="font-size: 0.95rem;"><i class="bi bi-exclamation-circle-fill text-warning me-2"></i> Luas Serangan: <b class="text-dark">${topLoc.totalLS.toFixed(2)} Ha</b> <span class="text-muted">(${locPct}%)</span></div><div style="font-size: 0.95rem;"><i class="bi bi-bar-chart-fill me-2" style="color: ${sevColor}"></i> Indeks Keterukan: <b class="text-dark">${avgSev}</b> - <span style="color: ${sevColor}; font-weight: bold;">${sevText}</span></div></div></div>`;
         }
-        var myPestChart = null; 
-        var chartLevel = 1; // 1: Perosak, 2: Tanaman, 3: Daerah
-        var pilihanPerosak = "";
-        var pilihanTanaman = "";
-
-        function lukisCartaPerosak(level, namaPest = "", namaTanaman = "") {
-            if (typeof Chart === 'undefined') return;
-            const ctx = document.getElementById('cBar').getContext('2d'); 
-            if(myPestChart) myPestChart.destroy();
-
-            let labelX = [], dataY = [], tajuk = "", warna = "";
-
-            if (level === 1) {
-                // LEVEL 1: TOP 10 PEROSAK
-                let kiraPerosak = {};
-                fData.forEach(item => {
-                    try {
-                        let pObj = typeof item.p === 'string' ? JSON.parse(item.p) : item.p;
-                        if(pObj) Object.entries(pObj).forEach(([nPest, luas]) => {
-                            kiraPerosak[nPest] = (kiraPerosak[nPest]||0) + parseFloat(luas);
-                        });
-                    } catch(e){}
-                });
-                let top10 = Object.entries(kiraPerosak).sort((a,b)=>b[1]-a[1]).slice(0,10);
-                labelX = top10.map(x=>x[0]); dataY = top10.map(x=>x[1]);
-                tajuk = "Top 10 Perosak Tertinggi (Ha)"; warna = "#ef4444"; // Merah
-                
-                chartLevel = 1;
-                document.getElementById('btnBackPest').style.display = 'none';
-            } 
-            else if (level === 2) {
-                // LEVEL 2: PECAHAN TANAMAN UNTUK 1 PEROSAK
-                let kiraTanaman = {};
-                fData.forEach(item => {
-                    try {
-                        let pObj = typeof item.p === 'string' ? JSON.parse(item.p) : item.p;
-                        if(pObj && pObj[namaPest]) kiraTanaman[item.tn] = (kiraTanaman[item.tn]||0) + parseFloat(pObj[namaPest]);
-                    } catch(e){}
-                });
-                let susun = Object.entries(kiraTanaman).sort((a,b)=>b[1]-a[1]);
-                labelX = susun.map(x=>x[0]); dataY = susun.map(x=>x[1]);
-                tajuk = `Tanaman Diserang: ${namaPest} (Ha)`; warna = "#eab308"; // Kuning
-                
-                chartLevel = 2; pilihanPerosak = namaPest;
-                document.getElementById('btnBackPest').style.display = 'inline-block';
-            } 
-            else if (level === 3) {
-                // LEVEL 3: PECAHAN DAERAH UNTUK 1 TANAMAN
-                let kiraDaerah = {};
-                fData.forEach(item => {
-                    try {
-                        let pObj = typeof item.p === 'string' ? JSON.parse(item.p) : item.p;
-                        if(pObj && pObj[namaPest] && item.tn === namaTanaman) kiraDaerah[item.d] = (kiraDaerah[item.d]||0) + parseFloat(pObj[namaPest]);
-                    } catch(e){}
-                });
-                let susun = Object.entries(kiraDaerah).sort((a,b)=>b[1]-a[1]);
-                labelX = susun.map(x=>x[0]); dataY = susun.map(x=>x[1]);
-                tajuk = `Daerah Terlibat: ${namaTanaman} - ${namaPest} (Ha)`; warna = "#3b82f6"; // Biru
-                
-                chartLevel = 3; pilihanTanaman = namaTanaman;
-                document.getElementById('btnBackPest').style.display = 'inline-block';
+        function updateCharts(pm, km) { 
+            // CEK DULU: ADAKAH CHART.JS WUJUD?
+            if (typeof Chart === 'undefined') {
+                console.log("Chart.js tidak dimuatkan (Offline). Skip graf.");
+                document.getElementById('cBar').parentElement.innerHTML = '<div class="alert alert-light text-center border mt-5">Grafik tidak tersedia dalam mod Offline</div>';
+                document.getElementById('cPie').parentElement.innerHTML = '<div class="alert alert-light text-center border mt-5">Carta tidak tersedia</div>';
+                return;
             }
 
-            myPestChart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: labelX, datasets: [{ label: 'Luas Serangan (Ha)', data: dataY, backgroundColor: warna, borderRadius: 4 }] },
-                options: {
-                    indexAxis: 'y', // Biar melintang supaya senang baca teks panjang
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { title: { display: true, text: tajuk }, legend: { display: false } },
-                    onClick: (event, elements) => {
-                        if (elements.length > 0) {
-                            const index = elements[0].index;
-                            const labelDiKlik = myPestChart.data.labels[index];
-                            if (chartLevel === 1) lukisCartaPerosak(2, labelDiKlik);
-                            else if (chartLevel === 2) lukisCartaPerosak(3, pilihanPerosak, labelDiKlik);
-                        }
-                    }
-                }
-            });
-        }
-
-        function patahBalikCarta() {
-            if (chartLevel === 3) lukisCartaPerosak(2, pilihanPerosak);
-            else if (chartLevel === 2) lukisCartaPerosak(1);
-        }
-
-        function updateCharts(pm, km) { 
-            if (typeof Chart === 'undefined') return;
+            // Kalau ada, baru lukis
+            const tp = Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10); 
+            if(charts.b) charts.b.destroy(); 
+            charts.b = new Chart(document.getElementById('cBar'), { type: 'bar', data: { labels: tp.map(x=>x[0]), datasets: [{ label: 'Ha', data: tp.map(x=>x[1]), backgroundColor: '#10b981', borderRadius:4 }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} } }); 
             
-            // 1. Lukis Carta Pie (Keterukan) - Kekal macam asal Tuan
             if(charts.p) charts.p.destroy(); 
             charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); 
-
-            // 2. Lukis Carta Bar Interaktif (Level 1)
-            lukisCartaPerosak(1);
         }
         
         function updateMap(pts) { 
@@ -1815,297 +1622,6 @@
                 Swal.fire('Ralat API', 'Gagal berhubung dengan pelayan. Sila cuba lagi.', 'error');
             }
         }
-// ==========================================
-        // FUNGSI PENDAFTARAN AKAUN BARU (SWEETALERT2)
-        // ==========================================
-        async function toggleDaftar() {
-            const { value: formValues } = await Swal.fire({
-                title: 'Daftar Akaun Baru',
-                width: '500px',
-                html: `
-                    <div class="text-start mt-3" style="font-size: 0.9rem;">
-                        <div class="alert alert-info py-2 small mb-3"><i class="bi bi-info-circle-fill"></i> Akaun baru perlu disahkan oleh Admin sebelum boleh digunakan.</div>
-                        
-                        <label class="fw-bold mb-1 text-secondary">Nama Penuh (Seperti Kad Pengenalan)</label>
-                        <input id="reg-nama" class="form-control form-control-sm mb-3 text-uppercase" placeholder="Nama penuh anda">
-                        
-                        <div class="row g-2 mb-3">
-                            <div class="col-6">
-                                <label class="fw-bold mb-1 text-secondary">No. K/P (Tanpa Sengkang)</label>
-                                <input id="reg-ic" type="number" class="form-control form-control-sm" placeholder="900101011234">
-                            </div>
-                            <div class="col-6">
-                                <label class="fw-bold mb-1 text-secondary">Jawatan</label>
-                                <input id="reg-jawatan" class="form-control form-control-sm text-uppercase" placeholder="Cth: PEGAWAI PERTANIAN">
-                            </div>
-                        </div>
-                        
-                        <label class="fw-bold mb-1 text-secondary">Negeri Bertugas</label>
-                        <select id="reg-negeri" class="form-select form-select-sm mb-4">
-                            <option value="">- Pilih Negeri -</option>
-                            <option value="JOHOR">JOHOR</option>
-                            <option value="KEDAH">KEDAH</option>
-                            <option value="KELANTAN">KELANTAN</option>
-                            <option value="MELAKA">MELAKA</option>
-                            <option value="NEGERI SEMBILAN">NEGERI SEMBILAN</option>
-                            <option value="PAHANG">PAHANG</option>
-                            <option value="PERAK">PERAK</option>
-                            <option value="PERLIS">PERLIS</option>
-                            <option value="PULAU PINANG">PULAU PINANG</option>
-                            <option value="SABAH">SABAH</option>
-                            <option value="SARAWAK">SARAWAK</option>
-                            <option value="SELANGOR">SELANGOR</option>
-                            <option value="TERENGGANU">TERENGGANU</option>
-                            <option value="W.P. KUALA LUMPUR">W.P. KUALA LUMPUR</option>
-                            <option value="W.P. LABUAN">W.P. LABUAN</option>
-                            <option value="W.P. PUTRAJAYA">W.P. PUTRAJAYA</option>
-                        </select>
-
-                        <hr class="my-3 text-muted">
-
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="fw-bold mb-1 text-primary">ID Pengguna (Username)</label>
-                                <input id="reg-uid" class="form-control form-control-sm text-lowercase" placeholder="Pilih username anda">
-                            </div>
-                            <div class="col-6">
-                                <label class="fw-bold mb-1 text-danger">Kata Laluan</label>
-                                <input id="reg-pwd" type="password" class="form-control form-control-sm" placeholder="Pilih kata laluan">
-                            </div>
-                        </div>
-                    </div>
-                `,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: '<i class="bi bi-person-plus-fill me-1"></i> Hantar Pendaftaran',
-                cancelButtonText: 'Batal',
-                confirmButtonColor: '#198754',
-                preConfirm: () => {
-                    const nama = document.getElementById('reg-nama').value.trim();
-                    const ic = document.getElementById('reg-ic').value.trim();
-                    const jawatan = document.getElementById('reg-jawatan').value.trim();
-                    const negeri = document.getElementById('reg-negeri').value;
-                    const uid = document.getElementById('reg-uid').value.trim();
-                    const pwd = document.getElementById('reg-pwd').value.trim();
-
-                    if(!nama || !ic || !jawatan || !negeri || !uid || !pwd) {
-                        Swal.showValidationMessage('Sila isi SEMUA maklumat yang diwajibkan!');
-                        return false;
-                    }
-                    
-                    // Kembalikan data dalam format yang Backend perlukan
-                    return { 
-                        nama: nama.toUpperCase(), 
-                        ic: ic, 
-                        jawatan: jawatan.toUpperCase(), 
-                        negeri: negeri, 
-                        uid: uid.toLowerCase(), 
-                        pwd: pwd,
-                        role: "STAF",        // Default sistem
-                        status: "MENUNGGU",  // Default sistem
-                        catatan: "Didaftar melalui PWA"
-                    };
-                }
-            });
-
-            if (formValues) {
-                Swal.fire({ 
-                    title: 'Menghantar Pendaftaran...', 
-                    allowOutsideClick: false, 
-                    showConfirmButton: false, 
-                    didOpen: () => Swal.showLoading() 
-                });
-                
-                // Panggil API registerUser di Backend
-                const r = await postData('registerUser', formValues);
-                
-                if (r.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berjaya!',
-                        text: r.message,
-                        confirmButtonColor: '#198754'
-                    });
-                } else {
-                    Swal.fire('Gagal Mendaftar', r.message, 'error');
-                }
-            }
-        }
-
-
-        
-        // ==========================================
-        // FUNGSI LUPA KATA LALUAN (SEMAKAN IC & NAMA)
-        // ==========================================
-        async function lupaKatalaluan() {
-            const { value: formValues } = await Swal.fire({
-                title: 'Lupa Akses Log Masuk?',
-                html: `
-                    <div class="text-start mt-3">
-                        <label class="small fw-bold">Nama Penuh</label>
-                        <input id="swal-nama" class="form-control mb-3 text-uppercase" placeholder="Sama seperti dalam sistem">
-                        <label class="small fw-bold">No. K/P (Tanpa Sengkang)</label>
-                        <input id="swal-ic" type="number" class="form-control" placeholder="Cth: 900101011234">
-                    </div>
-                `,
-                focusConfirm: false, showCancelButton: true, confirmButtonText: 'Semak Data', cancelButtonText: 'Batal',
-                preConfirm: () => {
-                    const nama = document.getElementById('swal-nama').value.trim();
-                    const ic = document.getElementById('swal-ic').value.trim();
-                    if(!nama || !ic) { Swal.showValidationMessage('Sila isi kedua-dua maklumat!'); return false; }
-                    return { nama, ic };
-                }
-            });
-
-            if (formValues) {
-                Swal.fire({ title: 'Menyemak Data...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
-                const r = await postData('verifyForgotPwd', formValues);
-
-                if (r.success) {
-                    const { value: updateValues } = await Swal.fire({
-                        title: 'Rekod Dijumpai!',
-                        html: `
-                            <div class="alert alert-success small mb-3">Kekalkan atau tukar kata laluan baru di sini.</div>
-                            <div class="text-start">
-                                <label class="small fw-bold text-success">Username</label>
-                                <input id="upd-uid" class="form-control mb-3" value="${r.uid}">
-                                <label class="small fw-bold text-success">Kata Laluan</label>
-                                <input id="upd-pwd" class="form-control" value="${r.pwd}">
-                            </div>
-                        `,
-                        showCancelButton: true, confirmButtonText: '<i class="bi bi-save"></i> Simpan & Log Masuk', cancelButtonText: 'Tutup',
-                        preConfirm: () => {
-                            const uid = document.getElementById('upd-uid').value.trim();
-                            const pwd = document.getElementById('upd-pwd').value.trim();
-                            if(!uid || !pwd) { Swal.showValidationMessage('Tidak boleh kosong!'); return false; }
-                            return { uid, pwd, row: r.row };
-                        }
-                    });
-
-                    if (updateValues) {
-                        Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
-                        const u = await postData('updateMyAccess', updateValues);
-                        if (u.success) {
-                            Swal.fire('Berjaya!', 'Akses telah dikemaskini.', 'success');
-                            document.getElementById('uid').value = updateValues.uid;
-                            document.getElementById('pwd').value = updateValues.pwd;
-                        } else { Swal.fire('Ralat', u.message, 'error'); }
-                    }
-                } else { Swal.fire('Tidak Dijumpai', r.message, 'error'); }
-            }
-        }
-
-        // ==========================================
-        // FUNGSI PENGURUSAN PENGGUNA (ADMIN PANEL)
-        // ==========================================
-        let allUsersData = [];
-
-        async function loadUsers() {
-            const tbody = document.getElementById('userTableBody');
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-5"><div class="spinner-border text-primary"></div></td></tr>';
-            try {
-                const d = await postData('getUserList', {});
-                if(d.success) {
-                    allUsersData = d.users || [];
-                    renderUsers(allUsersData);
-                } else { tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${d.message}</td></tr>`; }
-            } catch(e) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Ralat memuatkan senarai pengguna.</td></tr>'; }
-        }
-
-        function renderUsers(dataList) {
-            const tbody = document.getElementById('userTableBody');
-            if(dataList.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tiada data dijumpai.</td></tr>'; return; }
-            
-            tbody.innerHTML = dataList.map(u => {
-                let statusBadge = u.status.toUpperCase() === 'AKTIF' ? '<span class="badge bg-success">AKTIF</span>' : 
-                                  u.status.toUpperCase() === 'MENUNGGU' ? '<span class="badge bg-warning text-dark">MENUNGGU</span>' :
-                                  '<span class="badge bg-danger">' + u.status.toUpperCase() + '</span>';
-                                  
-                let actionBtn = u.status.toUpperCase() === 'MENUNGGU' ? 
-                    `<button class="btn btn-sm btn-success fw-bold me-1" onclick="updateUserStatus(${u.row}, 'AKTIF')"><i class="bi bi-check-lg"></i> LULUS</button>` : '';
-                
-                return `
-                <tr>
-                    <td><div class="fw-bold text-dark text-uppercase">${u.nama}</div><div class="small text-muted">${u.jawatan} - ${u.negeri}</div></td>
-                    <td>${maskIC(u.ic)}</td>
-                    <td>
-                        <span class="d-block small text-primary fw-bold"><i class="bi bi-person me-1"></i>${u.uid}</span>
-                        <span class="d-block small text-danger fw-bold"><i class="bi bi-key me-1"></i>${u.pwd}</span>
-                    </td>
-                    <td><span class="badge bg-light text-dark border">${u.role}</span></td>
-                    <td class="text-center">${statusBadge}</td>
-                    <td class="text-center">
-                        ${actionBtn}
-                        <button class="btn btn-sm btn-outline-primary" onclick="editUser(${u.row})" title="Kemaskini"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteUser(${u.row})" title="Padam Akaun"><i class="bi bi-trash-fill"></i></button>
-                    </td>
-                </tr>`;
-            }).join('');
-        }
-
-        function filterUsers() {
-            const term = document.getElementById('searchUser').value.toLowerCase();
-            const filtered = allUsersData.filter(u => (u.nama && u.nama.toLowerCase().includes(term)) || (u.ic && String(u.ic).includes(term)) || (u.uid && u.uid.toLowerCase().includes(term)));
-            renderUsers(filtered);
-        }
-
-        async function updateUserStatus(row, newStatus) {
-            if(!confirm(`Tukar status kepada ${newStatus}?`)) return;
-            const r = await postData('updateUser', { row: row, field: 'status', value: newStatus });
-            if(r.success) { loadUsers(); } else { alert("Ralat: " + r.message); }
-        }
-
-        async function deleteUser(row) {
-            const res = await Swal.fire({
-                title: 'Padam Akaun?', text: "Tindakan ini KEKAL!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6c757d', confirmButtonText: '<i class="bi bi-trash"></i> Ya, Padam!', cancelButtonText: 'Batal'
-            });
-            if (res.isConfirmed) {
-                Swal.fire({ title: 'Memadam...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                const r = await postData('deleteUser', { row: row });
-                if (r.success) { Swal.fire('Berjaya!', 'Akaun dipadam.', 'success'); loadUsers(); } else { Swal.fire('Ralat', r.message, 'error'); }
-            }
-        }
-
-        async function editUser(row) {
-            const u = allUsersData.find(x => x.row === row);
-            if(!u) return;
-            
-            const { value: formValues } = await Swal.fire({
-                title: 'Kemaskini Pengguna', width: '600px',
-                html: `
-                    <div class="text-start row g-3">
-                        <div class="col-12"><label class="small fw-bold">Nama Penuh</label><input id="swal-nama" class="form-control form-control-sm text-uppercase" value="${u.nama}"></div>
-                        <div class="col-6"><label class="small fw-bold">No. K/P</label><input id="swal-ic" type="number" class="form-control form-control-sm" value="${u.ic}"></div>
-                        <div class="col-6"><label class="small fw-bold">Jawatan</label><input id="swal-jawatan" class="form-control form-control-sm text-uppercase" value="${u.jawatan}"></div>
-                        <div class="col-12"><label class="small fw-bold">Negeri Bertugas</label><select id="swal-negeri" class="form-select form-select-sm"><option value="HQ / IBU PEJABAT" ${u.negeri==='HQ / IBU PEJABAT'?'selected':''}>HQ / IBU PEJABAT</option><option value="Johor" ${u.negeri==='Johor'?'selected':''}>Johor</option><option value="Kedah" ${u.negeri==='Kedah'?'selected':''}>Kedah</option><option value="Kelantan" ${u.negeri==='Kelantan'?'selected':''}>Kelantan</option><option value="Melaka" ${u.negeri==='Melaka'?'selected':''}>Melaka</option><option value="Negeri Sembilan" ${u.negeri==='Negeri Sembilan'?'selected':''}>Negeri Sembilan</option><option value="Pahang" ${u.negeri==='Pahang'?'selected':''}>Pahang</option><option value="Perak" ${u.negeri==='Perak'?'selected':''}>Perak</option><option value="Perlis" ${u.negeri==='Perlis'?'selected':''}>Perlis</option><option value="Pulau Pinang" ${u.negeri==='Pulau Pinang'?'selected':''}>Pulau Pinang</option><option value="Sabah" ${u.negeri==='Sabah'?'selected':''}>Sabah</option><option value="Sarawak" ${u.negeri==='Sarawak'?'selected':''}>Sarawak</option><option value="Selangor" ${u.negeri==='Selangor'?'selected':''}>Selangor</option><option value="Terengganu" ${u.negeri==='Terengganu'?'selected':''}>Terengganu</option><option value="W.P. Kuala Lumpur" ${u.negeri==='W.P. Kuala Lumpur'?'selected':''}>W.P. Kuala Lumpur</option><option value="W.P. Labuan" ${u.negeri==='W.P. Labuan'?'selected':''}>W.P. Labuan</option><option value="W.P. Putrajaya" ${u.negeri==='W.P. Putrajaya'?'selected':''}>W.P. Putrajaya</option></select></div>
-                        <div class="col-6 mt-3"><label class="small fw-bold text-primary">Username</label><input id="swal-uid" class="form-control form-control-sm" value="${u.uid}"></div>
-                        <div class="col-6 mt-3"><label class="small fw-bold text-danger">Password</label><input id="swal-pwd" class="form-control form-control-sm" value="${u.pwd}"></div>
-                        <div class="col-6 mt-3"><label class="small fw-bold">Peranan</label><select id="swal-role" class="form-select form-select-sm"><option value="STAF" ${u.role==='STAF'?'selected':''}>STAF</option><option value="PENYELIA" ${u.role==='PENYELIA'?'selected':''}>PENYELIA</option><option value="ADMIN" ${u.role==='ADMIN'?'selected':''}>ADMIN</option></select></div>
-                        <div class="col-6 mt-3"><label class="small fw-bold text-warning">Status Akaun</label><select id="swal-status" class="form-select form-select-sm"><option value="AKTIF" ${u.status.toUpperCase()==='AKTIF'?'selected':''}>AKTIF</option><option value="MENUNGGU" ${u.status.toUpperCase()==='MENUNGGU'?'selected':''}>MENUNGGU</option><option value="DITOLAK" ${u.status.toUpperCase()==='DITOLAK'?'selected':''}>DITOLAK</option><option value="DIGANTUNG" ${u.status.toUpperCase()==='DIGANTUNG'?'selected':''}>DIGANTUNG</option></select></div>
-                    </div>
-                `,
-                focusConfirm: false, showCancelButton: true, confirmButtonText: 'Simpan',
-                preConfirm: () => {
-                    return {
-                        row: u.row, uid: document.getElementById('swal-uid').value.trim(), pwd: document.getElementById('swal-pwd').value.trim(), nama: document.getElementById('swal-nama').value.trim().toUpperCase(), negeri: document.getElementById('swal-negeri').value, role: document.getElementById('swal-role').value, jawatan: document.getElementById('swal-jawatan').value.trim().toUpperCase(), ic: document.getElementById('swal-ic').value.trim(), status: document.getElementById('swal-status').value
-                    }
-                }
-            });
-            if (formValues) {
-                Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                const r = await postData('updateUser', { field: 'full_edit', ...formValues });
-                if(r.success) { Swal.fire('Berjaya!', 'Maklumat pengguna dikemaskini.', 'success'); loadUsers(); } else { Swal.fire('Ralat', r.message, 'error'); }
-            }
-        }
-
-      // --- FUNGSI TUTUP NO IC (MASKING) ---
-function maskIC(ic) {
-    if (!ic || ic.length < 12) return ic;
-    // Contoh output: 900101-**-1234
-    let clean = ic.replace(/[^0-9]/g, ""); // Buang sengkang jika ada
-    return clean.substring(0, 6) + "-**-" + clean.substring(10);
-}
-        
     </script>
 </body>
 </html>
