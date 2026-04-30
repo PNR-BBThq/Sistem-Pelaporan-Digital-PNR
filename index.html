@@ -554,31 +554,31 @@
         let currentHeaders = []; 
         let pestMasterData = {}; 
 
-       async function postData(act, load) {
-            try {
-                let payload;
-                // Laluan Bebas (Tanpa Token)
-                const laluanBebas = ['login', 'registerUser', 'verifyForgotPwd', 'updateMyAccess'];
-                
-                if (laluanBebas.includes(act)) { 
-                    payload = { action: act, ...load }; 
-                } else { 
-                    payload = { action: act, token: userToken, u: currentUserID, ...load }; 
-                }
-                
-                const res = await fetch(`${API_URL}?action=${act}`, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
-                const r = JSON.parse(await res.text());
-
-                if (!laluanBebas.includes(act) && r.success === false && r.message && (r.message.includes("sesi") || r.message.includes("token"))) {
-                    alert("⛔ Sesi tamat. Sila log masuk semula."); 
-                    localStorage.removeItem('pnr_session'); 
-                    location.reload(); 
-                    return { success: false }; 
-                }
-                return r;
-            } catch(e) { console.error(e); return {success:false, message:"Ralat sambungan."}; }
+       async function postData(action, payload = {}) {
+    try {
+        const fd = new FormData();
+        fd.append('action', action);
+        if(payload) Object.keys(payload).forEach(k => fd.append(k, payload[k]));
+        
+        const res = await fetch(API_URL, { method: 'POST', body: fd });
+        
+        // Sedut data sebagai teks biasa dulu untuk kaji isinya
+        const text = await res.text(); 
+        
+        try {
+            // Cuba tukar kepada JSON
+            return JSON.parse(text);
+        } catch(e) {
+            // Jika server hantar HTML ralat (bukan JSON), sistem tangkap di sini!
+            alert("RALAT SERVER: Sila semak Code.gs Tuan. Server tidak hantar data yang betul untuk tindakan: " + action);
+            console.error("Respon ROSAK dari server:", text);
+            return { status: "error", message: "Server hantar data tidak sah." };
         }
-
+    } catch(error) {
+        alert("RALAT RANGKAIAN: Sistem gagal berhubung dengan pelayan Google.");
+        return { status: "error", message: error.message };
+    }
+}
         async function loadMasterData() {
             try {
                 const r = await postData('getTanamanList', {});
@@ -684,37 +684,43 @@
         function doLogout() { localStorage.removeItem('pnr_session'); location.reload(); }
         window.onload = checkSession;
         
-        function switchTab(t, el) {
-            // Logik buang aktif untuk PC & Mobile
-            document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active')); 
-            document.querySelectorAll('.nav-bot-item').forEach(x => x.classList.remove('active'));
-            
-            // Tambah warna aktif pada butang yang ditekan
-            if(el) {
-                if(!el.classList.contains('bg-success') && el.classList.contains('nav-item')) el.classList.add('active');
-                if(el.classList.contains('nav-bot-item')) el.classList.add('active');
-            }
+        function switchTab(tabId, el) {
+    try {
+        // 1. Buang semua warna butang aktif
+        document.querySelectorAll('.nav-item, .nav-bot-item').forEach(i => i.classList.remove('active'));
+        if(el) el.classList.add('active');
 
-            // Tukar skrin utama
-           // Tukar skrin utama (TAMBAH 'view-users' DALAM SENARAI)
-            ['view-main','view-verify','view-tasks','view-form', 'view-users'].forEach(v => {
-                const view = document.getElementById(v);
-                if(view) view.style.display = 'none';
-            });
-            
-            const targetView = document.getElementById('view-'+t);
-            if(targetView) targetView.style.display = 'block';
+        // 2. Sembunyikan semua skrin dengan selamat
+        const views = ['view-main', 'view-verify', 'view-tasks', 'view-form', 'view-users'];
+        views.forEach(v => {
+            const div = document.getElementById(v);
+            if(div) div.style.display = 'none';
+        });
 
-            if(t==='verify') loadPend();
-            if(t==='tasks') loadMyTasks();
-            if(t==='users') loadUsers();
-            if(t==='main' && map) setTimeout(() => map.invalidateSize(), 300);
-            
-            // Tutup sidebar filter di telefon (kalau tengah terbuka)
-            document.getElementById('sidebar').classList.remove('active');
-            const overlay = document.getElementById('mobileOverlay');
-            if(overlay) overlay.classList.remove('active');
+        // 3. Tunjuk skrin yang dipilih
+        const targetView = document.getElementById('view-' + tabId);
+        if(targetView) {
+            targetView.style.display = 'block';
+        } else {
+            alert('AMARAN: Kotak HTML untuk view-' + tabId + ' tidak dijumpai!');
         }
+
+        // 4. Tarik data
+        if(tabId === 'verify') loadPend();
+        if(tabId === 'tasks') loadMyTasks();
+        if(tabId === 'users') loadUsers();
+
+        // 5. Tutup sidebar di telefon
+        const sidebar = document.getElementById('sidebar');
+        if(window.innerWidth <= 768 && sidebar) {
+            sidebar.classList.remove('active');
+        }
+    } catch (error) {
+        // Jika ada ralat, ia akan beritahu di skrin telefon!
+        alert("RALAT TUKAR TAB: " + error.message);
+        console.error("Ralat switchTab:", error);
+    }
+}
 
                 // --- FUNGSI TARIKH MUKTAMAD (MANUAL PARSING) ---
         function formatDateDisplay(dateStr) {
