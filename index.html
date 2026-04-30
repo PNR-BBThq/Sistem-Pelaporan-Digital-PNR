@@ -554,43 +554,41 @@
         let currentHeaders = []; 
         let pestMasterData = {}; 
 
-      async function postData(action, payload = {}) {
-    // 1. Gabungkan action dan payload
-    let data = { action: action, ...payload };
-    
-    // 2. Masukkan Pas Keselamatan (Token & UID)
-    try {
-        const rawProf = localStorage.getItem('uProf');
-        if (rawProf) {
-            const p = JSON.parse(rawProf);
-            if (p.uid) data.uid = p.uid;
-            if (p.token) data.token = p.token;
-        }
-    } catch(e) {}
+     async function postData(action, payload = {}) {
+            // 1. Gabungkan action dan payload
+            let data = { action: action, ...payload };
+            
+            // 2. GUNA PEMBOLEHUBAH GLOBAL TUAN YANG SEBENAR (Bukan localStorage)
+            if (typeof userToken !== 'undefined' && userToken) {
+                data.token = userToken;
+            }
+            if (typeof currentUserID !== 'undefined' && currentUserID) {
+                data.uid = currentUserID;
+            }
 
-    // 3. Hantar ke Google Server guna format JSON (Format Asal Tuan)
-    try {
-        const res = await fetch(API_URL, { 
-            method: 'POST', 
-            // Jangan guna headers, elak ralat CORS
-            body: JSON.stringify(data) 
-        });
-        
-        const text = await res.text();
-        
-        try {
-            return JSON.parse(text);
-        } catch(e) {
-            alert("RALAT SERVER: Pelayan Google memulangkan amaran. Sila semak Console (F12).");
-            console.error("Respon Rosak:", text);
-            return { status: "error", message: "Format tidak sah dari server." };
+            // 3. Hantar ke Google Server (Dengan perisai CORS text/plain)
+            try {
+                const res = await fetch(API_URL, { 
+                    method: 'POST', 
+                    headers: { "Content-Type": "text/plain" },
+                    body: JSON.stringify(data) 
+                });
+                
+                const text = await res.text();
+                
+                try {
+                    return JSON.parse(text);
+                } catch(e) {
+                    alert("RALAT SERVER: Sila semak tab Console (F12) untuk maklumat lanjut.");
+                    console.error("Respon Rosak dari Google:", text);
+                    return { status: "error", message: "Format tidak sah dari server." };
+                }
+            } catch(error) {
+                alert("RALAT RANGKAIAN: Gagal berhubung dengan pelayan Google.");
+                console.error(error);
+                return { status: "error", message: error.message };
+            }
         }
-    } catch(error) {
-        alert("RALAT RANGKAIAN: Gagal berhubung dengan pelayan.");
-        console.error(error);
-        return { status: "error", message: error.message };
-    }
-}
         async function loadMasterData() {
             try {
                 const r = await postData('getTanamanList', {});
