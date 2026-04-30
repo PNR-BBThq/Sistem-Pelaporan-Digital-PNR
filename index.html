@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+    <script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"></script>
 
     <style>
         :root { --primary: #064e3b; --accent: #10b981; --bg: #f3f4f6; }
@@ -20,7 +21,7 @@
         
         /* LOGIN & LAYOUT */
         #loginOverlay { position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center; background: #064e3b; }
-        .swal2-container { z-index: 9999999 !important; } /* Ubat supaya pop-up duduk di lapisan paling depan */
+        .swal2-container { z-index: 9999999 !important; }
         .login-box { background: white; padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
         .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: #e8f5e9; border-right: 1px solid #c6e7ce; padding: 20px; z-index: 100; transition: transform 0.3s; display: flex; flex-direction: column; }
         .brand { font-size: 1.3rem; font-weight: 900; color: #000; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding-left: 10px; flex-shrink: 0; }
@@ -44,10 +45,7 @@
         /* STYLE REPORT CARD */
         .verify-card { background: #fff; border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; height: 100%; display: flex; flex-direction: column; transition: transform 0.2s; border: 1px solid #e2e8f0; }
         .verify-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        
         .filter-label { font-size: 0.75rem; font-weight: 800; color: #000; margin-bottom: 3px; display: block; text-transform: uppercase; }
-
-        /* STYLE KHAS UNTUK TUGASAN */
         .task-reject-box { background-color: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 8px; margin-bottom: 15px; color: #b91c1c; font-size: 0.85rem; }
 
         @media (max-width: 768px) {
@@ -55,63 +53,27 @@
             .sidebar.active { transform: translateX(0); }
             .main-content { margin-left: 0; padding: 15px; }
         }
-        /* =========================================
-           MOBILE APP UI (BOTTOM NAVIGATION BAR)
-           ========================================= */
+        /* MOBILE APP UI */
         .mobile-bottom-nav { display: none; }
         .mobile-overlay { display: none; }
 
         @media (max-width: 768px) {
-            /* 1. Sembunyikan Butang Menu Atas Lama */
             .d-md-none.mb-3 { display: none !important; }
-            
-            /* 2. Ubah Sidebar jadi "Offcanvas" (Hanya buka bila ditekan) */
-            .sidebar { 
-                transform: translateX(-100%); 
-                z-index: 1050; 
-                box-shadow: 5px 0 15px rgba(0,0,0,0.2); 
-            }
+            .sidebar { transform: translateX(-100%); z-index: 1050; box-shadow: 5px 0 15px rgba(0,0,0,0.2); }
             .sidebar.active { transform: translateX(0); }
-            
-            /* 3. Ruang bernafas untuk main content (elak tertutup dengan menu bawah) */
             .main-content { padding: 15px; padding-bottom: 90px; margin-left: 0; }
-            
-            /* 4. Bar Navigasi Bawah (Macam App Sebenar) */
-            .mobile-bottom-nav {
-                display: flex; position: fixed; bottom: 0; left: 0; right: 0;
-                background: #ffffff; box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
-                z-index: 1040; padding: 10px 10px 15px 10px; justify-content: space-between;
-                align-items: flex-end; border-top-left-radius: 20px; border-top-right-radius: 20px;
-            }
-            .nav-bot-item {
-                text-align: center; color: #9ca3af; font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
-                flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-                cursor: pointer; transition: 0.3s;
-            }
+            .mobile-bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; box-shadow: 0 -4px 15px rgba(0,0,0,0.08); z-index: 1040; padding: 10px 10px 15px 10px; justify-content: space-between; align-items: flex-end; border-top-left-radius: 20px; border-top-right-radius: 20px; }
+            .nav-bot-item { text-align: center; color: #9ca3af; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
             .nav-bot-item i { font-size: 1.4rem; margin-bottom: 2px; }
             .nav-bot-item.active { color: #064e3b; }
-            
-            /* 5. Butang Tambah Data Besar (Tengah) */
-            .nav-bot-fab {
-                background: linear-gradient(135deg, #10b981, #059669); color: white !important;
-                width: 55px; height: 55px; border-radius: 50%;
-                display: flex; align-items: center; justify-content: center;
-                font-size: 2rem; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
-                transform: translateY(-20px); border: 4px solid #f3f4f6;
-            }
-            
-            /* 6. Latar Hitam Gelap bila Filter dibuka */
-            .mobile-overlay {
-                position: fixed; top:0; left:0; right:0; bottom:0;
-                background: rgba(0,0,0,0.6); z-index: 1045; display: none;
-            }
+            .mobile-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); z-index: 1045; display: none; }
             .mobile-overlay.active { display: block; }
         }
     </style>
 </head>
 <body>
 
-  <div id="loginOverlay">
+    <div id="loginOverlay">
         <div class="login-box" id="formLogin">
             <div class="brand justify-content-center mb-4"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
             <h6 class="text-muted mb-4">Log Masuk Sistem</h6>
@@ -171,7 +133,7 @@
         </div>
     </div>
 
-  <div class="sidebar" id="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="brand"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
         
         <div class="sidebar-content">
@@ -188,15 +150,13 @@
                 <span><i class="bi bi-check-circle-fill me-2"></i> Pengesahan</span>
                 <span class="badge-pending" id="badgePending">0</span>
             </div>
-            
+            <hr class="my-4" style="color: #000;">
             <div class="nav-item bg-dark text-white shadow-sm mt-2" id="navUsers" style="display:none" onclick="switchTab('users', this)">
                 <span><i class="bi bi-people-fill me-2 text-warning"></i> Urus Pengguna</span>
             </div>
             
-            <hr class="my-4" style="color: #000;">
-            
-            <div class="mb-3 px-2">
-                <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="mb-3 px-2"> 
+                <div class="d-flex align-items-center justify-content-between mb-3 mt-3">
                     <small class="fw-bold text-dark" style="font-size:0.85rem; letter-spacing: 0.5px;"><i class="bi bi-funnel-fill me-1"></i> TAPISAN DATA</small>
                 </div>
                 
@@ -278,7 +238,7 @@
             </div>
         </div>
     </div>
-
+    
     <div class="main-content">
         <div class="d-md-none mb-3 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm">
             <span class="fw-bold text-success fs-5"><i class="bi bi-flower1"></i> PNR</span>
@@ -314,21 +274,18 @@
             </div>
 
             <div class="row g-3 mb-4">
-                
                 <div class="col-md-8">
                     <div class="card h-100 shadow-sm border-0">
-                        <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
-                            <div class="d-flex justify-content-between align-items-start">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
                             <div>
-                            <h6 class="fw-bold text-secondary m-0">Carta Serangan Perosak Tertinggi (Ha)</h6>
-                            <small class="text-muted d-block mt-1 fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px;">
-                             <i class="bi bi-hand-index-thumb-fill text-primary me-1"></i> Klik pada bar untuk lihat pecahan tanaman & daerah
-                            </small>
-                                </div>
-                            <button id="btnBackPest" class="btn btn-sm btn-outline-secondary shadow-sm mt-1" style="display:none;" onclick="patahBalikCarta()">
-                            <i class="bi bi-arrow-left"></i> Kembali
-                            </button>
+                                <h6 class="fw-bold text-secondary m-0">Carta Serangan Perosak Tertinggi (Ha)</h6>
+                                <small class="text-muted d-block mt-1 fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                    <i class="bi bi-hand-index-thumb-fill text-primary me-1"></i> Klik pada bar untuk lihat pecahan tanaman
+                                </small>
                             </div>
+                            <button id="btnBackPest" class="btn btn-sm btn-outline-secondary shadow-sm" style="display:none;" onclick="patahBalikCarta()">
+                                <i class="bi bi-arrow-left"></i> Kembali
+                            </button>
                         </div>
                         <div class="card-body px-4 pb-4">
                             <div style="height: 350px"> 
@@ -361,6 +318,7 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
             <div class="row g-3 mb-4">
                 <div class="col-md-8"><div class="map-box shadow-sm" id="map"></div></div>
@@ -377,15 +335,16 @@
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle">
                        <thead class="table-light">
-    <tr>
-        <th>Tarikh</th>
-        <th>Negeri</th>
-        <th>Lokasi</th>
-        <th>Tanaman</th>
-        <th>Luas Bancian</th>
-        <th>Luas Serangan</th>
-        <th class="text-center">Tindakan</th> </tr>
-</thead>
+                            <tr>
+                                <th>Tarikh</th>
+                                <th>Negeri</th>
+                                <th>Lokasi</th>
+                                <th>Tanaman</th>
+                                <th>Luas Bancian</th>
+                                <th>Luas Serangan</th>
+                                <th class="text-center">Tindakan</th> 
+                            </tr>
+                        </thead>
                         <tbody id="tBody"></tbody>
                     </table>
                 </div>
@@ -432,14 +391,10 @@
         </div>
 
         <div id="view-form" style="display:none; height: 100%;">
-           <iframe 
-    id="frameBorang" 
-    src="./form.html" 
-    style="width: 100%; height: 85vh; border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
-    allow="geolocation">
-</iframe>
+           <iframe id="frameBorang" src="./form.html" style="width: 100%; height: 85vh; border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" allow="geolocation"></iframe>
         </div>
-<div id="view-users" style="display:none">
+
+        <div id="view-users" style="display:none">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="fw-bold m-0 text-dark"><i class="bi bi-people-fill me-2"></i>Pengurusan Pengguna</h4>
                 <button class="btn btn-primary btn-sm px-3 shadow-sm" onclick="loadUsers()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
@@ -461,13 +416,14 @@
                                     <th class="text-uppercase text-center">Tindakan</th>
                                 </tr>
                             </thead>
-                            <tbody id="userTableBody"></tbody>
+                            <tbody id="userTableBody">
+                                </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
-        
+
     </div>
 
     <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
@@ -486,63 +442,54 @@
         </div>
     </div>
 
-        <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileFilter()"></div>
+    <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileFilter()"></div>
 
     <div class="mobile-bottom-nav d-md-none">
-        
         <div class="nav-bot-item active" onclick="switchTab('main', this)">
             <i class="bi bi-grid-1x2-fill text-primary fs-4"></i>
-            <span>Dashboard</span>
+            <span>Utama</span>
         </div>
-        
         <div class="nav-bot-item" id="mobNavTasks" onclick="switchTab('tasks', this)" style="display:none;">
             <i class="bi bi-list-task text-warning fs-4"></i>
-            <span>Tugasan</span>
+            <span>Tugas</span>
         </div>
-        
         <div class="nav-bot-item" id="mobNavVerify" onclick="switchTab('verify', this)" style="display:none;">
             <i class="bi bi-check-circle-fill text-info fs-4"></i>
-            <span>Pengesahan Data</span>
+            <span>Sahkan</span>
         </div>
-        
         <div class="nav-bot-item" onclick="switchTab('form', this)">
             <i class="bi bi-plus-lg text-success" style="font-size: 2rem; -webkit-text-stroke: 2px;"></i>
             <span class="text-success fw-bold">Borang</span>
         </div>
-        
         <div class="nav-bot-item" onclick="toggleMobileFilter()">
             <i class="bi bi-funnel-fill text-danger fs-4"></i>
             <span>Tapisan</span>
         </div>
-        
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // *** GANTI DENGAN URL API BARU DARI AKAUN GMAIL PERSONAL ANDA ***
-        const API_URL = "https://script.google.com/macros/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
+        // PASTIKAN URL INI ADALAH URL DEPLOYMENT YANG BETUL & TERKINI!
+        const API_URL = "https://script.google.com/macros/s/AKfycbx1hlsIWN5MCo7ab_ytT_d_oFqVjy1XMJwM39oBC8yPp9OLukRSbk47Ufate26quu4k/exec";
         const RPW_URL = "https://www.appsheet.com/start/55b088df-3ec1-469a-b5c6-1fca48052906";
         
-        // --- DATA RUJUKAN NEGERI & DAERAH ---
-       const districtData = {
-  "JOHOR": ["BATU PAHAT", "JOHOR BAHRU", "KLUANG", "KOTA TINGGI", "KULAI", "MERSING", "MUAR", "PONTIAN", "SEGAMAT", "TANGKAK"],
-  "KEDAH": ["BALING", "BANDAR BAHARU", "KOTA SETAR", "KUALA MUDA", "KUBANG PASU", "KULIM", "LANGKAWI", "PADANG TERAP", "PENDANG", "POKOK SENA", "SIK", "YAN"],
-  "KELANTAN": ["BACHOK", "GUA MUSANG", "JELI", "KOTA BHARU", "KUALA KRAI", "MACHANG", "PASIR MAS", "PASIR PUTEH", "TANAH MERAH", "TUMPAT"],
-  "MELAKA": ["ALOR GAJAH", "JASIN", "MELAKA TENGAH"],
-  "NEGERI SEMBILAN": ["JELEBU", "JEMPOL", "KUALA PILAH", "PORT DICKSON", "REMBAU", "SEREMBAN", "TAMPIN"],
-  "PAHANG": ["BENTONG", "BERA", "CAMERON HIGHLANDS", "JERANTUT", "KUANTAN", "LIPIS", "MARAN", "PEKAN", "RAUB", "ROMPIN", "TEMERLOH"],
-  "PERAK": ["BAGAN DATUK", "BATANG PADANG", "HILIR PERAK", "HULU PERAK", "KAMPAR", "KERIAN", "KINTA", "KUALA KANGSAR", "LARUT, MATANG DAN SELAMA", "MANJUNG", "MUALLIM", "PERAK TENGAH"],
-  "PERLIS": ["PERLIS"],
-  "PULAU PINANG": ["BARAT DAYA", "SEBERANG PERAI SELATAN", "SEBERANG PERAI TENGAH", "SEBERANG PERAI UTARA", "TIMUR LAUT"],
-  "SABAH": ["BEAUFORT", "BELURAN", "KALABAKAN", "KENINGAU", "KINABATANGAN", "KOTA BELUD", "KOTA KINABALU", "KOTA MARUDU", "KUALA PENYU", "KUDAT", "KUNAK", "LAHAD DATU", "NABAWAN", "PAPAR", "PENAMPANG", "PITAS", "PUTATAN", "RANAU", "SANDAKAN", "SEMPORNA", "SIPITANG", "TAMBUNAN", "TAWAU", "TELUPID", "TENOM", "TONGOD", "TUARAN"],
-  "SARAWAK": ["ASAJAYA", "BAU", "BELAGA", "BELURU", "BETONG", "BINTULU", "BUKIT MABONG", "DALAT", "DARO", "JULAU", "KABONG", "KANOWIT", "KAPIT", "KUCHING", "LAWAS", "LIMBANG", "LUBOK ANTU", "LUNDU", "MARUDI", "MATU", "MERADONG", "MIRI", "MUKAH", "PAKAN", "PUSA", "SAMARAHAN", "SARATOK", "SARIKEI", "SEBAUH", "SELANGAU", "SERIAN", "SIBU", "SIMUNJAN", "SONG", "SRI AMAN", "SUBIS", "TANJUNG MANIS", "TATAU", "TEBEDU", "TELANG USAN"],
-  "SELANGOR": ["GOMBAK", "HULU LANGAT", "HULU SELANGOR", "KLANG", "KUALA LANGAT", "KUALA SELANGOR", "PETALING", "SABAK BERNAM", "SEPANG"],
-  "TERENGGANU": ["BESUT", "DUNGUN", "HULU TERENGGANU", "KEMAMAN", "KUALA NERUS", "KUALA TERENGGANU", "MARANG", "SETIU"],
-  "W.P. KUALA LUMPUR": ["KUALA LUMPUR"],
-  "W.P. LABUAN": ["LABUAN"],
-  "W.P. PUTRAJAYA": ["PUTRAJAYA"]
-};
+        const districtData = {
+            "Johor": ["Batu Pahat", "Johor Bahru", "Kluang", "Kota Tinggi", "Kulai", "Mersing", "Muar", "Pontian", "Segamat", "Tangkak"], 
+            "Kedah": ["Baling", "Bandar Baharu", "Kota Setar", "Kuala Muda", "Kubang Pasu", "Kulim", "Langkawi", "Padang Terap", "Pendang", "Pokok Sena", "Sik", "Yan"], 
+            "Kelantan": ["Bachok", "Gua Musang", "Jeli", "Kota Bharu", "Kuala Krai", "Machang", "Pasir Mas", "Pasir Puteh", "Tanah Merah", "Tumpat"], 
+            "Melaka": ["Alor Gajah", "Jasin", "Melaka Tengah"], 
+            "Negeri Sembilan": ["Jelebu", "Jempol", "Kuala Pilah", "Port Dickson", "Rembau", "Seremban", "Tampin"], 
+            "Pahang": ["Bentong", "Bera", "Cameron Highlands", "Jerantut", "Kuantan", "Lipis", "Maran", "Pekan", "Raub", "Rompin", "Temerloh"], 
+            "Perak": ["Bagan Datuk", "Batang Padang", "Hilir Perak", "Hulu Perak", "Kampar", "Kerian", "Kinta", "Kuala Kangsar", "Larut, Matang dan Selama", "Manjung", "Muallim", "Perak Tengah"], 
+            "Perlis": ["Perlis"], 
+            "Pulau Pinang": ["Barat Daya", "Seberang Perai Selatan", "Seberang Perai Tengah", "Seberang Perai Utara", "Timur Laut"], 
+            "Sabah": ["Beaufort", "Beluran", "Kalabakan", "Keningau", "Kinabatangan", "Kota Belud", "Kota Kinabalu", "Kota Marudu", "Kuala Penyu", "Kudat", "Kunak", "Lahad Datu", "Nabawan", "Papar", "Penampang", "Pitas", "Putatan", "Ranau", "Sandakan", "Semporna", "Sipitang", "Tambunan", "Tawau", "Telupid", "Tenom", "Tongod", "Tuaran"], 
+            "Sarawak": ["Asajaya", "Bau", "Belaga", "Beluru", "Betong", "Bintulu", "Bukit Mabong", "Dalat", "Daro", "Julau", "Kabong", "Kanowit", "Kapit", "Kuching", "Lawas", "Limbang", "Lubok Antu", "Lundu", "Marudi", "Matu", "Meradong", "Miri", "Mukah", "Pakan", "Pusa", "Samarahan", "Saratok", "Sarikei", "Sebauh", "Selangau", "Serian", "Sibu", "Simunjan", "Song", "Sri Aman", "Subis", "Tanjung Manis", "Tatau", "Tebedu", "Telang Usan"], 
+            "Selangor": ["Gombak", "Hulu Langat", "Hulu Selangor", "Klang", "Kuala Langat", "Kuala Selangor", "Petaling", "Sabak Bernam", "Sepang"], 
+            "Terengganu": ["Besut", "Dungun", "Hulu Terengganu", "Kemaman", "Kuala Nerus", "Kuala Terengganu", "Marang", "Setiu"], 
+            "W.P. Kuala Lumpur": ["Kuala Lumpur"], "W.P. Labuan": ["Labuan"], "W.P. Putrajaya": ["Putrajaya"]
+        };
 
         let mData=[], fData=[], uProf=null, map=null, layer=null, pg=1, pSize=10, charts={};
         let currentPendingRows = []; 
@@ -550,50 +497,38 @@
         let currentUserID = "";
         let myTasksData = [];
         let currentFile = null; 
-        
         let currentHeaders = []; 
         let pestMasterData = {}; 
 
-     async function postData(action, payload = {}) {
-            // 1. Gabungkan action dan payload
-            let data = { action: action, ...payload };
-            
-            // 2. GUNA PEMBOLEHUBAH GLOBAL TUAN YANG SEBENAR (Bukan localStorage)
-            if (typeof userToken !== 'undefined' && userToken) {
-                data.token = userToken;
-            }
-            if (typeof currentUserID !== 'undefined' && currentUserID) {
-                data.uid = currentUserID;
-            }
-
-            // 3. Hantar ke Google Server (Dengan perisai CORS text/plain)
+        async function postData(act, load) {
             try {
-                const res = await fetch(API_URL, { 
-                    method: 'POST', 
-                    headers: { "Content-Type": "text/plain" },
-                    body: JSON.stringify(data) 
-                });
-                
-                const text = await res.text();
-                
-                try {
-                    return JSON.parse(text);
-                } catch(e) {
-                    alert("RALAT SERVER: Sila semak tab Console (F12) untuk maklumat lanjut.");
-                    console.error("Respon Rosak dari Google:", text);
-                    return { status: "error", message: "Format tidak sah dari server." };
+                let payload;
+                const laluanBebas = ['login', 'registerUser', 'verifyForgotPwd', 'updateMyAccess'];
+                if (laluanBebas.includes(act)) { 
+                    payload = { action: act, ...load }; 
+                } else { 
+                    payload = { action: act, token: userToken, u: currentUserID, ...load }; 
                 }
-            } catch(error) {
-                alert("RALAT RANGKAIAN: Gagal berhubung dengan pelayan Google.");
-                console.error(error);
-                return { status: "error", message: error.message };
+                const res = await fetch(`${API_URL}?action=${act}`, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
+                const r = JSON.parse(await res.text());
+
+                if (!laluanBebas.includes(act) && r.success === false && r.message && (r.message.includes("sesi") || r.message.includes("token"))) {
+                    alert("⛔ Sesi tamat. Sila log masuk semula."); 
+                    localStorage.removeItem('pnr_session'); 
+                    location.reload(); 
+                    return { success: false }; 
+                }
+                return r;
+            } catch(e) { 
+                console.error(e); 
+                return {success:false, message:"Ralat sambungan."}; 
             }
         }
+        
         async function loadMasterData() {
             try {
                 const r = await postData('getTanamanList', {});
                 let clean = {};
-                // Handle different JSON structures safely
                 if (r.data) clean = r.data;
                 else if (r.success === undefined && Object.keys(r).length > 0) clean = r; 
                 else {
@@ -601,7 +536,6 @@
                     delete clean.success; delete clean.message;
                 }
                 pestMasterData = clean;
-                console.log("Master Data:", pestMasterData);
             } catch(e) { console.error("Gagal load pest data", e); }
         }
 
@@ -634,18 +568,16 @@
             }
         }
 
-          function applyLogin(r, token, uid) {
+        function applyLogin(r, token, uid) {
             uProf = r; userToken = token; currentUserID = uid;
             document.getElementById('uDisp').innerText = r.name; 
             document.getElementById('loginOverlay').style.display = 'none';
             
-            // Logik Paparan Navigasi berdasarkan Role
             if(["ADMIN","PENYELIA"].includes((r.role||"").toUpperCase())) { 
                 document.getElementById('navVerify').style.display = "flex"; 
                 if(document.getElementById('mobNavVerify')) document.getElementById('mobNavVerify').style.display = "flex";
                 checkPendingCount(); 
             } else {
-                // Untuk staff biasa, paparkan butang tugas di phone
                 if(document.getElementById('mobNavTasks')) document.getElementById('mobNavTasks').style.display = "flex";
             }
             
@@ -658,30 +590,24 @@
             loadMyTasks();
             initDash();
         }
-        // Fungsi untuk buka/tutup Tapisan di Telefon
+
         function toggleMobileFilter() {
             document.getElementById('sidebar').classList.toggle('active');
             const overlay = document.getElementById('mobileOverlay');
             if(overlay) overlay.classList.toggle('active');
         }
 
-       // --- CHECK SESSION (OFFLINE FRIENDLY) ---
         async function checkSession() {
             const saved = localStorage.getItem('pnr_session');
             if (saved) {
                 try {
                     const s = JSON.parse(saved);
-                    // Jika ada data user, terus bagi masuk (tak kira online/offline)
                     if (s.uProf && s.userToken) {
                         applyLogin(s.uProf, s.userToken, s.currentUserID);
-                        
-                        // Cuma hantar log jika ada internet (background)
                         if (navigator.onLine) {
                             const p = { action: 'logSession', token: s.userToken, u: s.currentUserID, name: s.uProf.name, role: s.uProf.role };
                             fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(p) }).catch(e=>{});
                         } else {
-                            console.log("Offline Login: Menggunakan sesi simpanan.");
-                            // Tunjuk notifikasi kecil bahawa user offline
                             const summary = document.getElementById('smartSummary');
                             if(summary) summary.innerHTML = `<div class="alert alert-warning mb-0"><i class="bi bi-wifi-off"></i> Mod Offline: Anda sedang menggunakan data simpanan.</div>`;
                         }
@@ -691,107 +617,72 @@
                 }
             }
         }
+
         function doLogout() { localStorage.removeItem('pnr_session'); location.reload(); }
         window.onload = checkSession;
         
-        function switchTab(tabId, el) {
-    try {
-        // 1. Buang semua warna butang aktif
-        document.querySelectorAll('.nav-item, .nav-bot-item').forEach(i => i.classList.remove('active'));
-        if(el) el.classList.add('active');
+        function switchTab(t, el) {
+            document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active')); 
+            document.querySelectorAll('.nav-bot-item').forEach(x => x.classList.remove('active'));
+            
+            if(el) {
+                if(!el.classList.contains('bg-success') && el.classList.contains('nav-item')) el.classList.add('active');
+                if(el.classList.contains('nav-bot-item')) el.classList.add('active');
+            }
 
-        // 2. Sembunyikan semua skrin dengan selamat
-        const views = ['view-main', 'view-verify', 'view-tasks', 'view-form', 'view-users'];
-        views.forEach(v => {
-            const div = document.getElementById(v);
-            if(div) div.style.display = 'none';
-        });
+            ['view-main','view-verify','view-tasks','view-form', 'view-users'].forEach(v => {
+                const view = document.getElementById(v);
+                if(view) view.style.display = 'none';
+            });
+            
+            const targetView = document.getElementById('view-'+t);
+            if(targetView) targetView.style.display = 'block';
 
-        // 3. Tunjuk skrin yang dipilih
-        const targetView = document.getElementById('view-' + tabId);
-        if(targetView) {
-            targetView.style.display = 'block';
-        } else {
-            alert('AMARAN: Kotak HTML untuk view-' + tabId + ' tidak dijumpai!');
+            if(t==='verify') loadPend();
+            if(t==='tasks') loadMyTasks();
+            if(t==='users') loadUsers();
+            if(t==='main' && map) setTimeout(() => map.invalidateSize(), 300);
+            
+            document.getElementById('sidebar').classList.remove('active');
+            const overlay = document.getElementById('mobileOverlay');
+            if(overlay) overlay.classList.remove('active');
         }
 
-        // 4. Tarik data
-        if(tabId === 'verify') loadPend();
-        if(tabId === 'tasks') loadMyTasks();
-        if(tabId === 'users') loadUsers();
-
-        // 5. Tutup sidebar di telefon
-        const sidebar = document.getElementById('sidebar');
-        if(window.innerWidth <= 768 && sidebar) {
-            sidebar.classList.remove('active');
-        }
-    } catch (error) {
-        // Jika ada ralat, ia akan beritahu di skrin telefon!
-        alert("RALAT TUKAR TAB: " + error.message);
-        console.error("Ralat switchTab:", error);
-    }
-}
-
-                // --- FUNGSI TARIKH MUKTAMAD (MANUAL PARSING) ---
         function formatDateDisplay(dateStr) {
             if (!dateStr || dateStr === "-") return "-";
-
-            // Tukar jadi string dulu kalau ia object
             let str = String(dateStr).trim();
-
-            // KES 1: Jika format Google Sheet standard (YYYY-MM-DD...)
-            // Contoh: "2026-02-11T16:00:00.000Z" atau "2026-02-11"
             if (str.includes('-')) {
                 const parts = str.split('T')[0].split('-'); 
-                // parts[0] = 2026, parts[1] = 02, parts[2] = 11
-                if (parts.length === 3) {
-                    return `${parts[2]}/${parts[1]}/${parts[0]}`; // Pusing jadi 11/02/2026
-                }
+                if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
             }
-
-            // KES 2: Jika format sudah ada slash (DD/MM/YYYY atau MM/DD/YYYY)
-            // Kita ANGGAP data dari database anda sentiasa betul (DD/MM/YYYY)
-            if (str.includes('/')) {
-                // Jangan ubah apa-apa, paparkan terus apa yang database bagi
-                // Ini elak browser 'memandai-mandai' terbalikkan bulan
-                return str; 
-            }
-
-            // KES 3: Fallback (Jika format pelik sangat, baru guna Date object)
+            if (str.includes('/')) return str; 
             const d = new Date(dateStr);
-            if (isNaN(d)) return str; // Kalau rosak, papar asal
-            
+            if (isNaN(d)) return str; 
             const day = String(d.getDate()).padStart(2, '0');
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const year = d.getFullYear();
             return `${day}/${month}/${year}`;
         }
 
-
        async function initDash() {
-            // 1. SEMAKAN AWAL (OFFLINE vs ONLINE)
             const isOffline = !navigator.onLine;
             const cachedRaw = localStorage.getItem('pnr_dashboard_data');
             const cachedTime = localStorage.getItem('pnr_dashboard_time');
 
-            // Jika Offline & Tiada Data Cache -> Tunjuk Warning Sahaja
             if (isOffline && !cachedRaw) {
                 document.getElementById('smartSummary').innerHTML = '<div class="alert alert-danger">Tiada sambungan internet & tiada data simpanan.</div>';
                 return; 
             }
 
-            // 2. MUATKAN DATA (Dari Cache atau Server)
             if (isOffline || cachedRaw) {
-                // Guna Cache Dulu (Laju)
                 try {
                     mData = JSON.parse(cachedRaw);
-                    processDataToUI(mData); // <--- KITA PISAHKAN LOGIK UI
+                    processDataToUI(mData);
                     updateLastUpdateLabel(cachedTime, false);
                 } catch(e) { console.error(e); }
             }
 
             if (!isOffline) {
-                // Tarik Data Baru (Background)
                 try {
                     const d = await postData('getAnalytics', {state: uProf.state});
                     if (d.records) {
@@ -800,21 +691,18 @@
                         const now = new Date().toLocaleString('en-MY', { hour12: true });
                         localStorage.setItem('pnr_dashboard_time', now);
                         
-                        processDataToUI(mData); // <--- UPDATE UI
+                        processDataToUI(mData);
                         updateLastUpdateLabel(now, true);
                     }
                 } catch (e) { console.log("Gagal tarik data server"); }
             }
         }
 
-        // --- FUNGSI BARU: PROSES UI (KALIS ERROR) ---
         function processDataToUI(dataList) {
-            // Setup Dropdown (Versi Checkbox)
             const currentN = v('selNegeri'); 
             fillSel('selNegeri', dataList.map(d => d.n).filter((val, i, a) => a.indexOf(val) === i).sort(), 'n');
             
             if(uProf.state !== "ALL") { 
-                // Kunci negeri jika dia bukan ADMIN
                 const cbList = document.querySelectorAll('.chk-selNegeri');
                 cbList.forEach(cb => {
                     if(cb.value === uProf.state) { cb.checked = true; cb.disabled = true; }
@@ -827,7 +715,6 @@
                 updateBtnText('selNegeri');
             }
 
-            // LUKIS MAP (HANYA JIKA LEAFLET WUJUD)
             if (typeof L !== 'undefined') {
                 if(!map) { 
                     try { map = L.map('map').setView([4.2105, 101.9758], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); } 
@@ -837,10 +724,9 @@
                 document.getElementById('map').innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted bg-light">Peta tidak tersedia (Offline)</div>';
             }
 
-            // JALANKAN KIRAAN (TEXT DATA TETAP BOLEH KIRA)
             runFilter('n');
         }
-        // --- FUNGSI KEMASKINI LABEL MASA ---
+
         function updateLastUpdateLabel(timeStr, isOnline) {
             const el = document.getElementById('lastUpdate');
             if (isOnline) {
@@ -850,7 +736,7 @@
             }
         }
 
-      function runFilter(source) {
+    function runFilter(source) {
             const n=v('selNegeri'), d=v('selDaerah'), t=v('selTanaman'), p=v('selPerosak'), k=v('selKategori'), s=v('dS'), e=v('dE');
             
             fData = mData.filter(r => { 
@@ -871,7 +757,6 @@
                        pestOk && (!s||r.t>=s) && (!e||r.t<=e);
             });
 
-            // Bekalkan parameter source code ('d', 't', 'k', 'p') supaya sistem tahu siapa yang trigger
             if(source === 'n' || !source) { 
                 const dataD = mData.filter(r => n.length===0 || n.includes(r.n)); 
                 updateDropdown('selDaerah', [...new Set(dataD.map(x=>x.d).filter(x=>x))].sort(), d, 'd'); 
@@ -890,7 +775,8 @@
             }
             pg = 1; calcUI();
         }
-      function updateDropdown(id, list, curValArray, srcCode) { 
+
+     function updateDropdown(id, list, curValArray, srcCode) { 
             const menu = document.getElementById('list' + id); 
             if(!menu) return;
             menu.innerHTML = ''; 
@@ -899,11 +785,9 @@
                 const cleanId = 'chk_' + id + '_' + x.replace(/[^a-zA-Z0-9]/g, '');
                 const div = document.createElement('div');
                 div.className = 'form-check mb-1';
-                // Lukis Checkbox
                 div.innerHTML = `<input class="form-check-input chk-${id}" type="checkbox" value="${x}" id="${cleanId}" ${isChecked}>
                                  <label class="form-check-label w-100 text-truncate" style="font-size:0.85rem; cursor:pointer;" for="${cleanId}">${x}</label>`;
                 
-                // Arahan bila di-tick: Tukar teks butang & jalankan tapisan
                 div.querySelector('input').addEventListener('change', () => {
                     updateBtnText(id);
                     runFilter(srcCode);
@@ -925,7 +809,7 @@
         function v(id){ 
             if(id === 'dS' || id === 'dE') { const el = document.getElementById(id); return el ? el.value : ""; }
             const checkboxes = document.querySelectorAll('.chk-' + id + ':checked');
-            return Array.from(checkboxes).map(cb => cb.value); // Pulangkan dalam bentuk Array
+            return Array.from(checkboxes).map(cb => cb.value);
         }
 
         function fillSel(id, arr, srcCode) { updateDropdown(id, arr, [], srcCode); }
@@ -936,6 +820,7 @@
             ['selNegeri', 'selDaerah', 'selTanaman', 'selPerosak', 'selKategori'].forEach(id => updateBtnText(id));
             runFilter('n'); 
         }
+
         function calcUI() {
             let tt=0, ts=0, pm={}, km={1:0,2:0,3:0,4:0,5:0}, pts=[], hData={};
             fData.forEach(d => {
@@ -951,7 +836,8 @@
             document.getElementById('k4').innerText = fData.length.toLocaleString('en-US');
             updateCharts(pm, km); updateMap(pts); updateHotspot(hData); genSummary(pm, tt, ts); renTab();
         } 
-       function genSummary(pm, tt, ts) {
+
+        function genSummary(pm, tt, ts) {
             const el = document.getElementById('smartSummary');
             if (!el) return;
             if (ts === 0 || fData.length === 0) { el.innerHTML = `<div class="d-flex align-items-center"><div class="bg-light rounded-circle p-3 me-3 text-secondary"><i class="bi bi-robot fs-2"></i></div><div><h6 class="text-primary fw-bold mb-1">Analisis Pintar</h6><span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Tiada rekod serangan dilaporkan setakat ini.</span></div></div>`; return; }
@@ -975,8 +861,9 @@
             let locPct = topLoc.totalLT > 0 ? ((topLoc.totalLS / topLoc.totalLT) * 100).toFixed(2) : "0.00";
             el.innerHTML = `<div class="d-flex align-items-start"><div class="d-none d-sm-flex bg-white shadow-sm border rounded-circle p-3 me-4 align-items-center justify-content-center" style="width: 60px; height: 60px; flex-shrink: 0;"><i class="bi bi-robot fs-3 text-primary"></i></div><div style="flex-grow: 1;"><h6 class="text-primary fw-bold mb-3">Analisis Pintar</h6><div class="mb-2" style="font-size: 0.95rem;"><i class="bi bi-geo-alt-fill text-danger me-2"></i> Lokasi Hotspot: <b class="text-uppercase text-dark">${topLoc.daerah}, ${topLoc.negeri}</b></div><div class="mb-2" style="font-size: 0.95rem; line-height: 1.5;"><i class="bi bi-flower1 text-success me-2"></i> Tanaman <b class="text-uppercase text-dark">${topCrop}</b> paling terkesan akibat serangan <b class="text-uppercase text-dark">${topPest}</b></div><div class="mb-2" style="font-size: 0.95rem;"><i class="bi bi-exclamation-circle-fill text-warning me-2"></i> Luas Serangan: <b class="text-dark">${topLoc.totalLS.toFixed(2)} Ha</b> <span class="text-muted">(${locPct}%)</span></div><div style="font-size: 0.95rem;"><i class="bi bi-bar-chart-fill me-2" style="color: ${sevColor}"></i> Indeks Keterukan: <b class="text-dark">${avgSev}</b> - <span style="color: ${sevColor}; font-weight: bold;">${sevText}</span></div></div></div>`;
         }
+
         var myPestChart = null; 
-        var chartLevel = 1; // 1: Perosak, 2: Tanaman, 3: Daerah
+        var chartLevel = 1; 
         var pilihanPerosak = "";
         var pilihanTanaman = "";
 
@@ -988,7 +875,6 @@
             let labelX = [], dataY = [], tajuk = "", warna = "";
 
             if (level === 1) {
-                // LEVEL 1: TOP 10 PEROSAK
                 let kiraPerosak = {};
                 fData.forEach(item => {
                     try {
@@ -1000,13 +886,11 @@
                 });
                 let top10 = Object.entries(kiraPerosak).sort((a,b)=>b[1]-a[1]).slice(0,10);
                 labelX = top10.map(x=>x[0]); dataY = top10.map(x=>x[1]);
-                tajuk = "Top 10 Perosak Tertinggi (Ha)"; warna = "#10b981";// Hijau
-                
+                tajuk = "Top 10 Perosak Tertinggi (Ha)"; warna = "#ef4444"; 
                 chartLevel = 1;
                 document.getElementById('btnBackPest').style.display = 'none';
             } 
             else if (level === 2) {
-                // LEVEL 2: PECAHAN TANAMAN UNTUK 1 PEROSAK
                 let kiraTanaman = {};
                 fData.forEach(item => {
                     try {
@@ -1016,13 +900,11 @@
                 });
                 let susun = Object.entries(kiraTanaman).sort((a,b)=>b[1]-a[1]);
                 labelX = susun.map(x=>x[0]); dataY = susun.map(x=>x[1]);
-                tajuk = `Tanaman Diserang: ${namaPest} (Ha)`; warna = "#eab308"; // Kuning
-                
+                tajuk = `Tanaman Diserang: ${namaPest} (Ha)`; warna = "#eab308"; 
                 chartLevel = 2; pilihanPerosak = namaPest;
                 document.getElementById('btnBackPest').style.display = 'inline-block';
             } 
             else if (level === 3) {
-                // LEVEL 3: PECAHAN DAERAH UNTUK 1 TANAMAN
                 let kiraDaerah = {};
                 fData.forEach(item => {
                     try {
@@ -1032,8 +914,7 @@
                 });
                 let susun = Object.entries(kiraDaerah).sort((a,b)=>b[1]-a[1]);
                 labelX = susun.map(x=>x[0]); dataY = susun.map(x=>x[1]);
-                tajuk = `Daerah Terlibat: ${namaTanaman} - ${namaPest} (Ha)`; warna = "#3b82f6"; // Biru
-                
+                tajuk = `Daerah Terlibat: ${namaTanaman} - ${namaPest} (Ha)`; warna = "#3b82f6"; 
                 chartLevel = 3; pilihanTanaman = namaTanaman;
                 document.getElementById('btnBackPest').style.display = 'inline-block';
             }
@@ -1042,7 +923,7 @@
                 type: 'bar',
                 data: { labels: labelX, datasets: [{ label: 'Luas Serangan (Ha)', data: dataY, backgroundColor: warna, borderRadius: 4 }] },
                 options: {
-                    indexAxis: 'y', // Biar melintang supaya senang baca teks panjang
+                    indexAxis: 'y', 
                     responsive: true, maintainAspectRatio: false,
                     plugins: { title: { display: true, text: tajuk }, legend: { display: false } },
                     onClick: (event, elements) => {
@@ -1064,33 +945,90 @@
 
         function updateCharts(pm, km) { 
             if (typeof Chart === 'undefined') return;
-            
-            // 1. Lukis Carta Pie (Keterukan) - Kekal macam asal Tuan
             if(charts.p) charts.p.destroy(); 
             charts.p = new Chart(document.getElementById('cPie'), { type: 'doughnut', data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } }); 
-
-            // 2. Lukis Carta Bar Interaktif (Level 1)
             lukisCartaPerosak(1);
         }
         
+        var markerLayer = null; 
+        var heatLayer = null;
+        var mapLayerControl = null;
+
         function updateMap(pts) { 
             if(!map) return;
-            if(layer) map.removeLayer(layer); 
+            if(markerLayer) map.removeLayer(markerLayer); 
+            if(heatLayer) map.removeLayer(heatLayer);
+            if(mapLayerControl) map.removeControl(mapLayerControl);
+
             if(pts.length) { 
-                const markers = pts.map(item => {
-                    const p = item.coord; const d = item.data; let pestHTML = ""; let pestObj = {}; try { pestObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p; } catch(e) { pestObj = {}; }
-                    if (pestObj && Object.keys(pestObj).length > 0) { pestHTML = `<div style="margin-top:5px; border-top:1px dashed #ccc; padding-top:5px;"><small class="fw-bold text-muted">PERINCIAN PEROSAK:</small><ul style="padding-left: 15px; margin-bottom: 0; font-size: 0.8rem;">`; Object.entries(pestObj).forEach(([nama, luas]) => { pestHTML += `<li>${nama}: <b class="text-danger">${parseFloat(luas).toFixed(2)} Ha</b></li>`; }); pestHTML += `</ul></div>`; } else { pestHTML = `<div class="mt-2 text-muted small fst-italic">- Tiada data perosak terperinci -</div>`; }
-                    const popupContent = `<div style="font-family: sans-serif; font-size: 0.85rem; min-width: 200px;"><div style="background-color: #f8f9fa; padding: 5px; border-bottom: 1px solid #ddd; margin-bottom: 5px;"><b class="text-success text-uppercase">${d.tn}</b></div><div class="mb-1"><i class="bi bi-geo-alt-fill text-danger"></i> <b>${d.l}</b><br><span class="text-muted small">${d.d}, ${d.n}</span></div><div class="d-flex justify-content-between bg-light border rounded p-1 mb-2" style="font-size: 0.8rem;"><div><span class="d-block text-muted" style="font-size:0.7rem">LUAS TANAM</span><b>${d.lt.toFixed(2)} Ha</b></div><div class="text-end border-start ps-2"><span class="d-block text-muted" style="font-size:0.7rem">JUMLAH SERANGAN</span><b class="text-danger">${d.ls.toFixed(2)} Ha</b></div></div>${pestHTML}<div class="text-end mt-2"><small class="text-muted" style="font-size: 0.7rem;">Tarikh: ${d.t}</small></div></div>`;
+                const markersArr = [];
+                const heatData = []; 
+
+                pts.forEach(item => {
+                    const p = item.coord; 
+                    const d = item.data; 
+                    let pestHTML = ""; 
+                    let pestObj = {}; 
+                    let maxPeratus = 0; 
+
+                    try { pestObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p; } catch(e) { pestObj = {}; }
+                    
+                    if (pestObj && Object.keys(pestObj).length > 0) { 
+                        pestHTML = `<div style="margin-top:5px; border-top:1px dashed #ccc; padding-top:5px;">
+                                    <small class="fw-bold text-muted">PERINCIAN & PERATUS PEROSAK:</small>
+                                    <ul style="padding-left: 15px; margin-bottom: 0; font-size: 0.8rem;">`; 
+                        
+                        Object.entries(pestObj).forEach(([nama, luas]) => { 
+                            let luasPest = parseFloat(luas) || 0;
+                            let peratusPest = 0;
+                            if (d.lt > 0) { peratusPest = (luasPest / d.lt) * 100; }
+                            if (peratusPest > maxPeratus) { maxPeratus = peratusPest; }
+                            pestHTML += `<li>${nama}: <b>${luasPest.toFixed(2)} Ha</b> <span style="font-weight:bold;">(${peratusPest.toFixed(1)}%)</span></li>`; 
+                        }); 
+                        pestHTML += `</ul></div>`; 
+                    } else { 
+                        pestHTML = `<div class="mt-2 text-muted small fst-italic">- Tiada data perosak terperinci -</div>`; 
+                        if (d.lt > 0 && d.ls > 0) maxPeratus = (d.ls / d.lt) * 100;
+                    }
+
+                    heatData.push([p[0], p[1], maxPeratus]);
+
+                    const popupContent = `<div style="font-family: sans-serif; font-size: 0.85rem; min-width: 200px;">
+                        <div style="background-color: #f8f9fa; padding: 5px; border-bottom: 1px solid #ddd; margin-bottom: 5px;"><b class="text-success text-uppercase">${d.tn}</b></div>
+                        <div class="mb-1"><i class="bi bi-geo-alt-fill text-danger"></i> <b>${d.l}</b><br><span class="text-muted small">${d.d}, ${d.n}</span></div>
+                        <div class="d-flex justify-content-between bg-light border rounded p-1 mb-2" style="font-size: 0.8rem;">
+                            <div><span class="d-block text-muted" style="font-size:0.65rem">LUAS TANAM</span><b>${d.lt.toFixed(2)} Ha</b></div>
+                            <div class="text-end border-start ps-2"><span class="d-block text-muted" style="font-size:0.65rem">ANCAMAN MAX</span><b class="text-danger">${maxPeratus.toFixed(1)}%</b></div>
+                        </div>
+                        ${pestHTML}
+                        <div class="text-end mt-2"><small class="text-muted" style="font-size: 0.7rem;">Tarikh: ${d.t}</small></div>
+                    </div>`;
+                    
                     const marker = L.circleMarker(p, { radius: 6, color: 'white', weight: 1, fillColor: '#dc2626', fillOpacity: 0.8 });
-                    marker.bindPopup(popupContent); marker.bindTooltip(`<b>${d.tn}</b>: ${d.l}`, { direction: 'top', offset: [0, -5], opacity: 0.9 }); return marker;
+                    marker.bindPopup(popupContent); 
+                    marker.bindTooltip(`<b>${d.tn}</b>: ${d.l}`, { direction: 'top', offset: [0, -5], opacity: 0.9 }); 
+                    markersArr.push(marker);
                 });
-                layer = L.layerGroup(markers).addTo(map); 
+
+                markerLayer = L.layerGroup(markersArr); 
+                
+                heatLayer = L.heatLayer(heatData, {
+                    radius: 35, blur: 25, max: 100,
+                    gradient: { 0.1: 'blue', 0.4: 'lime', 0.7: 'yellow', 1.0: 'red' }
+                });
+
+                heatLayer.addTo(map);
+
+                const overlayMaps = { "📍 Titik Lokasi (Biasa)": markerLayer, "🔥 Peta Haba (Heatmap)": heatLayer };
+                mapLayerControl = L.control.layers(null, overlayMaps, {collapsed: false}).addTo(map);
+
                 try { map.fitBounds(L.latLngBounds(pts.map(x => x.coord))); } catch(e){}
             } 
         }
+
         function updateHotspot(hData) { const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; }
         
-      function renTab() { 
+        function renTab() { 
             const st = (pg-1)*pSize; 
             const dt = fData.slice(st, st+pSize); 
             document.getElementById('tBody').innerHTML = dt.length ? dt.map((d, i) => { 
@@ -1104,14 +1042,11 @@
                     <td onclick="viewRec(${realIndex})">${d.lt.toFixed(2)}</td>
                     <td onclick="viewRec(${realIndex})" class="text-danger fw-bold">${d.ls.toFixed(2)}</td>
                     <td class="text-center">
-                      <button class="btn btn-sm btn-danger" 
-                        data-lokasi="${d.l}" 
-                        data-pegawai="${d.pg}" 
-                        data-coord="${d.c}" 
-                        data-tarikh="${d.t}" 
-                        onclick="event.stopPropagation(); klikJanaPDF(this)">
-                        <i class="bi bi-file-earmark-pdf-fill"></i> PDF
-                    </button>
+                       <button class="btn btn-sm btn-outline-danger" title="Jana PDF" 
+                                data-lokasi="${d.l}" data-pegawai="${d.pg}" data-timestamp="${d.ts}" 
+                                onclick="event.stopPropagation(); klikJanaPDF(this)">
+                            <i class="bi bi-file-earmark-pdf-fill"></i> PDF
+                        </button>
                     </td>
                 </tr>`; 
             }).join('') : '<tr><td colspan="7" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; 
@@ -1120,32 +1055,30 @@
 
         async function loadMyTasks() {
             const container = document.getElementById('taskContainer');
+            if(!container) return;
             container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
             try {
                 const d = await postData('getMyTasks', { name: uProf.name });
                 myTasksData = d.rows || [];
                 currentHeaders = d.headers || []; 
                 const b = document.getElementById('badgeTask');
-                b.innerText = myTasksData.length; b.style.display = myTasksData.length ? "inline-block" : "none";
+                if(b) { b.innerText = myTasksData.length; b.style.display = myTasksData.length ? "inline-block" : "none"; }
                 if (!myTasksData.length) { container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed">Tiada tugasan aktif.</div>'; return; }
                 container.innerHTML = ""; myTasksData.forEach(r => renderCard(r, container, 'TASK'));
             } catch(e) { container.innerHTML = "Ralat memuatkan tugasan."; }
         }
 
-      // --- KEMASKINI: FUNGSI LOAD PENDING (FIX DATE) ---
         async function loadPend() { 
             const container = document.getElementById('verifyContainer'); 
+            if(!container) return;
             container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>'; 
             try { 
                 const d = await postData('getPending', {state: uProf.state}); 
                 currentPendingRows = d.rows || []; 
-                
-                // Simpan header untuk mapping
                 if(d.headers) currentHeaders = d.headers; 
                 
                 const b = document.getElementById('badgePending');
-                b.innerText = currentPendingRows.length; 
-                b.style.display = currentPendingRows.length ? "inline-block" : "none";
+                if(b) { b.innerText = currentPendingRows.length; b.style.display = currentPendingRows.length ? "inline-block" : "none"; }
 
                 if(!d.rows || !d.rows.length) { 
                     container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>'; 
@@ -1153,29 +1086,22 @@
                 } 
                 
                 container.innerHTML = ""; 
-                
-                // Helper Images
                 const cleanImageLink = (raw) => { if (!raw) return []; let str = String(raw).trim(); if(str.length < 5) return []; str = str.replace(/[\[\]"'\\]/g, ''); return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http')); }; 
                 const toViewLink = (link) => { const idMatch = link.match(/[-\w]{25,}/); if(idMatch) return `https://drive.google.com/file/d/${idMatch[0]}/view?usp=sharing`; return link; };
 
                 d.rows.forEach((r) => { 
                     const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }; 
                     
-                    // --- PEMBETULAN TARIKH DI SINI ---
-                    // Kita guna formatDateDisplay (Global Function) dan bukan formatTkh (Local Function lama)
                     const timestamp = getVal('Timestamp'); 
                     const tkhHantar = formatDateDisplay(timestamp); 
-                    
                     const rawTarikhBancian = getVal('Tarikh Bancian') || getVal('Tarikh') || getVal('Date');
                     const tarikhBancian = formatDateDisplay(rawTarikhBancian);
-                    // ---------------------------------
-
                     const nama = getVal('Nama') || getVal('Pegawai'); 
                     const email = getVal('Email') || "-"; 
                     const negeri = getVal('Negeri') || "-"; 
                     const daerah = getVal('Daerah') || "-"; 
                     const lokasi = getVal('Lokasi') || getVal('Kebun') || "-"; 
-                    const koordinat = String(getVal('Koordinat') || "-"); 
+                    const koordinat = getVal('Koordinat') || "-"; 
                     const tanaman = getVal('Nama Tanaman') || getVal('Tanaman') || "-"; 
                     const varieti = getVal('Varieti') || "-"; 
                     const umur = getVal('Umur') || "-"; 
@@ -1259,30 +1185,23 @@
             const tanaman = getV('NAMA TANAMAN') || getV('TANAMAN');
             const kategori = getV('KATEGORI') || "-";
             const tarikh = formatDateDisplay(getV('TARIKH') || getV('DATE'));
-            const statusRekod = getV('STATUS') || ""; // Tarik status sebenar dari sheet
+            const statusRekod = getV('STATUS') || ""; 
             const log = getV('LOG') || "";
             
-            let btnAction = "";
-            let badgeHtml = "";
-            let cardBorder = "primary";
-            let bgHeader = "light";
+            let btnAction = ""; let badgeHtml = ""; let cardBorder = "primary"; let bgHeader = "light";
 
             if (type === 'TASK') {
                 if (statusRekod.toUpperCase() === 'DRAF') {
-                    // PAPARAN UNTUK DRAF
                     badgeHtml = `<span class="badge bg-secondary">DRAF</span>`;
                     cardBorder = "secondary";
                     btnAction = `<button class="btn btn-success w-100 fw-bold btn-sm shadow-sm" onclick="openTaskEdit(${r.row})"><i class="bi bi-pencil-square"></i> SAMBUNG ISI / HANTAR</button>`;
                 } else {
-                    // PAPARAN UNTUK DITOLAK
                     badgeHtml = `<span class="badge bg-danger">DITOLAK</span>`;
-                    cardBorder = "danger";
-                    bgHeader = "danger bg-opacity-10";
+                    cardBorder = "danger"; bgHeader = "danger bg-opacity-10";
                     let reason = log.includes("DITOLAK") ? log.split("Sebab:").pop() : "Sila semak log.";
                     btnAction = `<div class="task-reject-box p-2 mb-2 small"><i class="bi bi-exclamation-triangle-fill"></i> ${reason}</div><button class="btn btn-danger w-100 fw-bold btn-sm" onclick="openTaskEdit(${r.row})">KEMASKINI & HANTAR</button>`;
                 }
             } else {
-                // PAPARAN UNTUK ADMIN/PENYELIA (BARU)
                 badgeHtml = `<span class="badge bg-warning text-dark">BARU</span>`;
                 btnAction = `<div class="d-flex gap-2"><button class="btn btn-outline-danger flex-grow-1 btn-sm fw-bold" onclick="subVer(${r.row},'REJECT')">TOLAK</button><button class="btn btn-success flex-grow-1 btn-sm fw-bold" onclick="subVer(${r.row},'APPROVE')">SAHKAN</button></div>`;
             }
@@ -1327,7 +1246,6 @@
             } else { currentFile = null; preview.style.display = 'none'; label.innerText = "Tiada gambar dipilih"; label.classList.remove('text-success'); }
         }
 
-        // --- NEW EDIT FORM FUNCTIONS ---
         function updateDistricts(srcId, targetId) {
             const state = document.getElementById(srcId).value;
             const target = document.getElementById(targetId);
@@ -1350,39 +1268,24 @@
             const kat = document.getElementById('fe_kategori').value;
             const tan = document.getElementById('fe_tanaman').value;
             let pests = [];
-            
-            if(kat && tan && pestMasterData[kat] && pestMasterData[kat][tan]) { 
-                pests = pestMasterData[kat][tan]; 
-            }
-            
-            let html = ''; 
-            pests.forEach(p => {
-                html += `<option value="${p}">`;
-            });
-            
+            if(kat && tan && pestMasterData[kat] && pestMasterData[kat][tan]) { pests = pestMasterData[kat][tan]; }
+            let html = ''; pests.forEach(p => { html += `<option value="${p}">`; });
             return html;
         }
-        
-       function updatePestRowsOnCropChange() {
+
+        function updatePestRowsOnCropChange() {
             document.querySelectorAll('.p-name').forEach(input => {
-                // Cari datalist yang berada tepat di sebelah kotak input
                 const datalist = input.nextElementSibling; 
-                if(datalist && datalist.tagName === 'DATALIST') {
-                    datalist.innerHTML = getPestOptionsHTML(input.value);
-                }
+                if(datalist && datalist.tagName === 'DATALIST') { datalist.innerHTML = getPestOptionsHTML(input.value); }
             });
         }
 
-        
         function setDropdownValue(el, val) {
             if(!val) return;
-            for(let i=0; i<el.options.length; i++) { 
-                if(el.options[i].value.toUpperCase() === String(val).toUpperCase()) { el.selectedIndex = i; return; } 
-            }
+            for(let i=0; i<el.options.length; i++) { if(el.options[i].value.toUpperCase() === String(val).toUpperCase()) { el.selectedIndex = i; return; } }
             let opt = document.createElement('option'); opt.value = val; opt.innerText = val + " (Data Asal)"; opt.selected = true; el.appendChild(opt);
         }
 
-       // --- RENDER EDIT FORM (GALERI PINTAR) ---
         function renderEditForm(rowID, rowData) {
             currentFile = null;
             const d = rowData;
@@ -1393,34 +1296,10 @@
             const savedNegeri = getV('NEGERI');
             const savedDaerah = getV('DAERAH');
             const savedKat = getV('KATEGORI');
-           const savedTan = getV('NAMA TANAMAN') || getV('TANAMAN');
-            
-            // --- KOD BARU: TARIK, TUKAR LINK & LUKIS GAMBAR LAMA ---
+            const savedTan = getV('NAMA TANAMAN') || getV('TANAMAN');
             const savedImg = getV('IMAGE LINKS (COMMA SEPARATED)') || getV('GAMBAR') || getV('IMAGE') || getV('FOTO') || "";
-            let oldImgPreviewHTML = "";
             
-            if(savedImg && savedImg.trim() !== "") {
-                const arr = savedImg.split(',');
-                oldImgPreviewHTML = `<div class="mt-2 pt-2 border-top"><small class="text-success fw-bold d-block mb-1"><i class="bi bi-images"></i> Gambar Sedia Ada:</small>` +
-                arr.map(lnk => {
-                    let cleanLnk = lnk.trim().replace(/[\[\]"'\\]/g, '');
-                    if(!cleanLnk) return "";
-                    
-                    // Magik: Cari ID Google Drive dan tukar ke direct link (thumbnail)
-                    let directSrc = cleanLnk;
-                    const idMatch = cleanLnk.match(/[-\w]{25,}/);
-                    if (idMatch) {
-                        // Guna sz=w200 supaya gambar ringan & terus keluar dalam tag <img>
-                        directSrc = `https://drive.google.com/thumbnail?id=${idMatch[0]}&sz=w200`;
-                    }
-                    
-                    return `<a href="${cleanLnk}" target="_blank" title="Klik untuk lihat saiz penuh">
-                                <img src="${directSrc}" style="width: 60px; height: 60px; object-fit: cover; margin-right: 5px; border-radius: 5px; border: 1px solid #ccc; display: inline-block;">
-                            </a>`;
-                }).join('') + `</div>`;
-            }
-            // ---------------------------------------------
-          let html = `
+           let html = `
             <div id="fullEditForm">
                 <input type="hidden" id="fe_row" value="${rowID}">
                 <h6 class="text-primary border-bottom pb-2">A. Lokasi</h6>
@@ -1487,14 +1366,13 @@
             else if (pestManual) { addPestRow(pestManual, getV('LUAS SERANGAN'), getV('KETERUKAN')); } 
             else { addPestRow(); }
             
-            // --- PANGGIL FUNGSI BLOK 2 DI SINI UNTUK LUKIS GAMBAR LAMA ---
             renderEditImages(savedImg); 
-            // -------------------------------------------------------------
 
             document.getElementById('modalTitle').innerText = "KEMASKINI DATA";
             new bootstrap.Modal(document.getElementById('detailModal')).show();
         }
 
+        let retainedImagesGlobal = []; 
 
         function renderEditImages(imgString) {
             const container = document.getElementById('edit_image_preview');
@@ -1506,17 +1384,10 @@
                 links.forEach((link, index) => {
                     if(link) {
                         retainedImagesGlobal.push(link);
-                        
-                        // --- KOD BARU: Tukar link Drive jadi Thumbnail URL ---
                         let imgSrc = link; 
                         const matchId = link.match(/[-\w]{25,}/); 
-                        if (matchId && matchId[0]) {
-                            // Guna API thumbnail Drive. sz=w150 maksudnya resize lebar 150px (loading laju sikit)
-                            imgSrc = `https://drive.google.com/thumbnail?id=${matchId[0]}&sz=w150`;
-                        }
-                        // ----------------------------------------------------
+                        if (matchId && matchId[0]) imgSrc = `https://drive.google.com/thumbnail?id=${matchId[0]}&sz=w150`;
 
-                        // Bina kotak thumbnail dengan butang X
                         const div = document.createElement('div');
                         div.className = "position-relative";
                         div.style = "width: 75px; height: 75px; border: 1px solid #ccc; border-radius: 5px; overflow: hidden;";
@@ -1534,17 +1405,14 @@
             }
         }
 
-        // Fungsi bila staf tekan butang X (Kekal sama)
         function removeRetainedImage(index, btnElement) {
             retainedImagesGlobal[index] = null; 
             btnElement.parentElement.remove(); 
         }
-
+        
        function addPestRow(name="", area="", sev="") {
             const tbody = document.querySelector('#fe_pestTable tbody');
             const tr = document.createElement('tr');
-            
-            // Cipta ID unik untuk datalist supaya tak bertembung jika ada banyak baris perosak
             const uniqueId = 'dl_pest_' + Math.floor(Math.random() * 10000); 
             const pestOptions = getPestOptionsHTML(name);
             
@@ -1571,7 +1439,6 @@
 
        async function saveFullEdit() {
             if(!confirm("Hantar kemaskini?")) return;
-            
             const btn = event.target; 
             btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> Memproses...'; 
             btn.disabled=true;
@@ -1582,13 +1449,12 @@
             const luasS = {}, sevS = {}, pctS = {};
             
             document.querySelectorAll('#fe_pestTable tbody tr').forEach(tr => {
-                const n = tr.querySelector('.p-name').value.toUpperCase().trim();
+                const n = tr.querySelector('.p-name').value;
                 const a = parseFloat(tr.querySelector('.p-area').value) || 0;
                 const s = tr.querySelector('.p-sev').value;
                 if(n) { luasS[n]=a; sevS[n]=s; pctS[n] = luasT>0 ? ((a/luasT)*100).toFixed(2):0; }
             });
 
-            // --- KUTIP GAMBAR LAMA & BARU ---
             const finalRetainedImages = typeof retainedImagesGlobal !== 'undefined' ? retainedImagesGlobal.filter(link => link !== null) : [];
             const fileInput = document.getElementById('fe_img');
             const files = fileInput ? fileInput.files : [];
@@ -1596,15 +1462,13 @@
 
             if (files.length > 0) {
                 Swal.fire({ title: 'Memproses Gambar...', html: 'Sila tunggu sebentar...', showConfirmButton: false, allowOutsideClick: false });
-                
                 const readPromises = Array.from(files).map(file => {
                     return new Promise((resolve) => {
                         const reader = new FileReader();
                         reader.onload = (e) => {
                             let ext = ".jpg"; 
                             if(file.name.includes('.')) ext = file.name.substring(file.name.lastIndexOf('.'));
-                            let finalName = captionVal ? (captionVal + ext) : file.name;
-                            
+                            let finalName = captionVal ? (captionVal + ext) : file.name; 
                             resolve({ imgName: finalName, imgType: file.type, imgData: e.target.result.split(',')[1] });
                         };
                         reader.readAsDataURL(file);
@@ -1646,24 +1510,19 @@
                 btn.innerHTML="SIMPAN PERUBAHAN"; btn.disabled=false;
             }
         }
-        // --- DASHBOARD VIEW MODAL ---
+
         function viewRec(idx) {
             const d = fData[idx]; if (!d) return;
             const cleanImg = (raw) => { if (!raw) return []; let str = String(raw).trim().replace(/[\[\]"'\\]/g, ''); return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http')); };
-            let pestRows = "";
+           let pestRows = "";
             if (d.p && Object.keys(d.p).length > 0) { 
                 Object.keys(d.p).forEach(k => { 
                     let luasVal = parseFloat(d.p[k]) || 0;
-                    
-                    // 👇 KIRAAN PERATUS AUTOMATIK DI PAPARAN 👇
                     let luasTanam = parseFloat(d.lt) || 0;
                     let pctVal = luasTanam > 0 ? ((luasVal / luasTanam) * 100).toFixed(2) : "0.00";
-                    
-                    // Tangkap tahap keterukan (Jika spesifik tiada, guna purata)
                     let sevVal = (d.pk && d.pk[k]) ? d.pk[k] : (d.k || 0); 
                     let level = parseInt(sevVal) || 0; 
                     let badgeColor = level < 3 ? 'success' : (level < 4 ? 'warning' : 'danger'); 
-                    
                     pestRows += `<tr><td style="font-size:0.85rem" class="text-uppercase">${k}</td><td class="text-center fw-bold">${luasVal.toFixed(2)}</td><td class="text-center small">${pctVal}%</td><td class="text-center"><span class="badge bg-${badgeColor}">T${level}</span></td></tr>`; 
                 }); 
             } else { 
@@ -1716,117 +1575,30 @@
         async function doDeleteRec(rowID) { if(!confirm("Padam rekod ini?")) return; const btn = event.target.closest('button'); btn.innerHTML='...'; btn.disabled=true; const r = await postData('deleteEntry', {row:rowID}); alert(r.message); if(r.success) location.reload(); }
         function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
         async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
-        async function approveAll() { 
-            if(!confirm("Sahkan SEMUA data yang telah diisi?")) return; 
-            
-            // 1. Kunci butang supaya tak boleh double-click
-            const btn = event.target.closest('button');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Memproses...';
-            btn.disabled = true;
-
-            // 2. Tunjuk Progress Bar (HTML sedia ada Tuan)
-            const progBox = document.getElementById('bulkProgress');
-            const progBar = document.getElementById('progBar');
-            const progText = document.getElementById('progText');
-            if(progBox) progBox.style.display = 'block';
-            if(progBar) progBar.style.width = '0%';
-            if(progText) progText.innerText = '0%';
-
-            // 3. Tarik senarai data yang perlu disahkan
-            const d = await postData('getPending', {state: uProf.state}); 
-            
-            if(!d.rows || !d.rows.length) {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                if(progBox) progBox.style.display = 'none';
-                alert("Tiada data untuk disahkan.");
-                return; 
-            } 
-            
-            let total = d.rows.length;
-            let count = 0;
-
-            // 4. Mula proses satu persatu (Looping)
-            for (const r of d.rows) { 
-                await postData('submitVerify', {row: r.row, act: 'APPROVE', reason: 'Bulk', name: uProf.name}); 
-                
-                // 5. Update Progress Bar supaya Penyelia nampak pergerakan
-                count++;
-                let pct = Math.round((count / total) * 100);
-                if(progBar) progBar.style.width = pct + '%';
-                if(progText) progText.innerText = pct + '%';
-            } 
-            
-            alert("✅ Selesai! Semua data berjaya disahkan."); 
-            
-            // 6. Reset UI dan Butang kembali kepada asal
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            if(progBox) progBox.style.display = 'none';
-            
-            loadPend(); 
-            initDash(); 
-            checkPendingCount();
-        }
+        async function approveAll() { if(!confirm("Sahkan SEMUA?")) return; const d = await postData('getPending', {state: uProf.state}); if(!d.rows.length) return; for (const r of d.rows) { await postData('submitVerify', {row: r.row, act: 'APPROVE', reason: 'Bulk', name: uProf.name}); } alert("Selesai"); loadPend(); initDash(); }
         async function downloadDualExcel() { if (!fData.length) { alert("Tiada data!"); return; } const workbook = new ExcelJS.Workbook(); const worksheet = workbook.addWorksheet('Laporan Penuh'); worksheet.columns = [{ header: 'ID', key: 'id', width: 6 }, { header: 'Nama Pegawai', key: 'pg', width: 25 }, { header: 'Tarikh', key: 't', width: 12 }, { header: 'Negeri', key: 'n', width: 15 }, { header: 'Daerah', key: 'd', width: 15 }, { header: 'Lokasi', key: 'l', width: 22 }, { header: 'Koordinat', key: 'c', width: 22 }, { header: 'Kategori', key: 'kt', width: 18 }, { header: 'Tanaman', key: 'tn', width: 18 }, { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, { header: 'Perosak', key: 'p', width: 20 }, { header: 'Keterukan', key: 'k', width: 15 }, { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, { header: '% Serangan', key: 'pct', width: 15 }, { header: 'Syor Kawalan', key: 's', width: 50 }]; worksheet.getRow(1).font = { bold: true }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }; let rowIndex = 2; fData.forEach(d => { let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]]; let startRow = rowIndex; let luasTanam = parseFloat(d.lt) || 0; pestEntries.forEach(([pName, pArea]) => { let luasSerang = parseFloat(pArea) || 0; let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%"; const row = worksheet.getRow(rowIndex); row.values = { id: d.id, pg: d.pg || "-", t: d.t, n: d.n, d: d.d, l: d.l, c: d.c || "-", kt: d.kt || "-", tn: d.tn, lt: luasTanam, p: pName, k: d.k, ls: luasSerang, pct: pctVal, s: d.s }; row.eachCell({ includeEmpty: true }, (cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; }); rowIndex++; }); if (pestEntries.length > 1) { for (let c = 1; c <= 10; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); } worksheet.mergeCells(startRow, 15, rowIndex - 1, 15); } }); const buffer = await workbook.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = window.URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'PNR_Laporan_Lengkap.xlsx'; anchor.click(); window.URL.revokeObjectURL(url); }
         async function dlPDF() { const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Jana...'; btn.disabled = true; let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length - 1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length - 1])}`; } try { let targetName = document.getElementById('selNegeri').value; if (uProf && uProf.state === "CAMERON HIGHLANDS") { targetName = "PAHANG"; } else if (uProf && uProf.state !== "ALL") { targetName = uProf.state; } if (!targetName) targetName = "SEMUA"; const m = { user: uProf.name, negeri: targetName, dates: dateLabel }; const r = await postData('genPDF', { data: fData, meta: m }); if (r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } else { alert("Gagal menjana PDF: " + r.message); } } catch (e) { console.error(e); alert("Ralat sistem semasa menjana PDF."); } btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false; }
      
-    // --- FUNGSI KLIK MUAT TURUN PDF (AUTO-DOWNLOAD BASE64) ---
         async function klikJanaPDF(btnElement) {
-            // Cek jika tiada internet
-            if (!navigator.onLine) {
-                Swal.fire('Mod Offline', 'Harap maklum, penjanaan PDF memerlukan capaian internet.', 'warning');
-                return;
-            }
-
-            // 1. Ambil data dari butang yang ditekan (KITA TAMBAH COORD & TARIKH DI SINI)
+            if (!navigator.onLine) { Swal.fire('Mod Offline', 'Penjanaan PDF memerlukan capaian internet.', 'warning'); return; }
             const lokasiStr = btnElement.getAttribute('data-lokasi');
             const pegawaiStr = btnElement.getAttribute('data-pegawai');
-            const coordStr = btnElement.getAttribute('data-coord');     // <--- TAMBAH INI
-            const tarikhStr = btnElement.getAttribute('data-tarikh');   // <--- TAMBAH INI
+            const exactTimestamp = btnElement.getAttribute('data-timestamp'); 
 
-            // Papar loading screen
             Swal.fire({
                 title: 'Menjana Laporan PDF...',
                 html: 'Sila tunggu sebentar. Memproses data & gambar...<br><br><div class="spinner-border text-danger" role="status"></div>',
-                showConfirmButton: false,
-                allowOutsideClick: false
+                showConfirmButton: false, allowOutsideClick: false
             });
 
             try {
-                // 2. Panggil backend API (HANTAR 4 DATA KE BACKEND)
-                const r = await postData('janaPDFBaris', { 
-                    lokasi: lokasiStr, 
-                    pegawai: pegawaiStr,
-                    coord: coordStr,      // <--- HANTAR KOORDINAT
-                    tarikh: tarikhStr     // <--- HANTAR TARIKH
-                });
-                
-                // Semak jika backend memulangkan status success dan data base64
+                const r = await postData('janaPDFBaris', { lokasi: lokasiStr, pegawai: pegawaiStr, timestampTarget: exactTimestamp });
                 if ((r.success || r.status === 'success') && r.base64) {
-                    
-                    // Proses Muat Turun Terus (Auto-Download) ke Peranti
                     const link = document.createElement('a');
                     link.href = "data:application/pdf;base64," + r.base64;
-                    
-                    // Guna nama fail dari backend, atau buat nama default jika tiada
                     link.download = r.fileName || ("Laporan_" + lokasiStr.replace(/[^a-zA-Z0-9]/g, "_") + ".pdf");
-                    
-                    // Simulasikan butang ditekan oleh pengguna (tanpa nampak di skrin)
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    // Tutup loading dan tunjuk mesej Berjaya
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berjaya!',
-                        text: 'Laporan PDF telah disimpan ke dalam peranti anda.',
-                        timer: 3000,
-                        showConfirmButton: false
-                    });
-
+                    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                    Swal.fire({ icon: 'success', title: 'Berjaya!', text: 'Laporan PDF sedia!', timer: 3000, showConfirmButton: false });
                 } else {
                     Swal.fire('Ralat', r.message || r.error || 'Gagal memuatkan data PDF.', 'error');
                 }
@@ -1834,189 +1606,73 @@
                 Swal.fire('Ralat API', 'Gagal berhubung dengan pelayan. Sila cuba lagi.', 'error');
             }
         }
-// ==========================================
-        // FUNGSI PENDAFTARAN AKAUN BARU (SWEETALERT2)
-        // ==========================================
-        async function toggleDaftar() {
-            const { value: formValues } = await Swal.fire({
-                title: 'Daftar Akaun Baru',
-                width: '500px',
-                html: `
-                    <div class="text-start mt-3" style="font-size: 0.9rem;">
-                        <div class="alert alert-info py-2 small mb-3"><i class="bi bi-info-circle-fill"></i> Akaun baru perlu disahkan oleh Admin sebelum boleh digunakan.</div>
-                        
-                        <label class="fw-bold mb-1 text-secondary">Nama Penuh (Seperti Kad Pengenalan)</label>
-                        <input id="reg-nama" class="form-control form-control-sm mb-3 text-uppercase" placeholder="Nama penuh anda">
-                        
-                        <div class="row g-2 mb-3">
-                            <div class="col-6">
-                                <label class="fw-bold mb-1 text-secondary">No. K/P (Tanpa Sengkang)</label>
-                                <input id="reg-ic" type="number" class="form-control form-control-sm" placeholder="900101011234">
-                            </div>
-                            <div class="col-6">
-                                <label class="fw-bold mb-1 text-secondary">Jawatan</label>
-                                <input id="reg-jawatan" class="form-control form-control-sm text-uppercase" placeholder="Cth: PEGAWAI PERTANIAN">
-                            </div>
-                        </div>
-                        
-                        <label class="fw-bold mb-1 text-secondary">Negeri Bertugas</label>
-                        <select id="reg-negeri" class="form-select form-select-sm mb-4">
-                            <option value="">- Pilih Negeri -</option>
-                            <option value="JOHOR">JOHOR</option>
-                            <option value="KEDAH">KEDAH</option>
-                            <option value="KELANTAN">KELANTAN</option>
-                            <option value="MELAKA">MELAKA</option>
-                            <option value="NEGERI SEMBILAN">NEGERI SEMBILAN</option>
-                            <option value="PAHANG">PAHANG</option>
-                            <option value="PERAK">PERAK</option>
-                            <option value="PERLIS">PERLIS</option>
-                            <option value="PULAU PINANG">PULAU PINANG</option>
-                            <option value="SABAH">SABAH</option>
-                            <option value="SARAWAK">SARAWAK</option>
-                            <option value="SELANGOR">SELANGOR</option>
-                            <option value="TERENGGANU">TERENGGANU</option>
-                            <option value="W.P. KUALA LUMPUR">W.P. KUALA LUMPUR</option>
-                            <option value="W.P. LABUAN">W.P. LABUAN</option>
-                            <option value="W.P. PUTRAJAYA">W.P. PUTRAJAYA</option>
-                        </select>
 
-                        <hr class="my-3 text-muted">
-
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="fw-bold mb-1 text-primary">ID Pengguna (Username)</label>
-                                <input id="reg-uid" class="form-control form-control-sm text-lowercase" placeholder="Pilih username anda">
-                            </div>
-                            <div class="col-6">
-                                <label class="fw-bold mb-1 text-danger">Kata Laluan</label>
-                                <input id="reg-pwd" type="password" class="form-control form-control-sm" placeholder="Pilih kata laluan">
-                            </div>
-                        </div>
-                    </div>
-                `,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: '<i class="bi bi-person-plus-fill me-1"></i> Hantar Pendaftaran',
-                cancelButtonText: 'Batal',
-                confirmButtonColor: '#198754',
-                preConfirm: () => {
-                    const nama = document.getElementById('reg-nama').value.trim();
-                    const ic = document.getElementById('reg-ic').value.trim();
-                    const jawatan = document.getElementById('reg-jawatan').value.trim();
-                    const negeri = document.getElementById('reg-negeri').value;
-                    const uid = document.getElementById('reg-uid').value.trim();
-                    const pwd = document.getElementById('reg-pwd').value.trim();
-
-                    if(!nama || !ic || !jawatan || !negeri || !uid || !pwd) {
-                        Swal.showValidationMessage('Sila isi SEMUA maklumat yang diwajibkan!');
-                        return false;
-                    }
-                    
-                    // Kembalikan data dalam format yang Backend perlukan
-                    return { 
-                        nama: nama.toUpperCase(), 
-                        ic: ic, 
-                        jawatan: jawatan.toUpperCase(), 
-                        negeri: negeri, 
-                        uid: uid.toLowerCase(), 
-                        pwd: pwd,
-                        role: "STAF",        // Default sistem
-                        status: "MENUNGGU",  // Default sistem
-                        catatan: "Didaftar melalui PWA"
-                    };
-                }
-            });
-
-            if (formValues) {
-                Swal.fire({ 
-                    title: 'Menghantar Pendaftaran...', 
-                    allowOutsideClick: false, 
-                    showConfirmButton: false, 
-                    didOpen: () => Swal.showLoading() 
-                });
-                
-                // Panggil API registerUser di Backend
-                const r = await postData('registerUser', formValues);
-                
-                if (r.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berjaya!',
-                        text: r.message,
-                        confirmButtonColor: '#198754'
-                    });
-                } else {
-                    Swal.fire('Gagal Mendaftar', r.message, 'error');
-                }
-            }
-        }
-
-
-        
-        // ==========================================
-        // FUNGSI LUPA KATA LALUAN (SEMAKAN IC & NAMA)
-        // ==========================================
         async function lupaKatalaluan() {
             const { value: formValues } = await Swal.fire({
                 title: 'Lupa Akses Log Masuk?',
-                html: `
-                    <div class="text-start mt-3">
-                        <label class="small fw-bold">Nama Penuh</label>
-                        <input id="swal-nama" class="form-control mb-3 text-uppercase" placeholder="Sama seperti dalam sistem">
-                        <label class="small fw-bold">No. K/P (Tanpa Sengkang)</label>
-                        <input id="swal-ic" type="number" class="form-control" placeholder="Cth: 900101011234">
-                    </div>
-                `,
+                html: `<div class="text-start mt-3"><label class="small fw-bold">Nama Penuh</label><input id="swal-nama" class="form-control mb-3 text-uppercase" placeholder="Sama seperti dalam sistem"><label class="small fw-bold">No. K/P (Tanpa Sengkang)</label><input id="swal-ic" type="number" class="form-control" placeholder="Cth: 900101011234"></div>`,
                 focusConfirm: false, showCancelButton: true, confirmButtonText: 'Semak Data', cancelButtonText: 'Batal',
                 preConfirm: () => {
-                    const nama = document.getElementById('swal-nama').value.trim();
-                    const ic = document.getElementById('swal-ic').value.trim();
+                    const nama = document.getElementById('swal-nama').value.trim(); const ic = document.getElementById('swal-ic').value.trim();
                     if(!nama || !ic) { Swal.showValidationMessage('Sila isi kedua-dua maklumat!'); return false; }
                     return { nama, ic };
                 }
             });
 
             if (formValues) {
-                Swal.fire({ title: 'Menyemak Data...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+                Swal.fire({ title: 'Menyemak Pangkalan Data...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
                 const r = await postData('verifyForgotPwd', formValues);
-
                 if (r.success) {
                     const { value: updateValues } = await Swal.fire({
                         title: 'Rekod Dijumpai!',
-                        html: `
-                            <div class="alert alert-success small mb-3">Kekalkan atau tukar kata laluan baru di sini.</div>
-                            <div class="text-start">
-                                <label class="small fw-bold text-success">Username</label>
-                                <input id="upd-uid" class="form-control mb-3" value="${r.uid}">
-                                <label class="small fw-bold text-success">Kata Laluan</label>
-                                <input id="upd-pwd" class="form-control" value="${r.pwd}">
-                            </div>
-                        `,
+                        html: `<div class="alert alert-success small mb-3">Ini adalah akses semasa anda. Anda boleh kekalkan atau tukar kata laluan baru di sini.</div><div class="text-start"><label class="small fw-bold text-success">Username</label><input id="upd-uid" class="form-control mb-3" value="${r.uid}"><label class="small fw-bold text-success">Kata Laluan</label><input id="upd-pwd" class="form-control" value="${r.pwd}"></div>`,
                         showCancelButton: true, confirmButtonText: '<i class="bi bi-save"></i> Simpan & Log Masuk', cancelButtonText: 'Tutup',
                         preConfirm: () => {
-                            const uid = document.getElementById('upd-uid').value.trim();
-                            const pwd = document.getElementById('upd-pwd').value.trim();
-                            if(!uid || !pwd) { Swal.showValidationMessage('Tidak boleh kosong!'); return false; }
+                            const uid = document.getElementById('upd-uid').value.trim(); const pwd = document.getElementById('upd-pwd').value.trim();
+                            if(!uid || !pwd) { Swal.showValidationMessage('Username dan Password tidak boleh kosong!'); return false; }
                             return { uid, pwd, row: r.row };
                         }
                     });
 
                     if (updateValues) {
-                        Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+                        Swal.fire({ title: 'Menyimpan Akses Baru...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
                         const u = await postData('updateMyAccess', updateValues);
                         if (u.success) {
-                            Swal.fire('Berjaya!', 'Akses telah dikemaskini.', 'success');
-                            document.getElementById('uid').value = updateValues.uid;
-                            document.getElementById('pwd').value = updateValues.pwd;
+                            Swal.fire('Berjaya!', 'Akses anda telah dikemaskini.', 'success');
+                            document.getElementById('uid').value = updateValues.uid; document.getElementById('pwd').value = updateValues.pwd;
                         } else { Swal.fire('Ralat', u.message, 'error'); }
                     }
                 } else { Swal.fire('Tidak Dijumpai', r.message, 'error'); }
             }
         }
 
-        // ==========================================
-        // FUNGSI PENGURUSAN PENGGUNA (ADMIN PANEL)
-        // ==========================================
+        function toggleDaftar(show) {
+            document.getElementById('formLogin').style.display = show ? 'none' : 'block';
+            document.getElementById('formDaftar').style.display = show ? 'block' : 'none';
+            if(show) { ['regNama', 'regIC', 'regJawatan', 'regNegeri', 'regUid', 'regPwd'].forEach(id => document.getElementById(id).value = ''); }
+        }
+
+        async function doRegister() {
+            const payload = {
+                uid: document.getElementById('regUid').value.trim(), pwd: document.getElementById('regPwd').value.trim(),
+                nama: document.getElementById('regNama').value.trim().toUpperCase(), negeri: document.getElementById('regNegeri').value,
+                role: 'STAFF', jawatan: document.getElementById('regJawatan').value.trim().toUpperCase(), ic: document.getElementById('regIC').value.trim(), status: 'MENUNGGU', catatan: 'Daftar melalui PWA'
+            };
+
+            if(!payload.nama || !payload.ic || !payload.negeri || !payload.uid || !payload.pwd) { Swal.fire('Maklumat Tidak Lengkap', 'Sila isi semua ruangan yang wajib!', 'warning'); return; }
+
+            const btn = document.getElementById('btnReg'); btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Menghantar...';
+
+            try {
+                const r = await postData('registerUser', payload);
+                if(r.success) {
+                    Swal.fire({ icon: 'success', title: 'Pendaftaran Berjaya!', text: 'Akaun anda sedang MENUNGGU kelulusan Admin. Sila maklumkan kepada Admin untuk pengaktifan.', confirmButtonColor: '#10b981' });
+                    toggleDaftar(false); 
+                } else { Swal.fire('Ralat Pendaftaran', r.message, 'error'); }
+            } catch(e) { Swal.fire('Ralat', 'Gagal berhubung dengan pelayan.', 'error'); }
+            btn.disabled = false; btn.innerHTML = 'HANTAR PENDAFTARAN';
+        }
+
         let allUsersData = [];
 
         async function loadUsers() {
@@ -2025,13 +1681,12 @@
             try {
                 const d = await postData('getUserList', {});
                 if(d.success) {
-                    allUsersData = d.users || [];
-                    renderUsers(allUsersData);
+                    allUsersData = d.users || []; renderUsers(allUsersData);
                 } else { tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${d.message}</td></tr>`; }
             } catch(e) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Ralat memuatkan senarai pengguna.</td></tr>'; }
         }
 
-        function renderUsers(dataList) {
+       function renderUsers(dataList) {
             const tbody = document.getElementById('userTableBody');
             if(dataList.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tiada data dijumpai.</td></tr>'; return; }
             
@@ -2046,11 +1701,8 @@
                 return `
                 <tr>
                     <td><div class="fw-bold text-dark text-uppercase">${u.nama}</div><div class="small text-muted">${u.jawatan} - ${u.negeri}</div></td>
-                    <td>${maskIC(u.ic)}</td>
-                    <td>
-                        <span class="d-block small text-primary fw-bold"><i class="bi bi-person me-1"></i>${u.uid}</span>
-                        <span class="d-block small text-danger fw-bold"><i class="bi bi-key me-1"></i>${u.pwd}</span>
-                    </td>
+                    <td class="font-monospace">${u.ic}</td>
+                    <td><span class="d-block small text-primary fw-bold"><i class="bi bi-person me-1"></i>${u.uid}</span><span class="d-block small text-danger fw-bold"><i class="bi bi-key me-1"></i>${u.pwd}</span></td>
                     <td><span class="badge bg-light text-dark border">${u.role}</span></td>
                     <td class="text-center">${statusBadge}</td>
                     <td class="text-center">
@@ -2069,19 +1721,17 @@
         }
 
         async function updateUserStatus(row, newStatus) {
-            if(!confirm(`Tukar status kepada ${newStatus}?`)) return;
+            if(!confirm(`Adakah anda pasti mahu menukar status kepada ${newStatus}?`)) return;
             const r = await postData('updateUser', { row: row, field: 'status', value: newStatus });
             if(r.success) { loadUsers(); } else { alert("Ralat: " + r.message); }
         }
 
         async function deleteUser(row) {
-            const res = await Swal.fire({
-                title: 'Padam Akaun?', text: "Tindakan ini KEKAL!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6c757d', confirmButtonText: '<i class="bi bi-trash"></i> Ya, Padam!', cancelButtonText: 'Batal'
-            });
+            const res = await Swal.fire({ title: 'Padam Akaun?', text: "Tindakan ini akan memadam data pengguna ini secara KEKAL!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6c757d', confirmButtonText: '<i class="bi bi-trash"></i> Ya, Padam!', cancelButtonText: 'Batal' });
             if (res.isConfirmed) {
                 Swal.fire({ title: 'Memadam...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                 const r = await postData('deleteUser', { row: row });
-                if (r.success) { Swal.fire('Berjaya!', 'Akaun dipadam.', 'success'); loadUsers(); } else { Swal.fire('Ralat', r.message, 'error'); }
+                if (r.success) { Swal.fire('Berjaya!', 'Akaun telah dipadam.', 'success'); loadUsers(); } else { Swal.fire('Ralat', r.message, 'error'); }
             }
         }
 
@@ -2090,41 +1740,37 @@
             if(!u) return;
             
             const { value: formValues } = await Swal.fire({
-                title: 'Kemaskini Pengguna', width: '600px',
+                title: 'Kemaskini Maklumat Pengguna', width: '600px',
                 html: `
                     <div class="text-start row g-3">
                         <div class="col-12"><label class="small fw-bold">Nama Penuh</label><input id="swal-nama" class="form-control form-control-sm text-uppercase" value="${u.nama}"></div>
                         <div class="col-6"><label class="small fw-bold">No. K/P</label><input id="swal-ic" type="number" class="form-control form-control-sm" value="${u.ic}"></div>
                         <div class="col-6"><label class="small fw-bold">Jawatan</label><input id="swal-jawatan" class="form-control form-control-sm text-uppercase" value="${u.jawatan}"></div>
-                        <div class="col-12"><label class="small fw-bold">Negeri Bertugas</label><select id="swal-negeri" class="form-select form-select-sm"><option value="HQ / IBU PEJABAT" ${u.negeri==='HQ / IBU PEJABAT'?'selected':''}>HQ / IBU PEJABAT</option><option value="Johor" ${u.negeri==='Johor'?'selected':''}>Johor</option><option value="Kedah" ${u.negeri==='Kedah'?'selected':''}>Kedah</option><option value="Kelantan" ${u.negeri==='Kelantan'?'selected':''}>Kelantan</option><option value="Melaka" ${u.negeri==='Melaka'?'selected':''}>Melaka</option><option value="Negeri Sembilan" ${u.negeri==='Negeri Sembilan'?'selected':''}>Negeri Sembilan</option><option value="Pahang" ${u.negeri==='Pahang'?'selected':''}>Pahang</option><option value="Perak" ${u.negeri==='Perak'?'selected':''}>Perak</option><option value="Perlis" ${u.negeri==='Perlis'?'selected':''}>Perlis</option><option value="Pulau Pinang" ${u.negeri==='Pulau Pinang'?'selected':''}>Pulau Pinang</option><option value="Sabah" ${u.negeri==='Sabah'?'selected':''}>Sabah</option><option value="Sarawak" ${u.negeri==='Sarawak'?'selected':''}>Sarawak</option><option value="Selangor" ${u.negeri==='Selangor'?'selected':''}>Selangor</option><option value="Terengganu" ${u.negeri==='Terengganu'?'selected':''}>Terengganu</option><option value="W.P. Kuala Lumpur" ${u.negeri==='W.P. Kuala Lumpur'?'selected':''}>W.P. Kuala Lumpur</option><option value="W.P. Labuan" ${u.negeri==='W.P. Labuan'?'selected':''}>W.P. Labuan</option><option value="W.P. Putrajaya" ${u.negeri==='W.P. Putrajaya'?'selected':''}>W.P. Putrajaya</option></select></div>
+                        <div class="col-12"><label class="small fw-bold">Negeri Bertugas</label><select id="swal-negeri" class="form-select form-select-sm">
+                            <option value="HQ / IBU PEJABAT" ${u.negeri==='HQ / IBU PEJABAT'?'selected':''}>HQ / IBU PEJABAT</option><option value="Johor" ${u.negeri==='Johor'?'selected':''}>Johor</option><option value="Kedah" ${u.negeri==='Kedah'?'selected':''}>Kedah</option><option value="Kelantan" ${u.negeri==='Kelantan'?'selected':''}>Kelantan</option><option value="Melaka" ${u.negeri==='Melaka'?'selected':''}>Melaka</option><option value="Negeri Sembilan" ${u.negeri==='Negeri Sembilan'?'selected':''}>Negeri Sembilan</option><option value="Pahang" ${u.negeri==='Pahang'?'selected':''}>Pahang</option><option value="Perak" ${u.negeri==='Perak'?'selected':''}>Perak</option><option value="Perlis" ${u.negeri==='Perlis'?'selected':''}>Perlis</option><option value="Pulau Pinang" ${u.negeri==='Pulau Pinang'?'selected':''}>Pulau Pinang</option><option value="Sabah" ${u.negeri==='Sabah'?'selected':''}>Sabah</option><option value="Sarawak" ${u.negeri==='Sarawak'?'selected':''}>Sarawak</option><option value="Selangor" ${u.negeri==='Selangor'?'selected':''}>Selangor</option><option value="Terengganu" ${u.negeri==='Terengganu'?'selected':''}>Terengganu</option><option value="W.P. Kuala Lumpur" ${u.negeri==='W.P. Kuala Lumpur'?'selected':''}>W.P. Kuala Lumpur</option><option value="W.P. Labuan" ${u.negeri==='W.P. Labuan'?'selected':''}>W.P. Labuan</option><option value="W.P. Putrajaya" ${u.negeri==='W.P. Putrajaya'?'selected':''}>W.P. Putrajaya</option></select></div>
                         <div class="col-6 mt-3"><label class="small fw-bold text-primary">Username</label><input id="swal-uid" class="form-control form-control-sm" value="${u.uid}"></div>
                         <div class="col-6 mt-3"><label class="small fw-bold text-danger">Password</label><input id="swal-pwd" class="form-control form-control-sm" value="${u.pwd}"></div>
-                        <div class="col-6 mt-3"><label class="small fw-bold">Peranan</label><select id="swal-role" class="form-select form-select-sm"><option value="STAF" ${u.role==='STAF'?'selected':''}>STAF</option><option value="PENYELIA" ${u.role==='PENYELIA'?'selected':''}>PENYELIA</option><option value="ADMIN" ${u.role==='ADMIN'?'selected':''}>ADMIN</option></select></div>
+                        <div class="col-6 mt-3"><label class="small fw-bold">Peranan (Access Level)</label><select id="swal-role" class="form-select form-select-sm"><option value="STAFF" ${u.role==='STAFF'?'selected':''}>STAFF</option><option value="PENYELIA" ${u.role==='PENYELIA'?'selected':''}>PENYELIA</option><option value="ADMIN" ${u.role==='ADMIN'?'selected':''}>ADMIN</option></select></div>
                         <div class="col-6 mt-3"><label class="small fw-bold text-warning">Status Akaun</label><select id="swal-status" class="form-select form-select-sm"><option value="AKTIF" ${u.status.toUpperCase()==='AKTIF'?'selected':''}>AKTIF</option><option value="MENUNGGU" ${u.status.toUpperCase()==='MENUNGGU'?'selected':''}>MENUNGGU</option><option value="DITOLAK" ${u.status.toUpperCase()==='DITOLAK'?'selected':''}>DITOLAK</option><option value="DIGANTUNG" ${u.status.toUpperCase()==='DIGANTUNG'?'selected':''}>DIGANTUNG</option></select></div>
                     </div>
                 `,
-                focusConfirm: false, showCancelButton: true, confirmButtonText: 'Simpan',
+                focusConfirm: false, showCancelButton: true, confirmButtonText: 'Simpan Perubahan',
                 preConfirm: () => {
                     return {
-                        row: u.row, uid: document.getElementById('swal-uid').value.trim(), pwd: document.getElementById('swal-pwd').value.trim(), nama: document.getElementById('swal-nama').value.trim().toUpperCase(), negeri: document.getElementById('swal-negeri').value, role: document.getElementById('swal-role').value, jawatan: document.getElementById('swal-jawatan').value.trim().toUpperCase(), ic: document.getElementById('swal-ic').value.trim(), status: document.getElementById('swal-status').value
+                        row: u.row, uid: document.getElementById('swal-uid').value.trim(), pwd: document.getElementById('swal-pwd').value.trim(),
+                        nama: document.getElementById('swal-nama').value.trim().toUpperCase(), negeri: document.getElementById('swal-negeri').value,
+                        role: document.getElementById('swal-role').value, jawatan: document.getElementById('swal-jawatan').value.trim().toUpperCase(),
+                        ic: document.getElementById('swal-ic').value.trim(), status: document.getElementById('swal-status').value
                     }
                 }
             });
+
             if (formValues) {
                 Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                 const r = await postData('updateUser', { field: 'full_edit', ...formValues });
-                if(r.success) { Swal.fire('Berjaya!', 'Maklumat pengguna dikemaskini.', 'success'); loadUsers(); } else { Swal.fire('Ralat', r.message, 'error'); }
+                if(r.success) { Swal.fire('Berjaya!', 'Maklumat pengguna telah dikemaskini.', 'success'); loadUsers(); } else { Swal.fire('Ralat', r.message, 'error'); }
             }
         }
-
-      // --- FUNGSI TUTUP NO IC (MASKING) ---
-function maskIC(ic) {
-    if (!ic || ic.length < 12) return ic;
-    // Contoh output: 900101-**-1234
-    let clean = ic.replace(/[^0-9]/g, ""); // Buang sengkang jika ada
-    return clean.substring(0, 6) + "-**-" + clean.substring(10);
-}
-        
     </script>
 </body>
 </html>
