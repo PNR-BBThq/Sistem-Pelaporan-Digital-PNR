@@ -554,42 +554,40 @@
         let currentHeaders = []; 
         let pestMasterData = {}; 
 
-       async function postData(action, payload = {}) {
+      async function postData(action, payload = {}) {
+    // 1. Gabungkan action dan payload
+    let data = { action: action, ...payload };
+    
+    // 2. Masukkan Pas Keselamatan (Token & UID)
     try {
-        const fd = new FormData();
-        fd.append('action', action);
-        
-        // --- KOD YANG TERTINGGAL (PAS KESELAMATAN) ---
-        // Sistem akan cari profil pengguna di dalam memori
-        try {
-            const rawProf = localStorage.getItem('uProf');
-            if (rawProf) {
-                const p = JSON.parse(rawProf);
-                if (p.uid) fd.append('uid', p.uid);
-                if (p.token) fd.append('token', p.token);
-            }
-        } catch(e) {}
-        // ---------------------------------------------
+        const rawProf = localStorage.getItem('uProf');
+        if (rawProf) {
+            const p = JSON.parse(rawProf);
+            if (p.uid) data.uid = p.uid;
+            if (p.token) data.token = p.token;
+        }
+    } catch(e) {}
 
-        // Masukkan data tambahan
-        if(payload) Object.keys(payload).forEach(k => fd.append(k, payload[k]));
+    // 3. Hantar ke Google Server guna format JSON (Format Asal Tuan)
+    try {
+        const res = await fetch(API_URL, { 
+            method: 'POST', 
+            // Jangan guna headers, elak ralat CORS
+            body: JSON.stringify(data) 
+        });
         
-        const res = await fetch(API_URL, { method: 'POST', body: fd });
-        
-        // Sedut data sebagai teks biasa dulu untuk kaji isinya
-        const text = await res.text(); 
+        const text = await res.text();
         
         try {
-            // Cuba tukar kepada JSON
             return JSON.parse(text);
         } catch(e) {
-            // Jika server hantar HTML ralat (bukan JSON), sistem tangkap di sini!
-            alert("RALAT SERVER (" + action + "):\nSila semak fail Code.gs. Server gagal hantar data format JSON.");
-            console.error("Respon ROSAK dari server:", text);
-            return { status: "error", message: "Ralat format pelayan." };
+            alert("RALAT SERVER: Pelayan Google memulangkan amaran. Sila semak Console (F12).");
+            console.error("Respon Rosak:", text);
+            return { status: "error", message: "Format tidak sah dari server." };
         }
     } catch(error) {
-        alert("RALAT RANGKAIAN: Sistem gagal berhubung dengan pelayan Google.");
+        alert("RALAT RANGKAIAN: Gagal berhubung dengan pelayan.");
+        console.error(error);
         return { status: "error", message: error.message };
     }
 }
