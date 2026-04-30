@@ -558,6 +558,20 @@
     try {
         const fd = new FormData();
         fd.append('action', action);
+        
+        // --- KOD YANG TERTINGGAL (PAS KESELAMATAN) ---
+        // Sistem akan cari profil pengguna di dalam memori
+        try {
+            const rawProf = localStorage.getItem('uProf');
+            if (rawProf) {
+                const p = JSON.parse(rawProf);
+                if (p.uid) fd.append('uid', p.uid);
+                if (p.token) fd.append('token', p.token);
+            }
+        } catch(e) {}
+        // ---------------------------------------------
+
+        // Masukkan data tambahan
         if(payload) Object.keys(payload).forEach(k => fd.append(k, payload[k]));
         
         const res = await fetch(API_URL, { method: 'POST', body: fd });
@@ -570,9 +584,9 @@
             return JSON.parse(text);
         } catch(e) {
             // Jika server hantar HTML ralat (bukan JSON), sistem tangkap di sini!
-            alert("RALAT SERVER: Sila semak Code.gs Tuan. Server tidak hantar data yang betul untuk tindakan: " + action);
+            alert("RALAT SERVER (" + action + "):\nSila semak fail Code.gs. Server gagal hantar data format JSON.");
             console.error("Respon ROSAK dari server:", text);
-            return { status: "error", message: "Server hantar data tidak sah." };
+            return { status: "error", message: "Ralat format pelayan." };
         }
     } catch(error) {
         alert("RALAT RANGKAIAN: Sistem gagal berhubung dengan pelayan Google.");
