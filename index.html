@@ -171,6 +171,10 @@
         </div>
     </div>
 
+            <small id="loginMsg" class="text-danger d-block mt-3 fw-bold"></small>
+        </div>
+    </div>
+
   <div class="sidebar" id="sidebar">
         <div class="brand"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
         
@@ -317,18 +321,11 @@
                 
                 <div class="col-md-8">
                     <div class="card h-100 shadow-sm border-0">
-                        <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
-                            <div class="d-flex justify-content-between align-items-start">
-                            <div>
+                        <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
                             <h6 class="fw-bold text-secondary m-0">Carta Serangan Perosak Tertinggi (Ha)</h6>
-                            <small class="text-muted d-block mt-1 fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px;">
-                             <i class="bi bi-hand-index-thumb-fill text-primary me-1"></i> Klik pada bar untuk lihat pecahan tanaman & daerah
-                            </small>
-                                </div>
-                            <button id="btnBackPest" class="btn btn-sm btn-outline-secondary shadow-sm mt-1" style="display:none;" onclick="patahBalikCarta()">
-                            <i class="bi bi-arrow-left"></i> Kembali
+                            <button id="btnBackPest" class="btn btn-sm btn-outline-secondary shadow-sm" style="display:none;" onclick="patahBalikCarta()">
+                                <i class="bi bi-arrow-left"></i> Kembali
                             </button>
-                            </div>
                         </div>
                         <div class="card-body px-4 pb-4">
                             <div style="height: 350px"> 
@@ -554,41 +551,31 @@
         let currentHeaders = []; 
         let pestMasterData = {}; 
 
-     async function postData(action, payload = {}) {
-            // 1. Gabungkan action dan payload
-            let data = { action: action, ...payload };
-            
-            // 2. GUNA PEMBOLEHUBAH GLOBAL TUAN YANG SEBENAR (Bukan localStorage)
-            if (typeof userToken !== 'undefined' && userToken) {
-                data.token = userToken;
-            }
-            if (typeof currentUserID !== 'undefined' && currentUserID) {
-                data.uid = currentUserID;
-            }
-
-            // 3. Hantar ke Google Server (Dengan perisai CORS text/plain)
+       async function postData(act, load) {
             try {
-                const res = await fetch(API_URL, { 
-                    method: 'POST', 
-                    headers: { "Content-Type": "text/plain" },
-                    body: JSON.stringify(data) 
-                });
+                let payload;
+                // Laluan Bebas (Tanpa Token)
+                const laluanBebas = ['login', 'registerUser', 'verifyForgotPwd', 'updateMyAccess'];
                 
-                const text = await res.text();
-                
-                try {
-                    return JSON.parse(text);
-                } catch(e) {
-                    alert("RALAT SERVER: Sila semak tab Console (F12) untuk maklumat lanjut.");
-                    console.error("Respon Rosak dari Google:", text);
-                    return { status: "error", message: "Format tidak sah dari server." };
+                if (laluanBebas.includes(act)) { 
+                    payload = { action: act, ...load }; 
+                } else { 
+                    payload = { action: act, token: userToken, u: currentUserID, ...load }; 
                 }
-            } catch(error) {
-                alert("RALAT RANGKAIAN: Gagal berhubung dengan pelayan Google.");
-                console.error(error);
-                return { status: "error", message: error.message };
-            }
+                
+                const res = await fetch(`${API_URL}?action=${act}`, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
+                const r = JSON.parse(await res.text());
+
+                if (!laluanBebas.includes(act) && r.success === false && r.message && (r.message.includes("sesi") || r.message.includes("token"))) {
+                    alert("⛔ Sesi tamat. Sila log masuk semula."); 
+                    localStorage.removeItem('pnr_session'); 
+                    location.reload(); 
+                    return { success: false }; 
+                }
+                return r;
+            } catch(e) { console.error(e); return {success:false, message:"Ralat sambungan."}; }
         }
+
         async function loadMasterData() {
             try {
                 const r = await postData('getTanamanList', {});
@@ -694,43 +681,37 @@
         function doLogout() { localStorage.removeItem('pnr_session'); location.reload(); }
         window.onload = checkSession;
         
-        function switchTab(tabId, el) {
-    try {
-        // 1. Buang semua warna butang aktif
-        document.querySelectorAll('.nav-item, .nav-bot-item').forEach(i => i.classList.remove('active'));
-        if(el) el.classList.add('active');
+        function switchTab(t, el) {
+            // Logik buang aktif untuk PC & Mobile
+            document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active')); 
+            document.querySelectorAll('.nav-bot-item').forEach(x => x.classList.remove('active'));
+            
+            // Tambah warna aktif pada butang yang ditekan
+            if(el) {
+                if(!el.classList.contains('bg-success') && el.classList.contains('nav-item')) el.classList.add('active');
+                if(el.classList.contains('nav-bot-item')) el.classList.add('active');
+            }
 
-        // 2. Sembunyikan semua skrin dengan selamat
-        const views = ['view-main', 'view-verify', 'view-tasks', 'view-form', 'view-users'];
-        views.forEach(v => {
-            const div = document.getElementById(v);
-            if(div) div.style.display = 'none';
-        });
+            // Tukar skrin utama
+           // Tukar skrin utama (TAMBAH 'view-users' DALAM SENARAI)
+            ['view-main','view-verify','view-tasks','view-form', 'view-users'].forEach(v => {
+                const view = document.getElementById(v);
+                if(view) view.style.display = 'none';
+            });
+            
+            const targetView = document.getElementById('view-'+t);
+            if(targetView) targetView.style.display = 'block';
 
-        // 3. Tunjuk skrin yang dipilih
-        const targetView = document.getElementById('view-' + tabId);
-        if(targetView) {
-            targetView.style.display = 'block';
-        } else {
-            alert('AMARAN: Kotak HTML untuk view-' + tabId + ' tidak dijumpai!');
+            if(t==='verify') loadPend();
+            if(t==='tasks') loadMyTasks();
+            if(t==='users') loadUsers();
+            if(t==='main' && map) setTimeout(() => map.invalidateSize(), 300);
+            
+            // Tutup sidebar filter di telefon (kalau tengah terbuka)
+            document.getElementById('sidebar').classList.remove('active');
+            const overlay = document.getElementById('mobileOverlay');
+            if(overlay) overlay.classList.remove('active');
         }
-
-        // 4. Tarik data
-        if(tabId === 'verify') loadPend();
-        if(tabId === 'tasks') loadMyTasks();
-        if(tabId === 'users') loadUsers();
-
-        // 5. Tutup sidebar di telefon
-        const sidebar = document.getElementById('sidebar');
-        if(window.innerWidth <= 768 && sidebar) {
-            sidebar.classList.remove('active');
-        }
-    } catch (error) {
-        // Jika ada ralat, ia akan beritahu di skrin telefon!
-        alert("RALAT TUKAR TAB: " + error.message);
-        console.error("Ralat switchTab:", error);
-    }
-}
 
                 // --- FUNGSI TARIKH MUKTAMAD (MANUAL PARSING) ---
         function formatDateDisplay(dateStr) {
@@ -1000,7 +981,7 @@
                 });
                 let top10 = Object.entries(kiraPerosak).sort((a,b)=>b[1]-a[1]).slice(0,10);
                 labelX = top10.map(x=>x[0]); dataY = top10.map(x=>x[1]);
-                tajuk = "Top 10 Perosak Tertinggi (Ha)"; warna = "#10b981";// Hijau
+                tajuk = "Top 10 Perosak Tertinggi (Ha)"; warna = "#ef4444"; // Merah
                 
                 chartLevel = 1;
                 document.getElementById('btnBackPest').style.display = 'none';
@@ -1132,18 +1113,20 @@
             } catch(e) { container.innerHTML = "Ralat memuatkan tugasan."; }
         }
 
-      async function loadPend() { 
+      // --- KEMASKINI: FUNGSI LOAD PENDING (FIX DATE) ---
+        async function loadPend() { 
             const container = document.getElementById('verifyContainer'); 
-            if(!container) return;
             container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>'; 
             try { 
                 const d = await postData('getPending', {state: uProf.state}); 
                 currentPendingRows = d.rows || []; 
                 
+                // Simpan header untuk mapping
                 if(d.headers) currentHeaders = d.headers; 
                 
                 const b = document.getElementById('badgePending');
-                if(b) { b.innerText = currentPendingRows.length; b.style.display = currentPendingRows.length ? "inline-block" : "none"; }
+                b.innerText = currentPendingRows.length; 
+                b.style.display = currentPendingRows.length ? "inline-block" : "none";
 
                 if(!d.rows || !d.rows.length) { 
                     container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>'; 
@@ -1151,22 +1134,23 @@
                 } 
                 
                 container.innerHTML = ""; 
+                
+                // Helper Images
                 const cleanImageLink = (raw) => { if (!raw) return []; let str = String(raw).trim(); if(str.length < 5) return []; str = str.replace(/[\[\]"'\\]/g, ''); return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http')); }; 
                 const toViewLink = (link) => { const idMatch = link.match(/[-\w]{25,}/); if(idMatch) return `https://drive.google.com/file/d/${idMatch[0]}/view?usp=sharing`; return link; };
 
                 d.rows.forEach((r) => { 
-                    // PERISAI KESELAMATAN: Pastikan h tidak kosong sebelum proses
-                    const getVal = (key) => { 
-                        if(!currentHeaders || currentHeaders.length === 0) return "";
-                        const i = currentHeaders.findIndex(h => h && h.toLowerCase().includes(key.toLowerCase())); 
-                        return i > -1 ? r.data[i] : ""; 
-                    }; 
+                    const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }; 
                     
+                    // --- PEMBETULAN TARIKH DI SINI ---
+                    // Kita guna formatDateDisplay (Global Function) dan bukan formatTkh (Local Function lama)
                     const timestamp = getVal('Timestamp'); 
                     const tkhHantar = formatDateDisplay(timestamp); 
                     
                     const rawTarikhBancian = getVal('Tarikh Bancian') || getVal('Tarikh') || getVal('Date');
                     const tarikhBancian = formatDateDisplay(rawTarikhBancian);
+                    // ---------------------------------
+
                     const nama = getVal('Nama') || getVal('Pegawai'); 
                     const email = getVal('Email') || "-"; 
                     const negeri = getVal('Negeri') || "-"; 
@@ -1247,37 +1231,39 @@
                     </div>`; 
                     container.innerHTML += cardHTML; 
                 }); 
-            } catch(e) { console.error(e); container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memproses data pengesahan. Sila hubungi admin.</div>'; } 
+            } catch(e) { console.error(e); container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; } 
         }
 
        function renderCard(r, container, type) {
-            // PERISAI KESELAMATAN: Elak ralat toUpperCase pada header kosong
-            const getV = (key) => { 
-                if(!currentHeaders || currentHeaders.length === 0) return "";
-                const i = currentHeaders.findIndex(h => h && h.toUpperCase().includes(key.toUpperCase())); 
-                return i > -1 ? r.data[i] : ""; 
-            };
-            const lokasi = getV('LOKASI') || getV('KEBUN') || "-";
-            const tanaman = getV('NAMA TANAMAN') || getV('TANAMAN') || "-";
+            const getV = (key) => { const i = currentHeaders.findIndex(h => h.toUpperCase().includes(key.toUpperCase())); return i > -1 ? r.data[i] : ""; };
+            const lokasi = getV('LOKASI') || getV('KEBUN');
+            const tanaman = getV('NAMA TANAMAN') || getV('TANAMAN');
             const kategori = getV('KATEGORI') || "-";
             const tarikh = formatDateDisplay(getV('TARIKH') || getV('DATE'));
-            const statusRekod = getV('STATUS') || ""; 
+            const statusRekod = getV('STATUS') || ""; // Tarik status sebenar dari sheet
             const log = getV('LOG') || "";
             
-            let btnAction = ""; let badgeHtml = ""; let cardBorder = "primary"; let bgHeader = "light";
+            let btnAction = "";
+            let badgeHtml = "";
+            let cardBorder = "primary";
+            let bgHeader = "light";
 
             if (type === 'TASK') {
                 if (statusRekod.toUpperCase() === 'DRAF') {
+                    // PAPARAN UNTUK DRAF
                     badgeHtml = `<span class="badge bg-secondary">DRAF</span>`;
                     cardBorder = "secondary";
                     btnAction = `<button class="btn btn-success w-100 fw-bold btn-sm shadow-sm" onclick="openTaskEdit(${r.row})"><i class="bi bi-pencil-square"></i> SAMBUNG ISI / HANTAR</button>`;
                 } else {
+                    // PAPARAN UNTUK DITOLAK
                     badgeHtml = `<span class="badge bg-danger">DITOLAK</span>`;
-                    cardBorder = "danger"; bgHeader = "danger bg-opacity-10";
+                    cardBorder = "danger";
+                    bgHeader = "danger bg-opacity-10";
                     let reason = log.includes("DITOLAK") ? log.split("Sebab:").pop() : "Sila semak log.";
                     btnAction = `<div class="task-reject-box p-2 mb-2 small"><i class="bi bi-exclamation-triangle-fill"></i> ${reason}</div><button class="btn btn-danger w-100 fw-bold btn-sm" onclick="openTaskEdit(${r.row})">KEMASKINI & HANTAR</button>`;
                 }
             } else {
+                // PAPARAN UNTUK ADMIN/PENYELIA (BARU)
                 badgeHtml = `<span class="badge bg-warning text-dark">BARU</span>`;
                 btnAction = `<div class="d-flex gap-2"><button class="btn btn-outline-danger flex-grow-1 btn-sm fw-bold" onclick="subVer(${r.row},'REJECT')">TOLAK</button><button class="btn btn-success flex-grow-1 btn-sm fw-bold" onclick="subVer(${r.row},'APPROVE')">SAHKAN</button></div>`;
             }
@@ -2025,28 +2011,28 @@
                 } else { tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${d.message}</td></tr>`; }
             } catch(e) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Ralat memuatkan senarai pengguna.</td></tr>'; }
         }
-function renderUsers(dataList) {
+
+        function renderUsers(dataList) {
             const tbody = document.getElementById('userTableBody');
-            if(!dataList || dataList.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tiada data dijumpai.</td></tr>'; return; }
+            if(dataList.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tiada data dijumpai.</td></tr>'; return; }
             
             tbody.innerHTML = dataList.map(u => {
-                // PERISAI KESELAMATAN: Pastikan status wujud sebelum di format
-                let safeStatus = (u.status || "MENUNGGU").toUpperCase();
-                let safeRole = (u.role || "STAF").toUpperCase();
-                
-                let statusBadge = safeStatus === 'AKTIF' ? '<span class="badge bg-success">AKTIF</span>' : 
-                                  safeStatus === 'MENUNGGU' ? '<span class="badge bg-warning text-dark">MENUNGGU</span>' :
-                                  '<span class="badge bg-danger">' + safeStatus + '</span>';
+                let statusBadge = u.status.toUpperCase() === 'AKTIF' ? '<span class="badge bg-success">AKTIF</span>' : 
+                                  u.status.toUpperCase() === 'MENUNGGU' ? '<span class="badge bg-warning text-dark">MENUNGGU</span>' :
+                                  '<span class="badge bg-danger">' + u.status.toUpperCase() + '</span>';
                                   
-                let actionBtn = safeStatus === 'MENUNGGU' ? 
+                let actionBtn = u.status.toUpperCase() === 'MENUNGGU' ? 
                     `<button class="btn btn-sm btn-success fw-bold me-1" onclick="updateUserStatus(${u.row}, 'AKTIF')"><i class="bi bi-check-lg"></i> LULUS</button>` : '';
                 
                 return `
                 <tr>
-                    <td><div class="fw-bold text-dark text-uppercase">${u.nama || "-"}</div><div class="small text-muted">${u.jawatan || "-"} - ${u.negeri || "-"}</div></td>
-                    <td class="font-monospace">${maskIC(u.ic)}</td>
-                    <td><span class="d-block small text-primary fw-bold"><i class="bi bi-person me-1"></i>${u.uid || "-"}</span><span class="d-block small text-danger fw-bold"><i class="bi bi-key me-1"></i>${u.pwd || "-"}</span></td>
-                    <td><span class="badge bg-light text-dark border">${safeRole}</span></td>
+                    <td><div class="fw-bold text-dark text-uppercase">${u.nama}</div><div class="small text-muted">${u.jawatan} - ${u.negeri}</div></td>
+                    <td>${maskIC(u.ic)}</td>
+                    <td>
+                        <span class="d-block small text-primary fw-bold"><i class="bi bi-person me-1"></i>${u.uid}</span>
+                        <span class="d-block small text-danger fw-bold"><i class="bi bi-key me-1"></i>${u.pwd}</span>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">${u.role}</span></td>
                     <td class="text-center">${statusBadge}</td>
                     <td class="text-center">
                         ${actionBtn}
