@@ -2,182 +2,175 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sistem PNR Digital</title>
     
     <link rel="manifest" href="./manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 
     <style>
-        :root { --primary: #064e3b; --accent: #10b981; --bg: #f3f4f6; }
-        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; margin:0; }
+        :root { 
+            --primary: #064e3b; 
+            --accent: #10b981; 
+            --bg: #f8fafc; /* Warna latar aplikasi moden */
+            --card-bg: #ffffff;
+        }
+        
+        body { 
+            background-color: var(--bg); 
+            font-family: 'Poppins', sans-serif; 
+            font-size: 0.9rem; 
+            margin: 0; 
+            -webkit-tap-highlight-color: transparent; /* Hilangkan kotak biru bila ditekan di phone */
+        }
         
         /* LOGIN & LAYOUT */
-        #loginOverlay { position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center; background: #064e3b; }
-        .swal2-container { z-index: 9999999 !important; } /* Ubat supaya pop-up duduk di lapisan paling depan */
-        .login-box { background: white; padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
-        .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: #e8f5e9; border-right: 1px solid #c6e7ce; padding: 20px; z-index: 100; transition: transform 0.3s; display: flex; flex-direction: column; }
-        .brand { font-size: 1.3rem; font-weight: 900; color: #000; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding-left: 10px; flex-shrink: 0; }
+        #loginOverlay { position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #064e3b, #10b981); }
+        .swal2-container { z-index: 9999999 !important; font-family: 'Poppins', sans-serif !important; }
+        .login-box { background: white; padding: 2.5rem; border-radius: 24px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); }
+        
+        /* SIDEBAR (DESKTOP) */
+        .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: #ffffff; border-right: 1px solid #f1f5f9; padding: 20px; z-index: 100; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; box-shadow: 4px 0 24px rgba(0,0,0,0.02); }
+        .brand { font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 25px; display: flex; align-items: center; gap: 12px; padding-left: 10px; flex-shrink: 0; letter-spacing: -0.5px; }
         .sidebar-content { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding-right: 5px; margin-bottom: 10px; }
         .sidebar-content::-webkit-scrollbar { width: 4px; }
-        .sidebar-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-        .nav-item { padding: 12px 15px; margin-bottom: 5px; border-radius: 8px; cursor: pointer; color: #000; font-weight: 600; display: flex; align-items: center; justify-content: space-between; transition: 0.2s; }
-        .nav-item:hover { background: #c8e6c9; color: #000; }
-        .nav-item.active { background: #1b5e20; color: white; font-weight: 700; }
-        .sidebar-footer { flex-shrink: 0; border-top: 1px solid #c6e7ce; padding-top: 15px; }
-        .main-content { margin-left: 260px; padding: 25px; transition: margin-left 0.3s; }
+        .sidebar-content::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
         
-        /* DASHBOARD CARDS */
-        .kpi-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); border: 1px solid #e5e7eb; height: 100%; transition: transform 0.2s; }
-        .kpi-value { font-size: 1.8rem; font-weight: 800; color: #111827; margin-top: 5px; }
-        .map-box { height: 400px; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; position: relative; z-index: 1; }
-        .table-box { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; overflow: hidden; }
-        .text-danger { color: #dc2626 !important; }
-        .badge-pending { background: #dc2626; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; display: none; }
-
-        /* STYLE REPORT CARD */
-        .verify-card { background: #fff; border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; height: 100%; display: flex; flex-direction: column; transition: transform 0.2s; border: 1px solid #e2e8f0; }
-        .verify-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .nav-item { padding: 14px 16px; margin-bottom: 8px; border-radius: 12px; cursor: pointer; color: #64748b; font-weight: 600; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s ease; }
+        .nav-item:hover { background: #f8fafc; color: var(--primary); transform: translateX(4px); }
+        .nav-item.active { background: var(--primary); color: white; box-shadow: 0 8px 16px rgba(6, 78, 59, 0.2); }
+        .sidebar-footer { flex-shrink: 0; border-top: 1px solid #f1f5f9; padding-top: 15px; }
         
-        .filter-label { font-size: 0.75rem; font-weight: 800; color: #000; margin-bottom: 3px; display: block; text-transform: uppercase; }
+        .main-content { margin-left: 260px; padding: 30px; transition: margin-left 0.3s; }
+        
+        /* CARDS APP STYLE */
+        .kpi-card { background: var(--card-bg); border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.03); border: 1px solid #f8fafc; height: 100%; transition: transform 0.2s; position: relative; overflow: hidden; }
+        .kpi-value { font-size: 2rem; font-weight: 800; color: #0f172a; margin-top: 8px; line-height: 1.2; }
+        .kpi-title { font-size: 0.85rem; font-weight: 600; color: #64748b; }
+        .kpi-icon { width: 45px; height: 45px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        
+        .map-box { height: 400px; border-radius: 20px; overflow: hidden; border: 4px solid white; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); position: relative; z-index: 1; }
+        .table-box { background: var(--card-bg); border-radius: 20px; padding: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.03); border: none; overflow: hidden; }
+        
+        .verify-card { background: #fff; border: none; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); overflow: hidden; height: 100%; display: flex; flex-direction: column; transition: transform 0.2s; }
+        .verify-card:hover { transform: translateY(-5px); box-shadow: 0 20px 35px -10px rgba(0,0,0,0.1); }
+        
+        .btn { border-radius: 12px; font-weight: 600; padding: 10px 16px; transition: all 0.2s; }
+        .btn-success { background: linear-gradient(135deg, #10b981, #059669); border: none; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(16, 185, 129, 0.3); }
 
-        /* STYLE KHAS UNTUK TUGASAN */
-        .task-reject-box { background-color: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 8px; margin-bottom: 15px; color: #b91c1c; font-size: 0.85rem; }
+        .form-control, .form-select { border-radius: 12px; padding: 12px 15px; border-color: #e2e8f0; font-size: 0.9rem; }
+        .form-control:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); }
 
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.active { transform: translateX(0); }
-            .main-content { margin-left: 0; padding: 15px; }
-        }
+        .badge-pending { background: #dc2626; color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: none; }
+
         /* =========================================
-           MOBILE APP UI (BOTTOM NAVIGATION BAR)
+           MOBILE APP UI (NATIVE FEEL)
            ========================================= */
         .mobile-bottom-nav { display: none; }
         .mobile-overlay { display: none; }
+        .mobile-top-bar { display: none; }
 
         @media (max-width: 768px) {
-            /* 1. Sembunyikan Butang Menu Atas Lama */
+            /* Sembunyikan top bar desktop yang lama */
             .d-md-none.mb-3 { display: none !important; }
             
-            /* 2. Ubah Sidebar jadi "Offcanvas" (Hanya buka bila ditekan) */
+            /* TOP APP BAR (NATIVE STYLE) */
+            .mobile-top-bar {
+                display: flex; position: sticky; top: 0; z-index: 1030;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border-bottom: 1px solid rgba(0,0,0,0.05);
+            }
+
             .sidebar { 
                 transform: translateX(-100%); 
                 z-index: 1050; 
-                box-shadow: 5px 0 15px rgba(0,0,0,0.2); 
+                width: 85%; /* Kurangkan sikit lebar sidebar di phone */
+                border-top-right-radius: 24px;
+                border-bottom-right-radius: 24px;
             }
             .sidebar.active { transform: translateX(0); }
             
-            /* 3. Ruang bernafas untuk main content (elak tertutup dengan menu bawah) */
-            .main-content { padding: 15px; padding-bottom: 90px; margin-left: 0; }
+            /* Pad main content untuk ruang top bar dan bottom bar */
+            .main-content { padding: 15px; padding-top: 20px; padding-bottom: 110px; margin-left: 0; }
             
-            /* 4. Bar Navigasi Bawah (Macam App Sebenar) */
+            /* BOTTOM NAVIGATION (iOS / Android Modern Style) */
             .mobile-bottom-nav {
                 display: flex; position: fixed; bottom: 0; left: 0; right: 0;
-                background: #ffffff; box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
-                z-index: 1040; padding: 10px 10px 15px 10px; justify-content: space-between;
-                align-items: flex-end; border-top-left-radius: 20px; border-top-right-radius: 20px;
+                background: rgba(255, 255, 255, 0.92); 
+                backdrop-filter: blur(15px); /* Kesan kaca lutsinar */
+                -webkit-backdrop-filter: blur(15px);
+                border-top: 1px solid rgba(0,0,0,0.05);
+                z-index: 1040; 
+                padding: 12px 10px; 
+                /* Sokongan Safe Area untuk iPhone */
+                padding-bottom: calc(12px + env(safe-area-inset-bottom)); 
+                justify-content: space-around; align-items: center;
+                border-top-left-radius: 24px; border-top-right-radius: 24px;
+                box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
             }
             .nav-bot-item {
-                text-align: center; color: #9ca3af; font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+                text-align: center; color: #94a3b8; font-size: 0.65rem; font-weight: 600; 
                 flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
                 cursor: pointer; transition: 0.3s;
             }
-            .nav-bot-item i { font-size: 1.4rem; margin-bottom: 2px; }
-            .nav-bot-item.active { color: #064e3b; }
+            .nav-bot-item i { font-size: 1.5rem; margin-bottom: 4px; transition: transform 0.2s; }
+            .nav-bot-item.active { color: var(--primary); }
+            .nav-bot-item.active i { transform: translateY(-2px); font-weight: 800; }
             
-            /* 5. Butang Tambah Data Besar (Tengah) */
+            /* FLOATING ACTION BUTTON (FAB) Tgh-tgh */
             .nav-bot-fab {
                 background: linear-gradient(135deg, #10b981, #059669); color: white !important;
-                width: 55px; height: 55px; border-radius: 50%;
+                width: 60px; height: 60px; border-radius: 20px; /* Bentuk squircle lebih moden dari bulat penuh */
                 display: flex; align-items: center; justify-content: center;
-                font-size: 2rem; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
-                transform: translateY(-20px); border: 4px solid #f3f4f6;
+                font-size: 1.8rem; box-shadow: 0 10px 20px rgba(16, 185, 129, 0.4);
+                transform: translateY(-25px); border: 4px solid var(--bg);
+                transition: transform 0.2s;
             }
+            .nav-bot-fab:active { transform: translateY(-20px) scale(0.95); }
             
-            /* 6. Latar Hitam Gelap bila Filter dibuka */
             .mobile-overlay {
                 position: fixed; top:0; left:0; right:0; bottom:0;
-                background: rgba(0,0,0,0.6); z-index: 1045; display: none;
+                background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px);
+                z-index: 1045; display: none; opacity: 0; transition: opacity 0.3s;
             }
-            .mobile-overlay.active { display: block; }
+            .mobile-overlay.active { display: block; opacity: 1; }
         }
     </style>
 </head>
 <body>
 
-  <div id="loginOverlay">
+    <div id="loginOverlay">
         <div class="login-box" id="formLogin">
             <div class="brand justify-content-center mb-4"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
-            <h6 class="text-muted mb-4">Log Masuk Sistem</h6>
-            <input type="text" id="uid" class="form-control mb-3 p-3" placeholder="ID Pengguna">
-            <input type="password" id="pwd" class="form-control mb-4 p-3" placeholder="Kata Laluan">
-            <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold p-3" id="btnLogin">MASUK</button>
+            <h6 class="text-muted mb-4 fw-medium">Log Masuk Sistem</h6>
+            <input type="text" id="uid" class="form-control mb-3" placeholder="ID Pengguna">
+            <input type="password" id="pwd" class="form-control mb-4" placeholder="Kata Laluan">
+            <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold py-3 fs-6" id="btnLogin">MASUK</button>
             
-            <div class="d-flex justify-content-between mt-3 px-2">
-                <a href="javascript:void(0)" onclick="lupaKatalaluan()" class="text-decoration-none small text-secondary fw-bold hover-primary">
+            <div class="d-flex justify-content-between mt-4 px-1">
+                <a href="javascript:void(0)" onclick="lupaKatalaluan()" class="text-decoration-none small text-secondary fw-semibold">
                     <i class="bi bi-question-circle me-1"></i> Lupa Kata Laluan?
                 </a>
-                <a href="javascript:void(0)" onclick="toggleDaftar(true)" class="text-decoration-none small text-primary fw-bold">
+                <a href="javascript:void(0)" onclick="toggleDaftar(true)" class="text-decoration-none small text-success fw-bold">
                     <i class="bi bi-person-plus-fill me-1"></i> Daftar Akaun
                 </a>
             </div>
             <small id="loginMsg" class="text-danger d-block mt-3 fw-bold"></small>
         </div>
-
-        <div class="login-box" id="formDaftar" style="display:none; max-width: 450px;">
-            <div class="brand justify-content-center mb-2"><i class="bi bi-person-badge me-2"></i> DAFTAR PENGGUNA</div>
-            <p class="text-muted small mb-4" style="line-height:1.2;">Isi maklumat di bawah. Akaun perlu diaktifkan oleh Admin sebelum boleh digunakan.</p>
-            
-            <div class="row g-2 text-start">
-                <div class="col-12"><label class="small fw-bold">Nama Penuh</label><input type="text" id="regNama" class="form-control form-control-sm text-uppercase"></div>
-                <div class="col-6"><label class="small fw-bold">No. K/P (Tanpa Sengkang)</label><input type="number" id="regIC" class="form-control form-control-sm" placeholder="Cth: 900101011234"></div>
-                <div class="col-6"><label class="small fw-bold">Jawatan</label><input type="text" id="regJawatan" class="form-control form-control-sm text-uppercase" placeholder="Cth: PEGAWAI PERTANIAN"></div>
-                
-                <div class="col-12"><label class="small fw-bold mt-1">Negeri Bertugas</label>
-                    <select id="regNegeri" class="form-select form-select-sm">
-                        <option value="">- Pilih Negeri -</option>
-                        <option value="HQ / IBU PEJABAT">HQ / IBU PEJABAT</option>
-                        <option value="Johor">Johor</option>
-                        <option value="Kedah">Kedah</option>
-                        <option value="Kelantan">Kelantan</option>
-                        <option value="Melaka">Melaka</option>
-                        <option value="Negeri Sembilan">Negeri Sembilan</option>
-                        <option value="Pahang">Pahang</option>
-                        <option value="Perak">Perak</option>
-                        <option value="Perlis">Perlis</option>
-                        <option value="Pulau Pinang">Pulau Pinang</option>
-                        <option value="Sabah">Sabah</option>
-                        <option value="Sarawak">Sarawak</option>
-                        <option value="Selangor">Selangor</option>
-                        <option value="Terengganu">Terengganu</option>
-                        <option value="W.P. Kuala Lumpur">W.P. Kuala Lumpur</option>
-                        <option value="W.P. Labuan">W.P. Labuan</option>
-                        <option value="W.P. Putrajaya">W.P. Putrajaya</option>
-                    </select>
-                </div>
-                
-                <div class="col-6 mt-3"><label class="small fw-bold text-success">Username Pilihan</label><input type="text" id="regUid" class="form-control form-control-sm"></div>
-                <div class="col-6 mt-3"><label class="small fw-bold text-success">Kata Laluan</label><input type="password" id="regPwd" class="form-control form-control-sm"></div>
-            </div>
-            
-            <button type="button" onclick="doRegister()" class="btn btn-primary w-100 fw-bold p-2 mt-4 shadow-sm" id="btnReg">HANTAR PENDAFTARAN</button>
-            <button type="button" onclick="toggleDaftar(false)" class="btn btn-light text-secondary border w-100 fw-bold p-2 mt-2">KEMBALI KE LOG MASUK</button>
         </div>
-    </div>
 
-            <small id="loginMsg" class="text-danger d-block mt-3 fw-bold"></small>
-        </div>
-    </div>
-
-  <div class="sidebar" id="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="brand"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
-        
         <div class="sidebar-content">
             <div class="nav-item active" onclick="switchTab('main', this)">
                 <span><i class="bi bi-grid-1x2-fill me-2"></i> Dashboard</span>
@@ -185,7 +178,7 @@
             
             <div class="nav-item" id="navTasks" style="display:none" onclick="switchTab('tasks', this)">
                 <span><i class="bi bi-list-task me-2"></i> Tugasan Saya</span>
-                <span class="badge-pending" id="badgeTask" style="background:#dc2626;">0</span>
+                <span class="badge-pending" id="badgeTask">0</span>
             </div>
 
             <div class="nav-item" id="navVerify" style="display:none" onclick="switchTab('verify', this)">
@@ -193,267 +186,163 @@
                 <span class="badge-pending" id="badgePending">0</span>
             </div>
             
-            <div class="nav-item bg-dark text-white shadow-sm mt-2" id="navUsers" style="display:none" onclick="switchTab('users', this)">
+            <div class="nav-item mt-2 bg-dark text-white shadow-sm" id="navUsers" style="display:none" onclick="switchTab('users', this)">
                 <span><i class="bi bi-people-fill me-2 text-warning"></i> Urus Pengguna</span>
             </div>
             
-            <hr class="my-4" style="color: #000;">
-            
-            <div class="mb-3 px-2">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <small class="fw-bold text-dark" style="font-size:0.85rem; letter-spacing: 0.5px;"><i class="bi bi-funnel-fill me-1"></i> TAPISAN DATA</small>
-                </div>
-                
-                <div class="mb-2">
-                    <label class="filter-label">Negeri</label>
-                    <div class="dropdown d-grid">
-                        <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselNegeri" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
-                        <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselNegeri"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-2">
-                    <label class="filter-label">Daerah</label>
-                    <div class="dropdown d-grid">
-                        <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselDaerah" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
-                        <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselDaerah"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-2">
-                    <label class="filter-label">Tanaman</label>
-                    <div class="dropdown d-grid">
-                        <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselTanaman" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
-                        <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselTanaman"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-2">
-                    <label class="filter-label">Perosak</label>
-                    <div class="dropdown d-grid">
-                        <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselPerosak" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
-                        <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselPerosak"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-2">
-                    <label class="filter-label">Kategori</label>
-                    <div class="dropdown d-grid">
-                        <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselKategori" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
-                        <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselKategori"></div>
-                    </div>
-                </div>
-
-                <div class="mb-3 mt-3">
-                    <label class="filter-label">Julat Tarikh</label>
-                    <div class="row g-1">
-                        <div class="col-6"><input type="date" id="dS" class="form-control form-control-sm" onchange="runFilter()"></div>
-                        <div class="col-6"><input type="date" id="dE" class="form-control form-control-sm" onchange="runFilter()"></div>
-                    </div>
-                </div>
-                
-                <button class="btn btn-dark btn-sm w-100" onclick="resetFilter()">
-                    <i class="bi bi-arrow-counterclockwise"></i> Reset Tapisan
-                </button>
-
-                <hr class="my-4" style="color:#000">
-
-                <div class="p-3 rounded border shadow-sm bg-white">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="bg-danger text-white rounded p-1 me-2"><i class="bi bi-bug-fill"></i></div>
-                        <small class="fw-bold text-dark" style="line-height:1.2">Pemantauan<br>Perangkap RPW</small>
-                    </div>
-                    <p class="text-muted mb-2" style="font-size: 0.75rem;">Akses pantas ke data perangkap kumbang.</p>
-                    <button onclick="window.open(RPW_URL, '_blank')" class="btn btn-outline-danger btn-sm w-100 fw-bold">
-                        <i class="bi bi-box-arrow-up-right"></i> Buka Sistem
-                    </button>
-                </div>
+            <hr class="my-4 text-muted opacity-25">
             </div>
-        </div>
         
         <div class="sidebar-footer">
-            <div class="nav-item mb-3 bg-success text-white shadow-sm" onclick="switchTab('form', this)" style="cursor: pointer;">
-                <span><i class="bi bi-plus-lg me-2"></i> Tambah Data</span>
-            </div>
-
-            <div class="d-flex align-items-center justify-content-between px-2">
-                <div><small class="text-dark d-block" style="font-size: 0.75rem; font-weight:600;">Pengguna</small><strong id="uDisp" class="text-dark" style="font-size:0.9rem">-</strong></div>
-                <button class="btn btn-link text-danger btn-sm p-0" onclick="doLogout()" title="Log Keluar"><i class="bi bi-box-arrow-right fs-5"></i></button>
+            <div class="d-flex align-items-center justify-content-between px-2 bg-light p-3 rounded-4">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;"><i class="bi bi-person"></i></div>
+                    <div>
+                        <small class="text-muted d-block" style="font-size: 0.70rem; font-weight:600;">PENGGUNA</small>
+                        <strong id="uDisp" class="text-dark d-block text-truncate" style="font-size:0.85rem; max-width: 100px;">-</strong>
+                    </div>
+                </div>
+                <button class="btn btn-light bg-white text-danger btn-sm p-2 shadow-sm rounded-circle" onclick="doLogout()" title="Log Keluar"><i class="bi bi-box-arrow-right"></i></button>
             </div>
         </div>
     </div>
 
     <div class="main-content">
-        <div class="d-md-none mb-3 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm">
-            <span class="fw-bold text-success fs-5"><i class="bi bi-flower1"></i> PNR</span>
-            <button class="btn btn-light btn-sm border" onclick="document.getElementById('sidebar').classList.toggle('active')"><i class="bi bi-list fs-5"></i></button>
+        
+        <div class="mobile-top-bar d-md-none shadow-sm px-4 py-3 d-flex justify-content-between align-items-center mb-4 rounded-4 mx-1 mt-1">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-success bg-gradient shadow-sm text-white rounded-4 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-flower1 fs-5"></i>
+                </div>
+                <div class="d-flex flex-column">
+                    <span class="fw-bold fs-6 text-dark" style="line-height: 1.2;">PNR Digital</span>
+                    <span class="text-muted" style="font-size: 0.7rem;" id="lastUpdateMob">Sistem Pelaporan</span>
+                </div>
+            </div>
+            <button class="btn btn-light rounded-circle shadow-sm border-0 d-flex align-items-center justify-content-center" onclick="toggleMobileFilter()" style="width: 40px; height: 40px;">
+                <i class="bi bi-funnel-fill text-success"></i>
+            </button>
         </div>
 
         <div id="view-main">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-                <div><h4 class="fw-bold m-0 text-dark">Analisis Data</h4><small class="text-muted" id="lastUpdate">Data setakat: Terkini</small></div>
-                <div class="btn-group shadow-sm">
-                    <button class="btn btn-white border bg-white text-secondary btn-sm px-3" onclick="initDash()"><i class="bi bi-arrow-clockwise"></i></button>
-                    <button class="btn btn-success btn-sm px-3" onclick="downloadDualExcel()"><i class="bi bi-file-earmark-excel me-1"></i> Excel</button>
-                    <button class="btn btn-danger btn-sm px-3" onclick="dlPDF()"><i class="bi bi-file-earmark-pdf me-1"></i> PDF</button>
+            <div class="d-none d-md-flex justify-content-between align-items-center mb-4 gap-3">
+                <div><h3 class="fw-bold m-0 text-dark">Analisis Data</h3><small class="text-muted" id="lastUpdate">Data setakat: Terkini</small></div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-white border bg-white shadow-sm" onclick="initDash()"><i class="bi bi-arrow-clockwise"></i></button>
+                    <button class="btn btn-success shadow-sm px-4" onclick="downloadDualExcel()"><i class="bi bi-file-earmark-excel me-2"></i> Excel</button>
+                    <button class="btn btn-danger shadow-sm px-4" onclick="dlPDF()"><i class="bi bi-file-earmark-pdf me-2"></i> PDF</button>
                 </div>
             </div>
             
-            <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(to right, #e0f2fe, #f0f9ff);">
+            <div class="card mb-4 border-0 shadow-sm rounded-4" style="background: linear-gradient(135deg, #f0fdf4, #ffffff);">
                 <div class="card-body p-4">
                     <div id="smartSummary" class="text-dark">
                         <div class="d-flex align-items-center">
-                            <div class="spinner-border spinner-border-sm text-primary me-2"></div>
-                            Sedang menganalisis data...
+                            <div class="spinner-border spinner-border-sm text-success me-3"></div>
+                            <span class="fw-medium text-success">Sedang menganalisis kecerdasan data...</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="row g-3 mb-4">
-                <div class="col-6 col-md-3"><div class="kpi-card"><div class="d-flex justify-content-between mb-2"><span class="kpi-title">Luas Bancian</span><div class="kpi-icon bg-success-subtle text-success"><i class="bi bi-rulers"></i></div></div><div class="kpi-value" id="k1">0</div><small class="text-muted fw-bold">Hektar</small></div></div>
-                <div class="col-6 col-md-3"><div class="kpi-card"><div class="d-flex justify-content-between mb-2"><span class="kpi-title">Luas Serangan</span><div class="kpi-icon bg-danger-subtle text-danger"><i class="bi bi-bug-fill"></i></div></div><div class="kpi-value text-danger" id="k2">0</div><small class="text-muted fw-bold">Hektar</small></div></div>
-                <div class="col-6 col-md-3"><div class="kpi-card"><div class="d-flex justify-content-between mb-2"><span class="kpi-title">Peratus Serangan</span><div class="kpi-icon bg-warning-subtle text-warning"><i class="bi bi-percent"></i></div></div><div class="kpi-value" id="k3">0%</div><small class="text-muted fw-bold">Kadar Jangkitan</small></div></div>
-                <div class="col-6 col-md-3"><div class="kpi-card"><div class="d-flex justify-content-between mb-2"><span class="kpi-title">Bil. Rekod</span><div class="kpi-icon bg-primary-subtle text-primary"><i class="bi bi-file-text"></i></div></div><div class="kpi-value" id="k4">0</div><small class="text-muted fw-bold">Unit Data</small></div></div>
+                <div class="col-6 col-md-3"><div class="kpi-card"><div class="d-flex justify-content-between mb-3"><span class="kpi-title">Luas Bancian</span><div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-rulers"></i></div></div><div class="kpi-value" id="k1">0</div><small class="text-muted fw-medium mt-1 d-block">Hektar</small></div></div>
+                <div class="col-6 col-md-3"><div class="kpi-card"><div class="d-flex justify-content-between mb-3"><span class="kpi-title">Luas Serangan</span><div class="kpi-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-bug-fill"></i></div></div><div class="kpi-value text-danger" id="k2">0</div><small class="text-muted fw-medium mt-1 d-block">Hektar</small></div></div>
+                <div class="col-6 col-md-3"><div class="kpi-card"><div class="d-flex justify-content-between mb-3"><span class="kpi-title">Kadar Jangkitan</span><div class="kpi-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-percent"></i></div></div><div class="kpi-value" id="k3">0%</div><small class="text-muted fw-medium mt-1 d-block">Peratusan</small></div></div>
+                <div class="col-6 col-md-3"><div class="kpi-card"><div class="d-flex justify-content-between mb-3"><span class="kpi-title">Bil. Rekod</span><div class="kpi-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-file-text"></i></div></div><div class="kpi-value" id="k4">0</div><small class="text-muted fw-medium mt-1 d-block">Unit Data</small></div></div>
             </div>
 
             <div class="row g-3 mb-4">
                 <div class="col-md-8">
-                   <div class="card h-100 shadow-sm border-0">
+                   <div class="card h-100 shadow-sm border-0 rounded-4">
                         <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="fw-bold text-secondary m-0" id="tajukCBar">Carta Serangan Perosak Tertinggi (Ha)</h6>
-                                <small class="text-muted d-block mt-1 fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px;" id="subCBar">
-                                    <i class="bi bi-hand-index-thumb-fill text-primary me-1"></i> Klik pada bar untuk lihat pecahan tanaman
-                                </small>
+                                <h6 class="fw-bold text-dark m-0 fs-5" id="tajukCBar">Carta Serangan</h6>
+                                <small class="text-muted d-block mt-1 fw-medium" id="subCBar"><i class="bi bi-hand-index-thumb-fill text-primary me-1"></i> Klik baris untuk perincian</small>
                             </div>
-                            <button id="btnBackPest" class="btn btn-sm btn-outline-secondary shadow-sm" style="display:none;" onclick="patahBalikCarta()"><i class="bi bi-arrow-left"></i> Kembali</button>
+                            <button id="btnBackPest" class="btn btn-sm btn-light rounded-pill shadow-sm px-3 fw-bold" style="display:none;" onclick="patahBalikCarta()"><i class="bi bi-arrow-left me-1"></i> Kembali</button>
                         </div>
-                        <div class="card-body px-4 pb-4"><div style="height: 350px"><canvas id="cBar"></canvas></div></div>
+                        <div class="card-body px-4 pb-4"><div style="height: 300px"><canvas id="cBar"></canvas></div></div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card h-100 shadow-sm border-0">
-                        <div class="card-header bg-transparent border-0 py-3 d-flex align-items-center px-4 pt-4">
-                            <div class="icon-shape bg-warning text-white rounded-3 p-2 me-3 shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="bi bi-pie-chart-fill"></i></div>
-                            <h6 class="m-0 fw-bold text-secondary">Tahap Keterukan</h6>
+                    <div class="card h-100 shadow-sm border-0 rounded-4">
+                        <div class="card-header bg-transparent border-0 py-4 px-4 d-flex align-items-center">
+                            <div class="bg-warning text-white rounded-3 p-2 me-3 shadow-sm d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;"><i class="bi bi-pie-chart-fill fs-5"></i></div>
+                            <h6 class="m-0 fw-bold text-dark fs-5">Tahap Keterukan</h6>
                         </div>
-                        <div class="card-body text-center position-relative px-4 pb-4">
-                            <div style="height: 250px;"><canvas id="cPie"></canvas></div>
-                            <div class="mt-4 pt-3 border-top">
-                                <p class="text-uppercase text-muted fw-bold mb-2" style="font-size: 10px; letter-spacing: 1px;">Petunjuk Tahap</p>
-                                <div class="d-flex flex-wrap justify-content-center gap-2" style="font-size: 11px;">
-                                    <span class="badge rounded-pill bg-success bg-opacity-75 text-white">T1: Sgt Rendah</span>
-                                    <span class="badge rounded-pill bg-info text-dark">T2: Rendah</span>
-                                    <span class="badge rounded-pill bg-warning text-dark">T3: Sederhana</span>
-                                    <span class="badge rounded-pill text-white" style="background-color: #fd7e14;">T4: Teruk</span>
-                                    <span class="badge rounded-pill bg-danger text-white">T5: Sgt Teruk</span>
-                                </div>
-                            </div>
+                        <div class="card-body text-center px-4 pb-4">
+                            <div style="height: 220px;"><canvas id="cPie"></canvas></div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="row g-3 mb-4">
-                <div class="col-md-8"><div class="map-box shadow-sm" id="map"></div></div>
+                <div class="col-md-8"><div class="map-box" id="map"></div></div>
                 <div class="col-md-4">
-                    <div class="table-box h-100 shadow-sm" style="max-height:400px; overflow-y:auto">
-                        <h6 class="fw-bold mb-3 text-danger d-flex align-items-center"><i class="bi bi-fire me-2"></i>Hotspot Daerah</h6>
-                        <table class="table table-hover small mb-0"><thead class="table-light sticky-top"><tr><th>Daerah</th><th class="text-end">Luas Serangan (Ha)</th></tr></thead><tbody id="hotspotTable"></tbody></table>
+                    <div class="table-box h-100" style="max-height:400px; overflow-y:auto">
+                        <h6 class="fw-bold mb-4 text-danger d-flex align-items-center fs-5"><i class="bi bi-fire me-2"></i>Hotspot Daerah</h6>
+                        <table class="table table-hover small mb-0"><thead class="table-light sticky-top"><tr><th class="py-3 text-secondary">Daerah</th><th class="py-3 text-end text-secondary">Luas (Ha)</th></tr></thead><tbody id="hotspotTable"></tbody></table>
                     </div>
                 </div>
             </div>
 
-            <div class="table-box shadow-sm">
-                <div class="d-flex justify-content-between mb-3"><h6 class="fw-bold"><i class="bi bi-table me-2"></i>Jadual Rekod</h6><small id="pgInfo" class="text-muted"></small></div>
+            <div class="table-box">
+                <div class="d-flex justify-content-between align-items-center mb-4"><h6 class="fw-bold fs-5 m-0 text-dark"><i class="bi bi-table me-2 text-primary"></i>Jadual Rekod</h6><span id="pgInfo" class="badge bg-light text-dark border px-3 py-2 rounded-pill"></span></div>
                 <div class="table-responsive">
-                    <table class="table table-sm table-hover align-middle">
+                    <table class="table table-hover align-middle" style="white-space: nowrap;">
                        <thead class="table-light">
-    <tr>
-        <th>Tarikh</th>
-        <th>Negeri</th>
-        <th>Lokasi</th>
-        <th>Tanaman</th>
-        <th>Luas Bancian</th>
-        <th>Luas Serangan</th>
-        <th class="text-center">Tindakan</th> </tr>
-</thead>
+                            <tr><th class="py-3">Tarikh</th><th class="py-3">Negeri</th><th class="py-3">Lokasi</th><th class="py-3">Tanaman</th><th class="py-3">Bancian (Ha)</th><th class="py-3">Serangan (Ha)</th><th class="py-3 text-center">Tindakan</th></tr>
+                        </thead>
                         <tbody id="tBody"></tbody>
                     </table>
                 </div>
-                <div class="d-flex justify-content-end gap-2 mt-2">
-                    <button class="btn btn-sm btn-white border shadow-sm px-3" onclick="movePg(-1)">Prev</button>
-                    <button class="btn btn-sm btn-white border shadow-sm px-3" onclick="movePg(1)">Next</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-light rounded-pill shadow-sm px-4 fw-bold" onclick="movePg(-1)">Sebelumnya</button>
+                    <button class="btn btn-dark rounded-pill shadow-sm px-4 fw-bold" onclick="movePg(1)">Seterusnya</button>
                 </div>
             </div>
         </div>
 
         <div id="view-verify" style="display:none">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold m-0 text-dark">Pengesahan Data</h4>
-                <div class="btn-group shadow-sm">
-                    <button class="btn btn-success btn-sm px-3 fw-bold" onclick="approveAll()"><i class="bi bi-check-all me-1"></i> Sahkan Semua</button>
-                    <button class="btn btn-primary btn-sm px-3" onclick="loadPend()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
+                <h3 class="fw-bold m-0 text-dark">Pengesahan Data</h3>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success shadow-sm px-3 fw-bold rounded-pill" onclick="approveAll()"><i class="bi bi-check-all me-1"></i> Sahkan Semua</button>
+                    <button class="btn btn-light shadow-sm rounded-circle p-2" onclick="loadPend()"><i class="bi bi-arrow-clockwise fs-5"></i></button>
                 </div>
             </div>
-            
-            <div id="bulkProgress" class="alert alert-info" style="display:none">
-                <div class="d-flex justify-content-between mb-1"><small>Memproses...</small><small id="progText">0%</small></div>
-                <div class="progress" style="height: 10px;"><div class="progress-bar bg-success" id="progBar" style="width: 0%"></div></div>
+            <div id="bulkProgress" class="alert alert-info border-0 rounded-4 shadow-sm" style="display:none">
+                <div class="d-flex justify-content-between mb-2"><small class="fw-bold">Memproses Data...</small><small id="progText" class="fw-bold">0%</small></div>
+                <div class="progress rounded-pill" style="height: 12px;"><div class="progress-bar progress-bar-striped progress-bar-animated bg-success" id="progBar" style="width: 0%"></div></div>
             </div>
-            
-            <div id="verifyContainer" class="row g-3">
-                <div class="col-12 text-center p-5 text-muted bg-white rounded shadow-sm border border-dashed">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-3">Memuatkan senarai untuk disahkan...</p>
-                </div>
-            </div>
+            <div id="verifyContainer" class="row g-3"></div>
         </div>
 
         <div id="view-tasks" style="display:none">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold m-0 text-dark">Tugasan Saya</h4>
-                <button class="btn btn-primary btn-sm px-3" onclick="loadMyTasks()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
+                <h3 class="fw-bold m-0 text-dark">Tugasan Saya</h3>
+                <button class="btn btn-light shadow-sm rounded-pill px-3" onclick="loadMyTasks()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
             </div>
-            <div id="taskContainer" class="row g-3">
-                <div class="col-12 text-center p-5 text-muted bg-white rounded shadow-sm border border-dashed">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-3">Memuatkan tugasan...</p>
-                </div>
-            </div>
+            <div id="taskContainer" class="row g-3"></div>
         </div>
 
         <div id="view-form" style="display:none; height: 100%;">
-           <iframe 
-    id="frameBorang" 
-    src="./form.html" 
-    style="width: 100%; height: 85vh; border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
-    allow="geolocation">
-</iframe>
+           <iframe id="frameBorang" src="./form.html" style="width: 100%; height: 80vh; border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);" allow="geolocation"></iframe>
         </div>
-<div id="view-users" style="display:none">
+
+        <div id="view-users" style="display:none">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold m-0 text-dark"><i class="bi bi-people-fill me-2"></i>Pengurusan Pengguna</h4>
-                <button class="btn btn-primary btn-sm px-3 shadow-sm" onclick="loadUsers()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
+                <h3 class="fw-bold m-0 text-dark">Pengurusan Pengguna</h3>
+                <button class="btn btn-light shadow-sm rounded-pill px-3" onclick="loadUsers()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
             </div>
-            
-            <div class="card border-0 shadow-sm rounded-3">
+            <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4">
-                    <input type="text" id="searchUser" class="form-control form-control-lg mb-4 bg-light border-0" placeholder="Cari Nama / No K/P / Username..." onkeyup="filterUsers()">
-                    
+                    <input type="text" id="searchUser" class="form-control form-control-lg mb-4 bg-light border-0 rounded-pill px-4" placeholder="Cari Nama / No K/P / Username..." onkeyup="filterUsers()">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle" style="font-size: 0.85rem;">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-uppercase">Nama Pegawai & Jawatan</th>
-                                    <th class="text-uppercase">No. K/P</th>
-                                    <th class="text-uppercase">Akses Login (ID/Pass)</th>
-                                    <th class="text-uppercase">Peranan</th>
-                                    <th class="text-uppercase text-center">Status</th>
-                                    <th class="text-uppercase text-center">Tindakan</th>
-                                </tr>
-                            </thead>
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light"><tr><th class="py-3">Pegawai</th><th class="py-3">No. K/P</th><th class="py-3">Akses Login</th><th class="py-3">Peranan</th><th class="py-3 text-center">Status</th><th class="py-3 text-center">Tindakan</th></tr></thead>
                             <tbody id="userTableBody"></tbody>
                         </table>
                     </div>
@@ -465,47 +354,46 @@
 
     <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-success text-white">
-                    <h6 class="modal-title fw-bold" id="modalTitle"><i class="bi bi-card-heading me-2"></i>BUTIRAN REKOD</h6>
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header bg-success text-white border-0 py-3">
+                    <h6 class="modal-title fw-bold fs-5" id="modalTitle"><i class="bi bi-card-heading me-2"></i>BUTIRAN REKOD</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="if(confirm('Tutup tanpa simpan?')) { this.closest('.modal').querySelector('.btn-close').click() } else { return false; }"></button>
                 </div>
-                <div class="modal-body bg-light p-4" id="detailBody">
-                    </div>
-                <div class="modal-footer bg-white">
-                    <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button>
+                <div class="modal-body bg-light p-4" id="detailBody"></div>
+                <div class="modal-footer bg-white border-0 py-3">
+                    <button type="button" class="btn btn-light rounded-pill px-4 shadow-sm" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>
         </div>
     </div>
 
-        <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileFilter()"></div>
-
+    <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileFilter()"></div>
     <div class="mobile-bottom-nav d-md-none">
         
         <div class="nav-bot-item active" onclick="switchTab('main', this)">
-            <i class="bi bi-grid-1x2-fill text-primary fs-4"></i>
-            <span>Dashboard</span>
+            <i class="bi bi-grid-fill"></i>
+            <span>Analisis</span>
         </div>
         
         <div class="nav-bot-item" id="mobNavTasks" onclick="switchTab('tasks', this)" style="display:none;">
-            <i class="bi bi-list-task text-warning fs-4"></i>
+            <i class="bi bi-clipboard-check-fill"></i>
             <span>Tugasan</span>
         </div>
         
+        <div class="nav-bot-item" onclick="switchTab('form', this)" style="flex: 0.8;">
+            <div class="nav-bot-fab">
+                <i class="bi bi-plus-lg"></i>
+            </div>
+        </div>
+        
         <div class="nav-bot-item" id="mobNavVerify" onclick="switchTab('verify', this)" style="display:none;">
-            <i class="bi bi-check-circle-fill text-info fs-4"></i>
-            <span>Pengesahan Data</span>
+            <i class="bi bi-shield-check"></i>
+            <span>Pengesahan</span>
         </div>
         
-        <div class="nav-bot-item" onclick="switchTab('form', this)">
-            <i class="bi bi-plus-lg text-success" style="font-size: 2rem; -webkit-text-stroke: 2px;"></i>
-            <span class="text-success fw-bold">Borang</span>
-        </div>
-        
-        <div class="nav-bot-item" onclick="toggleMobileFilter()">
-            <i class="bi bi-funnel-fill text-danger fs-4"></i>
-            <span>Tapisan</span>
+        <div class="nav-bot-item" onclick="document.getElementById('sidebar').classList.toggle('active'); document.getElementById('mobileOverlay').classList.toggle('active');">
+            <i class="bi bi-list"></i>
+            <span>Menu</span>
         </div>
         
     </div>
