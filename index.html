@@ -110,13 +110,66 @@
 </head>
 <body>
 
-    <div id="loginOverlay">
-        <div class="login-box">
+  <div id="loginOverlay">
+        <div class="login-box" id="formLogin">
             <div class="brand justify-content-center mb-4"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
             <h6 class="text-muted mb-4">Log Masuk Sistem</h6>
             <input type="text" id="uid" class="form-control mb-3 p-3" placeholder="ID Pengguna">
             <input type="password" id="pwd" class="form-control mb-4 p-3" placeholder="Kata Laluan">
             <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold p-3" id="btnLogin">MASUK</button>
+            
+            <div class="d-flex justify-content-between mt-3 px-2">
+                <a href="javascript:void(0)" onclick="lupaKatalaluan()" class="text-decoration-none small text-secondary fw-bold hover-primary">
+                    <i class="bi bi-question-circle me-1"></i> Lupa Kata Laluan?
+                </a>
+                <a href="javascript:void(0)" onclick="toggleDaftar(true)" class="text-decoration-none small text-primary fw-bold">
+                    <i class="bi bi-person-plus-fill me-1"></i> Daftar Akaun
+                </a>
+            </div>
+            <small id="loginMsg" class="text-danger d-block mt-3 fw-bold"></small>
+        </div>
+
+        <div class="login-box" id="formDaftar" style="display:none; max-width: 450px;">
+            <div class="brand justify-content-center mb-2"><i class="bi bi-person-badge me-2"></i> DAFTAR PENGGUNA</div>
+            <p class="text-muted small mb-4" style="line-height:1.2;">Isi maklumat di bawah. Akaun perlu diaktifkan oleh Admin sebelum boleh digunakan.</p>
+            
+            <div class="row g-2 text-start">
+                <div class="col-12"><label class="small fw-bold">Nama Penuh</label><input type="text" id="regNama" class="form-control form-control-sm text-uppercase"></div>
+                <div class="col-6"><label class="small fw-bold">No. K/P (Tanpa Sengkang)</label><input type="number" id="regIC" class="form-control form-control-sm" placeholder="Cth: 900101011234"></div>
+                <div class="col-6"><label class="small fw-bold">Jawatan</label><input type="text" id="regJawatan" class="form-control form-control-sm text-uppercase" placeholder="Cth: PEGAWAI PERTANIAN"></div>
+                
+                <div class="col-12"><label class="small fw-bold mt-1">Negeri Bertugas</label>
+                    <select id="regNegeri" class="form-select form-select-sm">
+                        <option value="">- Pilih Negeri -</option>
+                        <option value="HQ / IBU PEJABAT">HQ / IBU PEJABAT</option>
+                        <option value="Johor">Johor</option>
+                        <option value="Kedah">Kedah</option>
+                        <option value="Kelantan">Kelantan</option>
+                        <option value="Melaka">Melaka</option>
+                        <option value="Negeri Sembilan">Negeri Sembilan</option>
+                        <option value="Pahang">Pahang</option>
+                        <option value="Perak">Perak</option>
+                        <option value="Perlis">Perlis</option>
+                        <option value="Pulau Pinang">Pulau Pinang</option>
+                        <option value="Sabah">Sabah</option>
+                        <option value="Sarawak">Sarawak</option>
+                        <option value="Selangor">Selangor</option>
+                        <option value="Terengganu">Terengganu</option>
+                        <option value="W.P. Kuala Lumpur">W.P. Kuala Lumpur</option>
+                        <option value="W.P. Labuan">W.P. Labuan</option>
+                        <option value="W.P. Putrajaya">W.P. Putrajaya</option>
+                    </select>
+                </div>
+                
+                <div class="col-6 mt-3"><label class="small fw-bold text-success">Username Pilihan</label><input type="text" id="regUid" class="form-control form-control-sm"></div>
+                <div class="col-6 mt-3"><label class="small fw-bold text-success">Kata Laluan</label><input type="password" id="regPwd" class="form-control form-control-sm"></div>
+            </div>
+            
+            <button type="button" onclick="doRegister()" class="btn btn-primary w-100 fw-bold p-2 mt-4 shadow-sm" id="btnReg">HANTAR PENDAFTARAN</button>
+            <button type="button" onclick="toggleDaftar(false)" class="btn btn-light text-secondary border w-100 fw-bold p-2 mt-2">KEMBALI KE LOG MASUK</button>
+        </div>
+    </div>
+
             <small id="loginMsg" class="text-danger d-block mt-3 fw-bold"></small>
         </div>
     </div>
