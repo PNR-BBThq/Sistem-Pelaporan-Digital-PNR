@@ -1935,7 +1935,7 @@
                 return `
                 <tr>
                     <td><div class="fw-bold text-dark text-uppercase">${u.nama}</div><div class="small text-muted">${u.jawatan} - ${u.negeri}</div></td>
-                    <td class="font-monospace">${u.ic}</td>
+                    <td>${maskIC(u.ic)}</td>
                     <td>
                         <span class="d-block small text-primary fw-bold"><i class="bi bi-person me-1"></i>${u.uid}</span>
                         <span class="d-block small text-danger fw-bold"><i class="bi bi-key me-1"></i>${u.pwd}</span>
@@ -2006,10 +2006,12 @@
             }
         }
 
-        function maskIC(icFull) {
-    if (!icFull || icFull.length < 12) return icFull;
-    // Contoh: 900101011234 -> 90****-**-1234
-    return icFull.substring(0, 2) + "****-**-" + icFull.substring(8);
+      // --- FUNGSI TUTUP NO IC (MASKING) ---
+function maskIC(ic) {
+    if (!ic || ic.length < 12) return ic;
+    // Contoh output: 900101-**-1234
+    let clean = ic.replace(/[^0-9]/g, ""); // Buang sengkang jika ada
+    return clean.substring(0, 6) + "-**-" + clean.substring(10);
 }
         
     </script>
