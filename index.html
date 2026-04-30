@@ -2005,6 +2005,13 @@
                 if(r.success) { Swal.fire('Berjaya!', 'Maklumat pengguna dikemaskini.', 'success'); loadUsers(); } else { Swal.fire('Ralat', r.message, 'error'); }
             }
         }
+
+        function maskIC(icFull) {
+    if (!icFull || icFull.length < 12) return icFull;
+    // Contoh: 900101011234 -> 90****-**-1234
+    return icFull.substring(0, 2) + "****-**-" + icFull.substring(8);
+}
+        
     </script>
 </body>
 </html>
