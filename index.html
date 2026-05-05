@@ -2180,11 +2180,19 @@ function downloadKML() {
         "SELANGOR": "ffff00ff" // Magenta
     };
 
-    let kml = `<?xml version="1.0" encoding="UTF-8"?>
+   let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
     <name>Laporan Serangan PNR Digital</name>
-    <description>Data spatial serangan perosak/penyakit</description>\n`;
+    <description>Data spatial serangan perosak/penyakit</description>
+    <LookAt>
+        <longitude>101.9758</longitude>
+        <latitude>4.2105</latitude>
+        <altitude>0</altitude>
+        <heading>0</heading>
+        <tilt>0</tilt>
+        <range>1500000</range>
+    </LookAt>\n`;
 
     fData.forEach(d => {
         const coord = d.c.split(',').map(Number);
