@@ -2165,13 +2165,13 @@ function downloadGeoJSON() {
     downloadAnchorNode.remove();
 }
 
- // ==========================================
+// ==========================================
 // 2. FUNGSI MUAT TURUN KML (Untuk Google Earth)
 // ==========================================
 function downloadKML() {
     if (!fData.length) { alert("Tiada data!"); return; }
 
-    // Warna mengikut Negeri (Kod warna KML guna format AABBGGRR - songsang sikit)
+    // Warna mengikut Negeri (Kod warna KML guna format AABBGGRR)
     const colorMap = {
         "JOHOR": "ff0000ff", // Merah
         "PAHANG": "ff00ffff", // Kuning
@@ -2180,7 +2180,7 @@ function downloadKML() {
         "SELANGOR": "ffff00ff" // Magenta
     };
 
-   let kml = `<?xml version="1.0" encoding="UTF-8"?>
+    let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
     <name>Laporan Serangan PNR Digital</name>
@@ -2199,13 +2199,13 @@ function downloadKML() {
         const peratus = d.lt > 0 ? ((d.ls / d.lt) * 100) : 0;
         const warna = colorMap[(d.n || "").toUpperCase()] || "ffffffff"; // Default Putih
         
-        // Saiz ikon berdasarkan peratus serangan (skala 0.5 hingga 2.5)
+        // Saiz ikon berdasarkan peratus serangan
         const skala = Math.max(0.5, (peratus / 100) * 2.5).toFixed(1);
 
-        // Perhatikan ejaan <scale> dan </scale> yang dah dibetulkan di bawah ini 😄
+        // KUNCI KESELAMATAN: Letak <![CDATA[ ... ]]> pada tag <name>
         kml += `
     <Placemark>
-        <name>${d.tn} - ${d.l}</name>
+        <name><![CDATA[${d.tn} - ${d.l}]]></name>
         <description><![CDATA[
             <b>Negeri:</b> ${d.n}<br>
             <b>Serangan:</b> ${d.ls.toFixed(2)} Ha (${peratus.toFixed(1)}%)<br>
@@ -2235,7 +2235,7 @@ function downloadKML() {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-}       
+}
         
     </script>
 </body>
