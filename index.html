@@ -289,13 +289,28 @@
             <button class="btn btn-light btn-sm border" onclick="document.getElementById('sidebar').classList.toggle('active')"><i class="bi bi-list fs-5"></i></button>
         </div>
 
-        <div id="view-main">
+       <div id="view-main">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-                <div><h4 class="fw-bold m-0 text-dark">Analisis Data</h4><small class="text-muted" id="lastUpdate">Data setakat: Terkini</small></div>
-                <div class="btn-group shadow-sm">
-                    <button class="btn btn-white border bg-white text-secondary btn-sm px-3" onclick="initDash()"><i class="bi bi-arrow-clockwise"></i></button>
-                    <button class="btn btn-success btn-sm px-3" onclick="downloadDualExcel()"><i class="bi bi-file-earmark-excel me-1"></i> Excel</button>
-                    <button class="btn btn-danger btn-sm px-3" onclick="dlPDF()"><i class="bi bi-file-earmark-pdf me-1"></i> PDF</button>
+                <div>
+                    <h4 class="fw-bold m-0 text-dark">Analisis Data</h4>
+                    <small class="text-muted" id="lastUpdate">Data setakat: Terkini</small>
+                </div>
+                
+                <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                    <div class="btn-group shadow-sm">
+                        <button class="btn btn-white border bg-white text-secondary btn-sm px-3" onclick="initDash()"><i class="bi bi-arrow-clockwise"></i></button>
+                        <button class="btn btn-success btn-sm px-3" onclick="downloadDualExcel()"><i class="bi bi-file-earmark-excel me-1"></i> Excel</button>
+                        <button class="btn btn-danger btn-sm px-3" onclick="dlPDF()"><i class="bi bi-file-earmark-pdf me-1"></i> PDF</button>
+                    </div>
+                    
+                    <div class="btn-group shadow-sm">
+                        <button class="btn btn-dark btn-sm px-3" onclick="downloadGeoJSON()">
+                            <i class="bi bi-geo-fill me-1"></i> GeoJSON
+                        </button>
+                        <button class="btn btn-primary btn-sm px-3" onclick="downloadKML()">
+                            <i class="bi bi-pin-map-fill me-1"></i> KML
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -2108,6 +2123,111 @@ function maskIC(ic) {
     let clean = ic.replace(/[^0-9]/g, ""); // Buang sengkang jika ada
     return clean.substring(0, 6) + "-**-" + clean.substring(10);
 }
+
+// ==========================================
+// 1. FUNGSI MUAT TURUN GEOJSON (Untuk QGIS/ArcMap)
+// ==========================================
+function downloadGeoJSON() {
+    if (!fData.length) { alert("Tiada data untuk dimuat turun!"); return; }
+
+    const geojson = {
+        "type": "FeatureCollection",
+        "features": fData.map(d => {
+            const coord = d.c.split(',').map(Number);
+            const peratus = d.lt > 0 ? ((d.ls / d.lt) * 100).toFixed(2) : 0;
+            
+            return {
+                "type": "Feature",
+                "geometry": { "type": "Point", "coordinates": [coord[1], coord[0]] }, // Long, Lat
+                "properties": {
+                    "ID": d.id,
+                    "Tarikh": d.t,
+                    "Negeri": d.n,
+                    "Daerah": d.d,
+                    "Lokasi": d.l,
+                    "Tanaman": d.tn,
+                    "Luas_Tanam_Ha": d.lt,
+                    "Luas_Serangan_Ha": d.ls,
+                    "Peratus_Serangan": peratus,
+                    "Keterukan": "T" + (d.k || 0),
+                    "Pegawai": d.pg
+                }
+            };
+        })
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(geojson));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "PNR_Data_Spatial.geojson");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+ // ==========================================
+// 2. FUNGSI MUAT TURUN KML (Untuk Google Earth)
+// ==========================================
+function downloadKML() {
+    if (!fData.length) { alert("Tiada data!"); return; }
+
+    // Warna mengikut Negeri (Kod warna KML guna format AABBGGRR - songsang sikit)
+    const colorMap = {
+        "JOHOR": "ff0000ff", // Merah
+        "PAHANG": "ff00ffff", // Kuning
+        "PERAK": "ffff0000", // Biru
+        "KEDAH": "ff00ff00", // Hijau
+        "SELANGOR": "ffff00ff" // Magenta
+    };
+
+    let kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+    <name>Laporan Serangan PNR Digital</name>
+    <description>Data spatial serangan perosak/penyakit</description>\n`;
+
+    fData.forEach(d => {
+        const coord = d.c.split(',').map(Number);
+        const peratus = d.lt > 0 ? ((d.ls / d.lt) * 100) : 0;
+        const warna = colorMap[(d.n || "").toUpperCase()] || "ffffffff"; // Default Putih
+        
+        // Saiz ikon berdasarkan peratus serangan (skala 0.5 hingga 2.5)
+        const skala = Math.max(0.5, (peratus / 100) * 2.5).toFixed(1);
+
+        // Perhatikan ejaan <scale> dan </scale> yang dah dibetulkan di bawah ini 😄
+        kml += `
+    <Placemark>
+        <name>${d.tn} - ${d.l}</name>
+        <description><![CDATA[
+            <b>Negeri:</b> ${d.n}<br>
+            <b>Serangan:</b> ${d.ls.toFixed(2)} Ha (${peratus.toFixed(1)}%)<br>
+            <b>Keterukan:</b> T${d.k}
+        ]]></description>
+        <Style>
+            <IconStyle>
+                <color>${warna}</color>
+                <scale>${skala}</scale>
+                <Icon><href>http://maps.google.com/mapfiles/kml/shapes/shaded_dot.png</href></Icon>
+            </IconStyle>
+        </Style>
+        <Point>
+            <coordinates>${coord[1]},${coord[0]},0</coordinates>
+        </Point>
+    </Placemark>`;
+    });
+
+    kml += `\n</Document></kml>`;
+
+    const blob = new Blob([kml], {type: 'application/vnd.google-earth.kml+xml'});
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "PNR_Laporan_GoogleEarth.kml";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}       
         
     </script>
 </body>
