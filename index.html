@@ -2166,49 +2166,74 @@ function downloadGeoJSON() {
 }
 
 // ==========================================
-// 2. FUNGSI MUAT TURUN KML (Untuk Google Earth) - TANPA LABEL SERABUT
+// 2. FUNGSI MUAT TURUN KML (INDIVIDU PEROSAK - KALIS OVER 100%)
 // ==========================================
 function downloadKML() {
     if (!fData.length) { alert("Tiada data!"); return; }
 
-    // Warna mengikut Negeri (Kod warna KML guna format AABBGGRR)
     const colorMap = {
-        "JOHOR": "ff0000ff", // Merah
-        "PAHANG": "ff00ffff", // Kuning
-        "PERAK": "ffff0000", // Biru
-        "KEDAH": "ff00ff00", // Hijau
-        "SELANGOR": "ffff00ff" // Magenta
+        "JOHOR": "ff0000ff", "KEDAH": "ff00ff00", "KELANTAN": "ff00a5ff",
+        "MELAKA": "ffff00ff", "NEGERI SEMBILAN": "ff13458b", "PAHANG": "ff00ffff",
+        "PERAK": "ffff0000", "PERLIS": "ff800080", "PULAU PINANG": "ffffff00",
+        "SABAH": "ff0080ff", "SARAWAK": "ffcbc0ff", "SELANGOR": "ff000080",
+        "TERENGGANU": "ffd0e040", "W.P. KUALA LUMPUR": "ff808080",
+        "W.P. LABUAN": "ff008000", "W.P. PUTRAJAYA": "ff8080c0", "HQ / IBU PEJABAT": "ff000000"
     };
 
     let kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
-    <name>Laporan Serangan PNR Digital</name>
-    <description>Data spatial serangan perosak/penyakit</description>
+    <name>Laporan Spatial PNR - Individu Perosak</name>
     <LookAt>
         <longitude>101.9758</longitude>
         <latitude>4.2105</latitude>
-        <altitude>0</altitude>
-        <heading>0</heading>
-        <tilt>0</tilt>
         <range>1500000</range>
     </LookAt>\n`;
 
     fData.forEach(d => {
-        const coord = d.c.split(',').map(Number);
-        const peratus = d.lt > 0 ? ((d.ls / d.lt) * 100) : 0;
-        const warna = colorMap[(d.n || "").toUpperCase()] || "ffffffff"; // Default Putih
-        
-        // Saiz ikon berdasarkan peratus serangan
-        const skala = Math.max(0.5, (peratus / 100) * 2.5).toFixed(1);
+        let pestObj = {};
+        try {
+            // Pecahkan data perosak daripada JSON string
+            pestObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p;
+        } catch(e) { pestObj = {}; }
 
-        kml += `
+        // Jika tiada perincian perosak di d.p, gunakan data ls (luas serangan) sebagai "Umum"
+        if (!pestObj || Object.keys(pestObj).length === 0) {
+            pestObj = { "Serangan Umum": d.ls };
+        }
+
+        // LOOP SETIAP PEROSAK DALAM SATU LOKASI
+        Object.entries(pestObj).forEach(([pestName, luasSerangPerosak]) => {
+            const coord = d.c.split(',').map(Number);
+            const luasS = parseFloat(luasSerangPerosak) || 0;
+            const luasT = parseFloat(d.lt) || 0;
+            
+            // KIRA PERATUS BERDASARKAN INDIVIDU PEROSAK SAHAJA
+            const peratus = luasT > 0 ? ((luasS / luasT) * 100) : 0;
+            
+            const namaNegeri = (d.n || "").toUpperCase();
+            const warna = colorMap[namaNegeri] || "ffffffff";
+            
+            // Saiz ikon (skala) ikut peratus individu perosak tersebut
+            const skala = Math.max(0.5, (peratus / 100) * 2.5).toFixed(1);
+
+            // Ambil tahap keterukan spesifik perosak jika ada (d.pk), kalau tak guna purata (d.k)
+            let sevVal = (d.pk && d.pk[pestName]) ? d.pk[pestName] : (d.k || 0);
+
+            kml += `
     <Placemark>
-        <name><![CDATA[${d.tn} - ${d.l}]]></name>
+        <name><![CDATA[${pestName} - ${d.l}]]></name>
         <description><![CDATA[
-            <b>Negeri:</b> ${d.n}<br>
-            <b>Serangan:</b> ${d.ls.toFixed(2)} Ha (${peratus.toFixed(1)}%)<br>
-            <b>Keterukan:</b> T${d.k}
+            <table border="1" padding="5" style="border-collapse:collapse; font-family:Arial; font-size:12px;">
+                <tr><td bgcolor="#f2f2f2"><b>PEROSAK</b></td><td><b>${pestName}</b></td></tr>
+                <tr><td bgcolor="#f2f2f2"><b>LOKASI</b></td><td>${d.l}</td></tr>
+                <tr><td bgcolor="#f2f2f2"><b>TANAMAN</b></td><td>${d.tn}</td></tr>
+                <tr><td bgcolor="#f2f2f2"><b>LUAS TANAM</b></td><td>${luasT.toFixed(2)} Ha</td></tr>
+                <tr><td bgcolor="#f2f2f2"><b>LUAS SERANGAN</b></td><td><font color="red">${luasS.toFixed(2)} Ha</font></td></tr>
+                <tr><td bgcolor="#f2f2f2"><b>PERATUS</b></td><td><b>${peratus.toFixed(1)}%</b></td></tr>
+                <tr><td bgcolor="#f2f2f2"><b>KETERUKAN</b></td><td>Tahap ${sevVal}</td></tr>
+                <tr><td bgcolor="#f2f2f2"><b>TARIKH</b></td><td>${d.t}</td></tr>
+            </table>
         ]]></description>
         <Style>
             <IconStyle>
@@ -2216,13 +2241,11 @@ function downloadKML() {
                 <scale>${skala}</scale>
                 <Icon><href>http://maps.google.com/mapfiles/kml/shapes/shaded_dot.png</href></Icon>
             </IconStyle>
-            <LabelStyle>
-                <scale>0</scale> </LabelStyle>
+            <LabelStyle><scale>0</scale></LabelStyle>
         </Style>
-        <Point>
-            <coordinates>${coord[1]},${coord[0]},0</coordinates>
-        </Point>
+        <Point><coordinates>${coord[1]},${coord[0]},0</coordinates></Point>
     </Placemark>`;
+        });
     });
 
     kml += `\n</Document></kml>`;
@@ -2231,7 +2254,7 @@ function downloadKML() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = "PNR_Laporan_GoogleEarth.kml";
+    a.download = "PNR_Data_Perosak_Individu.kml";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
