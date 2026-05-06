@@ -2166,7 +2166,7 @@ function downloadGeoJSON() {
 }
 
 // ==========================================
-// 2. FUNGSI MUAT TURUN KML (Untuk Google Earth)
+// 2. FUNGSI MUAT TURUN KML (Untuk Google Earth) - TANPA LABEL SERABUT
 // ==========================================
 function downloadKML() {
     if (!fData.length) { alert("Tiada data!"); return; }
@@ -2202,7 +2202,6 @@ function downloadKML() {
         // Saiz ikon berdasarkan peratus serangan
         const skala = Math.max(0.5, (peratus / 100) * 2.5).toFixed(1);
 
-        // KUNCI KESELAMATAN: Letak <![CDATA[ ... ]]> pada tag <name>
         kml += `
     <Placemark>
         <name><![CDATA[${d.tn} - ${d.l}]]></name>
@@ -2217,6 +2216,8 @@ function downloadKML() {
                 <scale>${skala}</scale>
                 <Icon><href>http://maps.google.com/mapfiles/kml/shapes/shaded_dot.png</href></Icon>
             </IconStyle>
+            <LabelStyle>
+                <scale>0</scale> </LabelStyle>
         </Style>
         <Point>
             <coordinates>${coord[1]},${coord[0]},0</coordinates>
