@@ -2125,20 +2125,33 @@ function maskIC(ic) {
 }
 
 // ==========================================
-// 1. FUNGSI MUAT TURUN GEOJSON (Untuk QGIS/ArcMap)
+// 1. FUNGSI MUAT TURUN GEOJSON (Individu Perosak untuk QGIS/ArcMap)
 // ==========================================
 function downloadGeoJSON() {
     if (!fData.length) { alert("Tiada data untuk dimuat turun!"); return; }
 
-    const geojson = {
-        "type": "FeatureCollection",
-        "features": fData.map(d => {
+    let featuresArray = [];
+
+    fData.forEach(d => {
+        let pestObj = {};
+        try {
+            pestObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p;
+        } catch(e) { pestObj = {}; }
+
+        if (!pestObj || Object.keys(pestObj).length === 0) {
+            pestObj = { "Serangan Umum": d.ls };
+        }
+
+        Object.entries(pestObj).forEach(([pestName, luasSerangPerosak]) => {
             const coord = d.c.split(',').map(Number);
-            const peratus = d.lt > 0 ? ((d.ls / d.lt) * 100).toFixed(2) : 0;
-            
-            return {
+            const luasS = parseFloat(luasSerangPerosak) || 0;
+            const luasT = parseFloat(d.lt) || 0;
+            const peratus = luasT > 0 ? ((luasS / luasT) * 100).toFixed(2) : 0;
+            let sevVal = (d.pk && d.pk[pestName]) ? d.pk[pestName] : (d.k || 0);
+
+            featuresArray.push({
                 "type": "Feature",
-                "geometry": { "type": "Point", "coordinates": [coord[1], coord[0]] }, // Long, Lat
+                "geometry": { "type": "Point", "coordinates": [coord[1], coord[0]] }, // Format GeoJSON mesti [Long, Lat]
                 "properties": {
                     "ID": d.id,
                     "Tarikh": d.t,
@@ -2146,25 +2159,30 @@ function downloadGeoJSON() {
                     "Daerah": d.d,
                     "Lokasi": d.l,
                     "Tanaman": d.tn,
-                    "Luas_Tanam_Ha": d.lt,
-                    "Luas_Serangan_Ha": d.ls,
-                    "Peratus_Serangan": peratus,
-                    "Keterukan": "T" + (d.k || 0),
+                    "Perosak": pestName,                     // Lajur spesifik untuk perosak
+                    "Luas_Tanam_Ha": luasT,
+                    "Luas_Serangan_Ha": luasS,             // Luas serangan spesifik perosak
+                    "Peratus_Serangan": parseFloat(peratus), // Peratus spesifik perosak
+                    "Keterukan": "T" + sevVal,
                     "Pegawai": d.pg
                 }
-            };
-        })
+            });
+        });
+    });
+
+    const geojson = {
+        "type": "FeatureCollection",
+        "features": featuresArray
     };
 
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(geojson));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "PNR_Data_Spatial.geojson");
+    downloadAnchorNode.setAttribute("download", "PNR_Data_Spatial_Individu.geojson");
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
 }
-
 // ==========================================
 // 2. FUNGSI MUAT TURUN KML (INDIVIDU PEROSAK - KALIS OVER 100%)
 // ==========================================
