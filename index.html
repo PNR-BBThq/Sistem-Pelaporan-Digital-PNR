@@ -9,121 +9,24 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
-
-    <style>
-        :root { --primary: #064e3b; --accent: #10b981; --bg: #f3f4f6; }
-        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; margin:0; }
-        
-        /* LOGIN & LAYOUT */
-        #loginOverlay { position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center; background: #064e3b; }
-        .swal2-container { z-index: 9999999 !important; } /* Ubat supaya pop-up duduk di lapisan paling depan */
-        .login-box { background: white; padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
-        .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: #e8f5e9; border-right: 1px solid #c6e7ce; padding: 20px; z-index: 100; transition: transform 0.3s; display: flex; flex-direction: column; }
-        .brand { font-size: 1.3rem; font-weight: 900; color: #000; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding-left: 10px; flex-shrink: 0; }
-        .sidebar-content { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding-right: 5px; margin-bottom: 10px; }
-        .sidebar-content::-webkit-scrollbar { width: 4px; }
-        .sidebar-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-        .nav-item { padding: 12px 15px; margin-bottom: 5px; border-radius: 8px; cursor: pointer; color: #000; font-weight: 600; display: flex; align-items: center; justify-content: space-between; transition: 0.2s; }
-        .nav-item:hover { background: #c8e6c9; color: #000; }
-        .nav-item.active { background: #1b5e20; color: white; font-weight: 700; }
-        .sidebar-footer { flex-shrink: 0; border-top: 1px solid #c6e7ce; padding-top: 15px; }
-        .main-content { margin-left: 260px; padding: 25px; transition: margin-left 0.3s; }
-        
-        /* DASHBOARD CARDS */
-        .kpi-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); border: 1px solid #e5e7eb; height: 100%; transition: transform 0.2s; }
-        .kpi-value { font-size: 1.8rem; font-weight: 800; color: #111827; margin-top: 5px; }
-        .map-box { height: 400px; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; position: relative; z-index: 1; }
-        .table-box { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; overflow: hidden; }
-        .text-danger { color: #dc2626 !important; }
-        .badge-pending { background: #dc2626; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; display: none; }
-
-        /* STYLE REPORT CARD */
-        .verify-card { background: #fff; border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; height: 100%; display: flex; flex-direction: column; transition: transform 0.2s; border: 1px solid #e2e8f0; }
-        .verify-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        
-        .filter-label { font-size: 0.75rem; font-weight: 800; color: #000; margin-bottom: 3px; display: block; text-transform: uppercase; }
-
-        /* STYLE KHAS UNTUK TUGASAN */
-        .task-reject-box { background-color: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 8px; margin-bottom: 15px; color: #b91c1c; font-size: 0.85rem; }
-
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.active { transform: translateX(0); }
-            .main-content { margin-left: 0; padding: 15px; }
-        }
-        /* =========================================
-           MOBILE APP UI (BOTTOM NAVIGATION BAR)
-           ========================================= */
-        .mobile-bottom-nav { display: none; }
-        .mobile-overlay { display: none; }
-
-        @media (max-width: 768px) {
-            /* 1. Sembunyikan Butang Menu Atas Lama */
-            .d-md-none.mb-3 { display: none !important; }
-            
-            /* 2. Ubah Sidebar jadi "Offcanvas" (Hanya buka bila ditekan) */
-            .sidebar { 
-                transform: translateX(-100%); 
-                z-index: 1050; 
-                box-shadow: 5px 0 15px rgba(0,0,0,0.2); 
-            }
-            .sidebar.active { transform: translateX(0); }
-            
-            /* 3. Ruang bernafas untuk main content (elak tertutup dengan menu bawah) */
-            .main-content { padding: 15px; padding-bottom: 90px; margin-left: 0; }
-            
-            /* 4. Bar Navigasi Bawah (Macam App Sebenar) */
-            .mobile-bottom-nav {
-                display: flex; position: fixed; bottom: 0; left: 0; right: 0;
-                background: #ffffff; box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
-                z-index: 1040; padding: 10px 10px 15px 10px; justify-content: space-between;
-                align-items: flex-end; border-top-left-radius: 20px; border-top-right-radius: 20px;
-            }
-            .nav-bot-item {
-                text-align: center; color: #9ca3af; font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
-                flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-                cursor: pointer; transition: 0.3s;
-            }
-            .nav-bot-item i { font-size: 1.4rem; margin-bottom: 2px; }
-            .nav-bot-item.active { color: #064e3b; }
-            
-            /* 5. Butang Tambah Data Besar (Tengah) */
-            .nav-bot-fab {
-                background: linear-gradient(135deg, #10b981, #059669); color: white !important;
-                width: 55px; height: 55px; border-radius: 50%;
-                display: flex; align-items: center; justify-content: center;
-                font-size: 2rem; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
-                transform: translateY(-20px); border: 4px solid #f3f4f6;
-            }
-            
-            /* 6. Latar Hitam Gelap bila Filter dibuka */
-            .mobile-overlay {
-                position: fixed; top:0; left:0; right:0; bottom:0;
-                background: rgba(0,0,0,0.6); z-index: 1045; display: none;
-            }
-            .mobile-overlay.active { display: block; }
-        }
-    </style>
+    
+    <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
 
-  <div id="loginOverlay">
+    <div id="loginOverlay">
         <div class="login-box" id="formLogin">
             <div class="brand justify-content-center mb-4"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
             <h6 class="text-muted mb-4">Log Masuk Sistem</h6>
             <input type="text" id="uid" class="form-control mb-3 p-3" placeholder="ID Pengguna">
             <input type="password" id="pwd" class="form-control mb-4 p-3" placeholder="Kata Laluan">
-            <button type="button" onclick="doLogin()" class="btn btn-success w-100 fw-bold p-3" id="btnLogin">MASUK</button>
+            <button type="button" class="btn btn-success w-100 fw-bold p-3" id="btnLogin">MASUK</button>
             
             <div class="d-flex justify-content-between mt-3 px-2">
-                <a href="javascript:void(0)" onclick="lupaKatalaluan()" class="text-decoration-none small text-secondary fw-bold hover-primary">
+                <a href="javascript:void(0)" id="btnLupaPwd" class="text-decoration-none small text-secondary fw-bold hover-primary">
                     <i class="bi bi-question-circle me-1"></i> Lupa Kata Laluan?
                 </a>
-                <a href="javascript:void(0)" onclick="toggleDaftar(true)" class="text-decoration-none small text-primary fw-bold">
+                <a href="javascript:void(0)" id="btnShowDaftar" class="text-decoration-none small text-primary fw-bold">
                     <i class="bi bi-person-plus-fill me-1"></i> Daftar Akaun
                 </a>
             </div>
@@ -135,12 +38,12 @@
             <p class="text-muted small mb-4" style="line-height:1.2;">Isi maklumat di bawah. Akaun perlu diaktifkan oleh Admin sebelum boleh digunakan.</p>
             
             <div class="row g-2 text-start">
-                <div class="col-12"><label class="small fw-bold">Nama Penuh</label><input type="text" id="regNama" class="form-control form-control-sm text-uppercase"></div>
-                <div class="col-6"><label class="small fw-bold">No. K/P (Tanpa Sengkang)</label><input type="number" id="regIC" class="form-control form-control-sm" placeholder="Cth: 900101011234"></div>
-                <div class="col-6"><label class="small fw-bold">Jawatan</label><input type="text" id="regJawatan" class="form-control form-control-sm text-uppercase" placeholder="Cth: PEGAWAI PERTANIAN"></div>
+                <div class="col-12"><label class="small fw-bold">Nama Penuh</label><input type="text" id="reg-nama" class="form-control form-control-sm text-uppercase"></div>
+                <div class="col-6"><label class="small fw-bold">No. K/P (Tanpa Sengkang)</label><input type="number" id="reg-ic" class="form-control form-control-sm" placeholder="Cth: 900101011234"></div>
+                <div class="col-6"><label class="small fw-bold">Jawatan</label><input type="text" id="reg-jawatan" class="form-control form-control-sm text-uppercase" placeholder="Cth: PEGAWAI PERTANIAN"></div>
                 
                 <div class="col-12"><label class="small fw-bold mt-1">Negeri Bertugas</label>
-                    <select id="regNegeri" class="form-select form-select-sm">
+                    <select id="reg-negeri" class="form-select form-select-sm">
                         <option value="">- Pilih Negeri -</option>
                         <option value="HQ / IBU PEJABAT">HQ / IBU PEJABAT</option>
                         <option value="Johor">Johor</option>
@@ -162,97 +65,59 @@
                     </select>
                 </div>
                 
-                <div class="col-6 mt-3"><label class="small fw-bold text-success">Username Pilihan</label><input type="text" id="regUid" class="form-control form-control-sm"></div>
-                <div class="col-6 mt-3"><label class="small fw-bold text-success">Kata Laluan</label><input type="password" id="regPwd" class="form-control form-control-sm"></div>
+                <div class="col-6 mt-3"><label class="small fw-bold text-success">Username Pilihan</label><input type="text" id="reg-uid" class="form-control form-control-sm"></div>
+                <div class="col-6 mt-3"><label class="small fw-bold text-success">Kata Laluan</label><input type="password" id="reg-pwd" class="form-control form-control-sm"></div>
             </div>
             
-            <button type="button" onclick="doRegister()" class="btn btn-primary w-100 fw-bold p-2 mt-4 shadow-sm" id="btnReg">HANTAR PENDAFTARAN</button>
-            <button type="button" onclick="toggleDaftar(false)" class="btn btn-light text-secondary border w-100 fw-bold p-2 mt-2">KEMBALI KE LOG MASUK</button>
+            <button type="button" class="btn btn-primary w-100 fw-bold p-2 mt-4 shadow-sm" id="btnSubmitDaftar">HANTAR PENDAFTARAN</button>
+            <button type="button" class="btn btn-light text-secondary border w-100 fw-bold p-2 mt-2" id="btnBackLogin">KEMBALI KE LOG MASUK</button>
         </div>
     </div>
 
-            <small id="loginMsg" class="text-danger d-block mt-3 fw-bold"></small>
-        </div>
-    </div>
-
-  <div class="sidebar" id="sidebar">
+    <div class="sidebar" id="sidebar">
         <div class="brand"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
         
         <div class="sidebar-content">
-            <div class="nav-item active" onclick="switchTab('main', this)">
+            <div class="nav-item active" data-view="main">
                 <span><i class="bi bi-grid-1x2-fill me-2"></i> Dashboard</span>
             </div>
             
-            <div class="nav-item" id="navTasks" style="display:none" onclick="switchTab('tasks', this)">
+            <div class="nav-item" id="navTasks" style="display:none" data-view="tasks">
                 <span><i class="bi bi-list-task me-2"></i> Tugasan Saya</span>
                 <span class="badge-pending" id="badgeTask" style="background:#dc2626;">0</span>
             </div>
 
-            <div class="nav-item" id="navVerify" style="display:none" onclick="switchTab('verify', this)">
+            <div class="nav-item" id="navVerify" style="display:none" data-view="verify">
                 <span><i class="bi bi-check-circle-fill me-2"></i> Pengesahan</span>
                 <span class="badge-pending" id="badgePending">0</span>
             </div>
             
-            <div class="nav-item bg-dark text-white shadow-sm mt-2" id="navUsers" style="display:none" onclick="switchTab('users', this)">
+            <div class="nav-item bg-dark text-white shadow-sm mt-2" id="navUsers" style="display:none" data-view="users">
                 <span><i class="bi bi-people-fill me-2 text-warning"></i> Urus Pengguna</span>
+            </div>
+            
+            <div class="nav-item bg-primary text-white shadow-sm mt-2" id="navSKU" onclick="ViewManager.switchTab('sku', this)">
+                <span><i class="bi bi-trophy-fill me-2 text-warning"></i> Pencapaian SKU</span>
             </div>
             
             <hr class="my-4" style="color: #000;">
             
-            <div class="mb-3 px-2">
+            <div class="mb-3 px-2" id="filterSection">
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <small class="fw-bold text-dark" style="font-size:0.85rem; letter-spacing: 0.5px;"><i class="bi bi-funnel-fill me-1"></i> TAPISAN DATA</small>
                 </div>
                 
-                <div class="mb-2">
-                    <label class="filter-label">Negeri</label>
-                    <div class="dropdown d-grid">
-                        <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselNegeri" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
-                        <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselNegeri"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-2">
-                    <label class="filter-label">Daerah</label>
-                    <div class="dropdown d-grid">
-                        <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselDaerah" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
-                        <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselDaerah"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-2">
-                    <label class="filter-label">Tanaman</label>
-                    <div class="dropdown d-grid">
-                        <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselTanaman" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
-                        <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselTanaman"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-2">
-                    <label class="filter-label">Perosak</label>
-                    <div class="dropdown d-grid">
-                        <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselPerosak" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
-                        <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselPerosak"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-2">
-                    <label class="filter-label">Kategori</label>
-                    <div class="dropdown d-grid">
-                        <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btnselKategori" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
-                        <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="listselKategori"></div>
-                    </div>
-                </div>
+                <div id="filterDropdownsContainer"></div>
 
                 <div class="mb-3 mt-3">
                     <label class="filter-label">Julat Tarikh</label>
                     <div class="row g-1">
-                        <div class="col-6"><input type="date" id="dS" class="form-control form-control-sm" onchange="runFilter()"></div>
-                        <div class="col-6"><input type="date" id="dE" class="form-control form-control-sm" onchange="runFilter()"></div>
+                        <div class="col-6"><input type="date" id="dS" class="form-control form-control-sm filter-input"></div>
+                        <div class="col-6"><input type="date" id="dE" class="form-control form-control-sm filter-input"></div>
                     </div>
                 </div>
                 
-                <button class="btn btn-dark btn-sm w-100" onclick="resetFilter()">
+                <button class="btn btn-dark btn-sm w-100" id="btnResetFilter">
                     <i class="bi bi-arrow-counterclockwise"></i> Reset Tapisan
                 </button>
 
@@ -264,7 +129,7 @@
                         <small class="fw-bold text-dark" style="line-height:1.2">Pemantauan<br>Perangkap RPW</small>
                     </div>
                     <p class="text-muted mb-2" style="font-size: 0.75rem;">Akses pantas ke data perangkap kumbang.</p>
-                    <button onclick="window.open(RPW_URL, '_blank')" class="btn btn-outline-danger btn-sm w-100 fw-bold">
+                    <button id="btnOpenRPW" class="btn btn-outline-danger btn-sm w-100 fw-bold">
                         <i class="bi bi-box-arrow-up-right"></i> Buka Sistem
                     </button>
                 </div>
@@ -272,13 +137,12 @@
         </div>
         
         <div class="sidebar-footer">
-            <div class="nav-item mb-3 bg-success text-white shadow-sm" onclick="switchTab('form', this)" style="cursor: pointer;">
+            <div class="nav-item mb-3 bg-success text-white shadow-sm" data-view="form" style="cursor: pointer;">
                 <span><i class="bi bi-plus-lg me-2"></i> Tambah Data</span>
             </div>
-
             <div class="d-flex align-items-center justify-content-between px-2">
                 <div><small class="text-dark d-block" style="font-size: 0.75rem; font-weight:600;">Pengguna</small><strong id="uDisp" class="text-dark" style="font-size:0.9rem">-</strong></div>
-                <button class="btn btn-link text-danger btn-sm p-0" onclick="doLogout()" title="Log Keluar"><i class="bi bi-box-arrow-right fs-5"></i></button>
+                <button class="btn btn-link text-danger btn-sm p-0" id="btnLogout" title="Log Keluar"><i class="bi bi-box-arrow-right fs-5"></i></button>
             </div>
         </div>
     </div>
@@ -286,30 +150,24 @@
     <div class="main-content">
         <div class="d-md-none mb-3 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm">
             <span class="fw-bold text-success fs-5"><i class="bi bi-flower1"></i> PNR</span>
-            <button class="btn btn-light btn-sm border" onclick="document.getElementById('sidebar').classList.toggle('active')"><i class="bi bi-list fs-5"></i></button>
+            <button class="btn btn-light btn-sm border" onclick="document.getElementById('sidebar').classList.toggle('active'); document.getElementById('mobileOverlay').classList.toggle('active');"><i class="bi bi-list fs-5"></i></button>
         </div>
 
-       <div id="view-main">
+        <div id="view-main" class="app-view">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                 <div>
                     <h4 class="fw-bold m-0 text-dark">Analisis Data</h4>
                     <small class="text-muted" id="lastUpdate">Data setakat: Terkini</small>
                 </div>
-                
                 <div class="d-flex flex-wrap gap-2 justify-content-md-end">
                     <div class="btn-group shadow-sm">
-                        <button class="btn btn-white border bg-white text-secondary btn-sm px-3" onclick="initDash()"><i class="bi bi-arrow-clockwise"></i></button>
-                        <button class="btn btn-success btn-sm px-3" onclick="downloadDualExcel()"><i class="bi bi-file-earmark-excel me-1"></i> Excel</button>
-                        <button class="btn btn-danger btn-sm px-3" onclick="dlPDF()"><i class="bi bi-file-earmark-pdf me-1"></i> PDF</button>
+                        <button class="btn btn-white border bg-white text-secondary btn-sm px-3" id="btnRefreshDash"><i class="bi bi-arrow-clockwise"></i></button>
+                        <button class="btn btn-success btn-sm px-3" id="btnDlExcel"><i class="bi bi-file-earmark-excel me-1"></i> Excel</button>
+                        <button class="btn btn-danger btn-sm px-3" id="btnDlPDF"><i class="bi bi-file-earmark-pdf me-1"></i> PDF</button>
                     </div>
-                    
                     <div class="btn-group shadow-sm">
-                        <button class="btn btn-dark btn-sm px-3" onclick="downloadGeoJSON()">
-                            <i class="bi bi-geo-fill me-1"></i> GeoJSON
-                        </button>
-                        <button class="btn btn-primary btn-sm px-3" onclick="downloadKML()">
-                            <i class="bi bi-pin-map-fill me-1"></i> KML
-                        </button>
+                        <button class="btn btn-dark btn-sm px-3" id="btnDlGeoJSON"><i class="bi bi-geo-fill me-1"></i> GeoJSON</button>
+                        <button class="btn btn-primary btn-sm px-3" id="btnDlKML"><i class="bi bi-pin-map-fill me-1"></i> KML</button>
                     </div>
                 </div>
             </div>
@@ -317,32 +175,22 @@
             <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(to right, #e0f2fe, #f0f9ff);">
                 <div class="card-body p-4">
                     <div id="smartSummary" class="text-dark">
-                        <div class="d-flex align-items-center">
-                            <div class="spinner-border spinner-border-sm text-primary me-2"></div>
-                            Sedang menganalisis data...
-                        </div>
+                        <div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Sedang menganalisis data...</div>
                     </div>
                 </div>
             </div>
 
-            <div class="row g-3 mb-4">
-                <div class="col-6 col-md-3"><div class="kpi-card"><div class="d-flex justify-content-between mb-2"><span class="kpi-title">Luas Bancian</span><div class="kpi-icon bg-success-subtle text-success"><i class="bi bi-rulers"></i></div></div><div class="kpi-value" id="k1">0</div><small class="text-muted fw-bold">Hektar</small></div></div>
-                <div class="col-6 col-md-3"><div class="kpi-card"><div class="d-flex justify-content-between mb-2"><span class="kpi-title">Luas Serangan</span><div class="kpi-icon bg-danger-subtle text-danger"><i class="bi bi-bug-fill"></i></div></div><div class="kpi-value text-danger" id="k2">0</div><small class="text-muted fw-bold">Hektar</small></div></div>
-                <div class="col-6 col-md-3"><div class="kpi-card"><div class="d-flex justify-content-between mb-2"><span class="kpi-title">Peratus Serangan</span><div class="kpi-icon bg-warning-subtle text-warning"><i class="bi bi-percent"></i></div></div><div class="kpi-value" id="k3">0%</div><small class="text-muted fw-bold">Kadar Jangkitan</small></div></div>
-                <div class="col-6 col-md-3"><div class="kpi-card"><div class="d-flex justify-content-between mb-2"><span class="kpi-title">Bil. Rekod</span><div class="kpi-icon bg-primary-subtle text-primary"><i class="bi bi-file-text"></i></div></div><div class="kpi-value" id="k4">0</div><small class="text-muted fw-bold">Unit Data</small></div></div>
-            </div>
+            <div class="row g-3 mb-4" id="kpiCardsContainer"></div>
 
             <div class="row g-3 mb-4">
                 <div class="col-md-8">
-                   <div class="card h-100 shadow-sm border-0">
+                    <div class="card h-100 shadow-sm border-0">
                         <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="fw-bold text-secondary m-0" id="tajukCBar">Carta Serangan Perosak Tertinggi (Ha)</h6>
-                                <small class="text-muted d-block mt-1 fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px;" id="subCBar">
-                                    <i class="bi bi-hand-index-thumb-fill text-primary me-1"></i> Klik pada bar untuk lihat pecahan tanaman
-                                </small>
+                                <small class="text-muted d-block mt-1 fw-bold" style="font-size: 0.75rem;" id="subCBar"><i class="bi bi-hand-index-thumb-fill text-primary me-1"></i> Klik pada bar untuk lihat pecahan</small>
                             </div>
-                            <button id="btnBackPest" class="btn btn-sm btn-outline-secondary shadow-sm" style="display:none;" onclick="patahBalikCarta()"><i class="bi bi-arrow-left"></i> Kembali</button>
+                            <button id="btnBackPest" class="btn btn-sm btn-outline-secondary shadow-sm" style="display:none;"><i class="bi bi-arrow-left"></i> Kembali</button>
                         </div>
                         <div class="card-body px-4 pb-4"><div style="height: 350px"><canvas id="cBar"></canvas></div></div>
                     </div>
@@ -355,16 +203,7 @@
                         </div>
                         <div class="card-body text-center position-relative px-4 pb-4">
                             <div style="height: 250px;"><canvas id="cPie"></canvas></div>
-                            <div class="mt-4 pt-3 border-top">
-                                <p class="text-uppercase text-muted fw-bold mb-2" style="font-size: 10px; letter-spacing: 1px;">Petunjuk Tahap</p>
-                                <div class="d-flex flex-wrap justify-content-center gap-2" style="font-size: 11px;">
-                                    <span class="badge rounded-pill bg-success bg-opacity-75 text-white">T1: Sgt Rendah</span>
-                                    <span class="badge rounded-pill bg-info text-dark">T2: Rendah</span>
-                                    <span class="badge rounded-pill bg-warning text-dark">T3: Sederhana</span>
-                                    <span class="badge rounded-pill text-white" style="background-color: #fd7e14;">T4: Teruk</span>
-                                    <span class="badge rounded-pill bg-danger text-white">T5: Sgt Teruk</span>
-                                </div>
-                            </div>
+                            <div class="mt-4 pt-3 border-top" id="legendContainer"></div>
                         </div>
                     </div>
                 </div>
@@ -384,109 +223,132 @@
                 <div class="d-flex justify-content-between mb-3"><h6 class="fw-bold"><i class="bi bi-table me-2"></i>Jadual Rekod</h6><small id="pgInfo" class="text-muted"></small></div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle">
-                       <thead class="table-light">
-    <tr>
-        <th>Tarikh</th>
-        <th>Negeri</th>
-        <th>Lokasi</th>
-        <th>Tanaman</th>
-        <th>Luas Bancian</th>
-        <th>Luas Serangan</th>
-        <th class="text-center">Tindakan</th> </tr>
-</thead>
+                        <thead class="table-light"><tr><th>Tarikh</th><th>Negeri</th><th>Lokasi</th><th>Tanaman</th><th>Luas Bancian</th><th>Luas Serangan</th><th class="text-center">Tindakan</th></tr></thead>
                         <tbody id="tBody"></tbody>
                     </table>
                 </div>
                 <div class="d-flex justify-content-end gap-2 mt-2">
-                    <button class="btn btn-sm btn-white border shadow-sm px-3" onclick="movePg(-1)">Prev</button>
-                    <button class="btn btn-sm btn-white border shadow-sm px-3" onclick="movePg(1)">Next</button>
+                    <button class="btn btn-sm btn-white border shadow-sm px-3" id="btnPrevPg">Prev</button>
+                    <button class="btn btn-sm btn-white border shadow-sm px-3" id="btnNextPg">Next</button>
                 </div>
             </div>
         </div>
 
-        <div id="view-verify" style="display:none">
+        <div id="view-verify" class="app-view" style="display:none">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="fw-bold m-0 text-dark">Pengesahan Data</h4>
                 <div class="btn-group shadow-sm">
-                    <button class="btn btn-success btn-sm px-3 fw-bold" onclick="approveAll()"><i class="bi bi-check-all me-1"></i> Sahkan Semua</button>
-                    <button class="btn btn-primary btn-sm px-3" onclick="loadPend()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
+                    <button class="btn btn-success btn-sm px-3 fw-bold" id="btnApproveAll"><i class="bi bi-check-all me-1"></i> Sahkan Semua</button>
+                    <button class="btn btn-primary btn-sm px-3" id="btnRefreshVerify"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
                 </div>
             </div>
-            
             <div id="bulkProgress" class="alert alert-info" style="display:none">
                 <div class="d-flex justify-content-between mb-1"><small>Memproses...</small><small id="progText">0%</small></div>
                 <div class="progress" style="height: 10px;"><div class="progress-bar bg-success" id="progBar" style="width: 0%"></div></div>
             </div>
-            
-            <div id="verifyContainer" class="row g-3">
-                <div class="col-12 text-center p-5 text-muted bg-white rounded shadow-sm border border-dashed">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-3">Memuatkan senarai untuk disahkan...</p>
-                </div>
-            </div>
+            <div id="verifyContainer" class="row g-3"></div>
         </div>
 
-        <div id="view-tasks" style="display:none">
+        <div id="view-tasks" class="app-view" style="display:none">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="fw-bold m-0 text-dark">Tugasan Saya</h4>
-                <button class="btn btn-primary btn-sm px-3" onclick="loadMyTasks()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
+                <button class="btn btn-primary btn-sm px-3" id="btnRefreshTasks"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
             </div>
-            <div id="taskContainer" class="row g-3">
-                <div class="col-12 text-center p-5 text-muted bg-white rounded shadow-sm border border-dashed">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-3">Memuatkan tugasan...</p>
-                </div>
-            </div>
+            <div id="taskContainer" class="row g-3"></div>
         </div>
 
-        <div id="view-form" style="display:none; height: 100%;">
-           <iframe 
-    id="frameBorang" 
-    src="./form.html" 
-    style="width: 100%; height: 85vh; border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
-    allow="geolocation">
-</iframe>
+        <div id="view-form" class="app-view" style="display:none; height: 100%;">
+            <iframe id="frameBorang" src="./form.html" style="width: 100%; height: 85vh; border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" allow="geolocation"></iframe>
         </div>
-<div id="view-users" style="display:none">
+
+        <div id="view-users" class="app-view" style="display:none">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="fw-bold m-0 text-dark"><i class="bi bi-people-fill me-2"></i>Pengurusan Pengguna</h4>
-                <button class="btn btn-primary btn-sm px-3 shadow-sm" onclick="loadUsers()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
+                <button class="btn btn-primary btn-sm px-3 shadow-sm" id="btnRefreshUsers"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
             </div>
-            
             <div class="card border-0 shadow-sm rounded-3">
                 <div class="card-body p-4">
-                    <input type="text" id="searchUser" class="form-control form-control-lg mb-4 bg-light border-0" placeholder="Cari Nama / No K/P / Username..." onkeyup="filterUsers()">
-                    
+                    <input type="text" id="searchUser" class="form-control form-control-lg mb-4 bg-light border-0" placeholder="Cari Nama / No K/P / Username...">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle" style="font-size: 0.85rem;">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-uppercase">Nama Pegawai & Jawatan</th>
-                                    <th class="text-uppercase">No. K/P</th>
-                                    <th class="text-uppercase">Akses Login (ID/Pass)</th>
-                                    <th class="text-uppercase">Peranan</th>
-                                    <th class="text-uppercase text-center">Status</th>
-                                    <th class="text-uppercase text-center">Tindakan</th>
-                                </tr>
-                            </thead>
+                            <thead class="table-light"><tr><th class="text-uppercase">Nama & Jawatan</th><th class="text-uppercase">No. K/P</th><th class="text-uppercase">Akses Login</th><th class="text-uppercase">Peranan</th><th class="text-uppercase text-center">Status</th><th class="text-uppercase text-center">Tindakan</th></tr></thead>
                             <tbody id="userTableBody"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
-        
-    </div>
+<div id="view-sku" class="app-view" style="display:none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold m-0 text-dark"><i class="bi bi-graph-up-arrow me-2 text-primary"></i> Laporan Pencapaian SKU 2026</h4>
+                <div class="btn-group shadow-sm d-print-none">
+                    <button class="btn btn-danger btn-sm px-3 fw-bold" onclick="KPIManager.printPDF()"><i class="bi bi-file-earmark-pdf me-1"></i> Cetak PDF</button>
+                    <button class="btn btn-white border bg-white text-primary btn-sm px-3 fw-bold" onclick="KPIManager.init()"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
+                </div>
+            </div>
 
+            <div class="row g-3 mb-4" id="kpiCardsModern"></div>
+
+            <div class="print-chart-row">
+                
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold m-0 text-secondary" id="stateChartTitle"><i class="bi bi-bar-chart-fill me-2"></i> Perbandingan Luas Pencapaian Mengikut Negeri (Ha)</h6>
+                        <button id="btnBackState" class="btn btn-xs btn-outline-secondary py-0 px-2 d-print-none" style="display:none;" onclick="KPIManager.backToAllStates()"><i class="bi bi-arrow-left"></i> Kembali</button>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 250px;"><canvas id="stateAchievementChart"></canvas></div>
+                        <p class="text-muted small mt-2 mb-0 d-print-none text-center"><i class="bi bi-hand-index-thumb"></i> Klik pada bar negeri untuk lihat pecahan kategori</p>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white py-3"><h6 class="fw-bold m-0 text-secondary"><i class="bi bi-graph-up me-2"></i> Trend Pencapaian Bulanan 2026</h6></div>
+                    <div class="card-body">
+                        <div style="height: 250px;"><canvas id="skuTrendChart"></canvas></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold m-0 text-secondary"><i class="bi bi-grid-3x3-gap-fill me-2"></i> Matrik Liputan Sasaran 2026</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle text-center mb-0" id="matrixTable" style="font-size: 0.8rem;">
+                            <thead class="table-light align-middle" id="matrixHead"></thead>
+                            <tbody id="matrixBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3"><h6 class="fw-bold m-0 text-secondary"><i class="bi bi-stars me-2"></i> Tanaman Luar Sasaran (Extra)</h6></div>
+                <div class="card-body bg-light">
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3" id="extraCropsContainer"></div>
+                </div>
+            </div>
+            
+            <div class="d-none d-print-block mt-5">
+                <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Ringkasan Luas Bancian & Bil. Lokasi Mengikut Tanaman</h5>
+                <table class="table table-sm table-bordered" style="font-size: 0.85rem;" id="printSummaryTable">
+                    <thead class="table-light"><tr><th>Nama Tanaman</th><th class="text-center">Bil. Lokasi</th><th class="text-center">Jumlah Luas (Ha)</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        
     <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-success text-white">
                     <h6 class="modal-title fw-bold" id="modalTitle"><i class="bi bi-card-heading me-2"></i>BUTIRAN REKOD</h6>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="if(confirm('Tutup tanpa simpan?')) { this.closest('.modal').querySelector('.btn-close').click() } else { return false; }"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" id="btnCloseModal"></button>
                 </div>
-                <div class="modal-body bg-light p-4" id="detailBody">
-                    </div>
+                <div class="modal-body bg-light p-4" id="detailBody"></div>
                 <div class="modal-footer bg-white">
                     <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Tutup</button>
                 </div>
@@ -494,1791 +356,47 @@
         </div>
     </div>
 
-        <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileFilter()"></div>
-
+    <div class="mobile-overlay" id="mobileOverlay" onclick="document.getElementById('sidebar').classList.remove('active'); this.classList.remove('active');"></div>
     <div class="mobile-bottom-nav d-md-none">
-        
-        <div class="nav-bot-item active" onclick="switchTab('main', this)">
+        <div class="nav-bot-item active" data-view="main">
             <i class="bi bi-grid-1x2-fill text-primary fs-4"></i>
             <span>Dashboard</span>
         </div>
-        
-        <div class="nav-bot-item" id="mobNavTasks" onclick="switchTab('tasks', this)" style="display:none;">
+        <div class="nav-bot-item" id="mobNavTasks" data-view="tasks" style="display:none;">
             <i class="bi bi-list-task text-warning fs-4"></i>
             <span>Tugasan</span>
         </div>
-        
-        <div class="nav-bot-item" id="mobNavVerify" onclick="switchTab('verify', this)" style="display:none;">
+        <div class="nav-bot-item" id="mobNavVerify" data-view="verify" style="display:none;">
             <i class="bi bi-check-circle-fill text-info fs-4"></i>
             <span>Pengesahan Data</span>
         </div>
-        
-        <div class="nav-bot-item" onclick="switchTab('form', this)">
+        <div class="nav-bot-item" data-view="form">
             <i class="bi bi-plus-lg text-success" style="font-size: 2rem; -webkit-text-stroke: 2px;"></i>
             <span class="text-success fw-bold">Borang</span>
         </div>
-        
-        <div class="nav-bot-item" onclick="toggleMobileFilter()">
+        <div class="nav-bot-item" id="btnMobileFilter" onclick="document.getElementById('sidebar').classList.toggle('active'); document.getElementById('mobileOverlay').classList.toggle('active');">
             <i class="bi bi-funnel-fill text-danger fs-4"></i>
             <span>Tapisan</span>
         </div>
-        
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-        // *** GANTI DENGAN URL API BARU DARI AKAUN GMAIL PERSONAL ANDA ***
-        const API_URL = "https://script.google.com/macros/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
-        const RPW_URL = "https://www.appsheet.com/start/55b088df-3ec1-469a-b5c6-1fca48052906";
-        
-        // --- DATA RUJUKAN NEGERI & DAERAH ---
-       const districtData = {
-  "JOHOR": ["BATU PAHAT", "JOHOR BAHRU", "KLUANG", "KOTA TINGGI", "KULAI", "MERSING", "MUAR", "PONTIAN", "SEGAMAT", "TANGKAK"],
-  "KEDAH": ["BALING", "BANDAR BAHARU", "KOTA SETAR", "KUALA MUDA", "KUBANG PASU", "KULIM", "LANGKAWI", "PADANG TERAP", "PENDANG", "POKOK SENA", "SIK", "YAN"],
-  "KELANTAN": ["BACHOK", "GUA MUSANG", "JELI", "KOTA BHARU", "KUALA KRAI", "MACHANG", "PASIR MAS", "PASIR PUTEH", "TANAH MERAH", "TUMPAT"],
-  "MELAKA": ["ALOR GAJAH", "JASIN", "MELAKA TENGAH"],
-  "NEGERI SEMBILAN": ["JELEBU", "JEMPOL", "KUALA PILAH", "PORT DICKSON", "REMBAU", "SEREMBAN", "TAMPIN"],
-  "PAHANG": ["BENTONG", "BERA", "CAMERON HIGHLANDS", "JERANTUT", "KUANTAN", "LIPIS", "MARAN", "PEKAN", "RAUB", "ROMPIN", "TEMERLOH"],
-  "PERAK": ["BAGAN DATUK", "BATANG PADANG", "HILIR PERAK", "HULU PERAK", "KAMPAR", "KERIAN", "KINTA", "KUALA KANGSAR", "LARUT, MATANG DAN SELAMA", "MANJUNG", "MUALLIM", "PERAK TENGAH"],
-  "PERLIS": ["PERLIS"],
-  "PULAU PINANG": ["BARAT DAYA", "SEBERANG PERAI SELATAN", "SEBERANG PERAI TENGAH", "SEBERANG PERAI UTARA", "TIMUR LAUT"],
-  "SABAH": ["BEAUFORT", "BELURAN", "KALABAKAN", "KENINGAU", "KINABATANGAN", "KOTA BELUD", "KOTA KINABALU", "KOTA MARUDU", "KUALA PENYU", "KUDAT", "KUNAK", "LAHAD DATU", "NABAWAN", "PAPAR", "PENAMPANG", "PITAS", "PUTATAN", "RANAU", "SANDAKAN", "SEMPORNA", "SIPITANG", "TAMBUNAN", "TAWAU", "TELUPID", "TENOM", "TONGOD", "TUARAN"],
-  "SARAWAK": ["ASAJAYA", "BAU", "BELAGA", "BELURU", "BETONG", "BINTULU", "BUKIT MABONG", "DALAT", "DARO", "JULAU", "KABONG", "KANOWIT", "KAPIT", "KUCHING", "LAWAS", "LIMBANG", "LUBOK ANTU", "LUNDU", "MARUDI", "MATU", "MERADONG", "MIRI", "MUKAH", "PAKAN", "PUSA", "SAMARAHAN", "SARATOK", "SARIKEI", "SEBAUH", "SELANGAU", "SERIAN", "SIBU", "SIMUNJAN", "SONG", "SRI AMAN", "SUBIS", "TANJUNG MANIS", "TATAU", "TEBEDU", "TELANG USAN"],
-  "SELANGOR": ["GOMBAK", "HULU LANGAT", "HULU SELANGOR", "KLANG", "KUALA LANGAT", "KUALA SELANGOR", "PETALING", "SABAK BERNAM", "SEPANG"],
-  "TERENGGANU": ["BESUT", "DUNGUN", "HULU TERENGGANU", "KEMAMAN", "KUALA NERUS", "KUALA TERENGGANU", "MARANG", "SETIU"],
-  "W.P. KUALA LUMPUR": ["KUALA LUMPUR"],
-  "W.P. LABUAN": ["LABUAN"],
-  "W.P. PUTRAJAYA": ["PUTRAJAYA"]
-};
-
-        let mData=[], fData=[], uProf=null, map=null, layer=null, pg=1, pSize=10, charts={};
-        let currentPendingRows = []; 
-        let userToken = ""; 
-        let currentUserID = "";
-        let myTasksData = [];
-        let currentFile = null; 
-        
-        let currentHeaders = []; 
-        let pestMasterData = {}; 
-
-       async function postData(act, load) {
-            try {
-                let payload;
-                // Laluan Bebas (Tanpa Token)
-                const laluanBebas = ['login', 'registerUser', 'verifyForgotPwd', 'updateMyAccess'];
-                
-                if (laluanBebas.includes(act)) { 
-                    payload = { action: act, ...load }; 
-                } else { 
-                    payload = { action: act, token: userToken, u: currentUserID, ...load }; 
-                }
-                
-                const res = await fetch(`${API_URL}?action=${act}`, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
-                const r = JSON.parse(await res.text());
-
-                if (!laluanBebas.includes(act) && r.success === false && r.message && (r.message.includes("sesi") || r.message.includes("token"))) {
-                    alert("⛔ Sesi tamat. Sila log masuk semula."); 
-                    localStorage.removeItem('pnr_session'); 
-                    location.reload(); 
-                    return { success: false }; 
-                }
-                return r;
-            } catch(e) { console.error(e); return {success:false, message:"Ralat sambungan."}; }
-        }
-
-        async function loadMasterData() {
-            try {
-                const r = await postData('getTanamanList', {});
-                let clean = {};
-                // Handle different JSON structures safely
-                if (r.data) clean = r.data;
-                else if (r.success === undefined && Object.keys(r).length > 0) clean = r; 
-                else {
-                    clean = Object.assign({}, r);
-                    delete clean.success; delete clean.message;
-                }
-                pestMasterData = clean;
-                console.log("Master Data:", pestMasterData);
-            } catch(e) { console.error("Gagal load pest data", e); }
-        }
-
-        async function checkPendingCount() { 
-            try { 
-                if(["ADMIN","PENYELIA"].includes((uProf.role||"").toUpperCase())) {
-                    const d = await postData('getPending', {state: uProf.state}); 
-                    const b = document.getElementById('badgePending'); 
-                    if(d.rows && d.rows.length > 0) { b.innerText = d.rows.length; b.style.display = "inline-block"; } else { b.style.display = "none"; } 
-                }
-            } catch(e){ console.error("Error checking pending:", e); } 
-        }
-
-        async function doLogin() {
-            const u = document.getElementById('uid').value; 
-            const p = document.getElementById('pwd').value; 
-            const btn = document.getElementById('btnLogin'); 
-            const msg = document.getElementById('loginMsg');
-            
-            if(!u || !p) { msg.innerText = "Sila isi ID dan Kata Laluan"; return; }
-            btn.disabled = true; btn.innerText = "Memproses...";
-            
-            const r = await postData('login', {u, p});
-            if(r.success) {
-                const sessionData = { uProf: r, userToken: r.token, currentUserID: u };
-                localStorage.setItem('pnr_session', JSON.stringify(sessionData));
-                applyLogin(r, r.token, u);
-            } else { 
-                msg.innerText = r.message; btn.disabled = false; btn.innerText = "MASUK"; 
-            }
-        }
-
-          function applyLogin(r, token, uid) {
-            uProf = r; userToken = token; currentUserID = uid;
-            document.getElementById('uDisp').innerText = r.name; 
-            document.getElementById('loginOverlay').style.display = 'none';
-            
-            // Logik Paparan Navigasi berdasarkan Role
-            if(["ADMIN","PENYELIA"].includes((r.role||"").toUpperCase())) { 
-                document.getElementById('navVerify').style.display = "flex"; 
-                if(document.getElementById('mobNavVerify')) document.getElementById('mobNavVerify').style.display = "flex";
-                checkPendingCount(); 
-            } else {
-                // Untuk staff biasa, paparkan butang tugas di phone
-                if(document.getElementById('mobNavTasks')) document.getElementById('mobNavTasks').style.display = "flex";
-            }
-            
-            if((r.role||"").toUpperCase() === "ADMIN") {
-                document.getElementById('navUsers').style.display = "flex";
-            }
-            document.getElementById('navTasks').style.display = "flex";
-            
-            loadMasterData(); 
-            loadMyTasks();
-            initDash();
-        }
-        // Fungsi untuk buka/tutup Tapisan di Telefon
-        function toggleMobileFilter() {
-            document.getElementById('sidebar').classList.toggle('active');
-            const overlay = document.getElementById('mobileOverlay');
-            if(overlay) overlay.classList.toggle('active');
-        }
-
-       // --- CHECK SESSION (OFFLINE FRIENDLY) ---
-        async function checkSession() {
-            const saved = localStorage.getItem('pnr_session');
-            if (saved) {
-                try {
-                    const s = JSON.parse(saved);
-                    // Jika ada data user, terus bagi masuk (tak kira online/offline)
-                    if (s.uProf && s.userToken) {
-                        applyLogin(s.uProf, s.userToken, s.currentUserID);
-                        
-                        // Cuma hantar log jika ada internet (background)
-                        if (navigator.onLine) {
-                            const p = { action: 'logSession', token: s.userToken, u: s.currentUserID, name: s.uProf.name, role: s.uProf.role };
-                            fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(p) }).catch(e=>{});
-                        } else {
-                            console.log("Offline Login: Menggunakan sesi simpanan.");
-                            // Tunjuk notifikasi kecil bahawa user offline
-                            const summary = document.getElementById('smartSummary');
-                            if(summary) summary.innerHTML = `<div class="alert alert-warning mb-0"><i class="bi bi-wifi-off"></i> Mod Offline: Anda sedang menggunakan data simpanan.</div>`;
-                        }
-                    }
-                } catch (e) {
-                    console.error("Session rosak", e);
-                }
-            }
-        }
-        function doLogout() { localStorage.removeItem('pnr_session'); location.reload(); }
-        window.onload = checkSession;
-        
-        function switchTab(t, el) {
-            // Logik buang aktif untuk PC & Mobile
-            document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active')); 
-            document.querySelectorAll('.nav-bot-item').forEach(x => x.classList.remove('active'));
-            
-            // Tambah warna aktif pada butang yang ditekan
-            if(el) {
-                if(!el.classList.contains('bg-success') && el.classList.contains('nav-item')) el.classList.add('active');
-                if(el.classList.contains('nav-bot-item')) el.classList.add('active');
-            }
-
-            // Tukar skrin utama
-           // Tukar skrin utama (TAMBAH 'view-users' DALAM SENARAI)
-            ['view-main','view-verify','view-tasks','view-form', 'view-users'].forEach(v => {
-                const view = document.getElementById(v);
-                if(view) view.style.display = 'none';
-            });
-            
-            const targetView = document.getElementById('view-'+t);
-            if(targetView) targetView.style.display = 'block';
-
-            if(t==='verify') loadPend();
-            if(t==='tasks') loadMyTasks();
-            if(t==='users') loadUsers();
-            if(t==='main' && map) setTimeout(() => map.invalidateSize(), 300);
-            
-            // Tutup sidebar filter di telefon (kalau tengah terbuka)
-            document.getElementById('sidebar').classList.remove('active');
-            const overlay = document.getElementById('mobileOverlay');
-            if(overlay) overlay.classList.remove('active');
-        }
-
-                // --- FUNGSI TARIKH MUKTAMAD (MANUAL PARSING) ---
-        function formatDateDisplay(dateStr) {
-            if (!dateStr || dateStr === "-") return "-";
-
-            // Tukar jadi string dulu kalau ia object
-            let str = String(dateStr).trim();
-
-            // KES 1: Jika format Google Sheet standard (YYYY-MM-DD...)
-            // Contoh: "2026-02-11T16:00:00.000Z" atau "2026-02-11"
-            if (str.includes('-')) {
-                const parts = str.split('T')[0].split('-'); 
-                // parts[0] = 2026, parts[1] = 02, parts[2] = 11
-                if (parts.length === 3) {
-                    return `${parts[2]}/${parts[1]}/${parts[0]}`; // Pusing jadi 11/02/2026
-                }
-            }
-
-            // KES 2: Jika format sudah ada slash (DD/MM/YYYY atau MM/DD/YYYY)
-            // Kita ANGGAP data dari database anda sentiasa betul (DD/MM/YYYY)
-            if (str.includes('/')) {
-                // Jangan ubah apa-apa, paparkan terus apa yang database bagi
-                // Ini elak browser 'memandai-mandai' terbalikkan bulan
-                return str; 
-            }
-
-            // KES 3: Fallback (Jika format pelik sangat, baru guna Date object)
-            const d = new Date(dateStr);
-            if (isNaN(d)) return str; // Kalau rosak, papar asal
-            
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
-
-
-       async function initDash() {
-            // 1. SEMAKAN AWAL (OFFLINE vs ONLINE)
-            const isOffline = !navigator.onLine;
-            const cachedRaw = localStorage.getItem('pnr_dashboard_data');
-            const cachedTime = localStorage.getItem('pnr_dashboard_time');
-
-            // Jika Offline & Tiada Data Cache -> Tunjuk Warning Sahaja
-            if (isOffline && !cachedRaw) {
-                document.getElementById('smartSummary').innerHTML = '<div class="alert alert-danger">Tiada sambungan internet & tiada data simpanan.</div>';
-                return; 
-            }
-
-            // 2. MUATKAN DATA (Dari Cache atau Server)
-            if (isOffline || cachedRaw) {
-                // Guna Cache Dulu (Laju)
-                try {
-                    mData = JSON.parse(cachedRaw);
-                    processDataToUI(mData); // <--- KITA PISAHKAN LOGIK UI
-                    updateLastUpdateLabel(cachedTime, false);
-                } catch(e) { console.error(e); }
-            }
-
-            if (!isOffline) {
-                // Tarik Data Baru (Background)
-                try {
-                    const d = await postData('getAnalytics', {state: uProf.state});
-                    if (d.records) {
-                        mData = d.records;
-                        localStorage.setItem('pnr_dashboard_data', JSON.stringify(mData));
-                        const now = new Date().toLocaleString('en-MY', { hour12: true });
-                        localStorage.setItem('pnr_dashboard_time', now);
-                        
-                        processDataToUI(mData); // <--- UPDATE UI
-                        updateLastUpdateLabel(now, true);
-                    }
-                } catch (e) { console.log("Gagal tarik data server"); }
-            }
-        }
-
-        // --- FUNGSI BARU: PROSES UI (KALIS ERROR) ---
-        function processDataToUI(dataList) {
-            // Setup Dropdown (Versi Checkbox)
-            const currentN = v('selNegeri'); 
-            fillSel('selNegeri', dataList.map(d => d.n).filter((val, i, a) => a.indexOf(val) === i).sort(), 'n');
-            
-            if(uProf.state !== "ALL") { 
-                // Kunci negeri jika dia bukan ADMIN
-                const cbList = document.querySelectorAll('.chk-selNegeri');
-                cbList.forEach(cb => {
-                    if(cb.value === uProf.state) { cb.checked = true; cb.disabled = true; }
-                    else { cb.checked = false; cb.disabled = true; } 
-                });
-                const btn = document.getElementById('btnselNegeri');
-                if(btn) { btn.innerText = uProf.state; btn.classList.add('disabled', 'bg-light'); }
-            } else if (currentN.length > 0) {
-                document.querySelectorAll('.chk-selNegeri').forEach(cb => { if(currentN.includes(cb.value)) cb.checked = true; }); 
-                updateBtnText('selNegeri');
-            }
-
-            // LUKIS MAP (HANYA JIKA LEAFLET WUJUD)
-            if (typeof L !== 'undefined') {
-                if(!map) { 
-                    try { map = L.map('map').setView([4.2105, 101.9758], 6); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map); } 
-                    catch(e) { console.log("Map Error"); }
-                }
-            } else {
-                document.getElementById('map').innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted bg-light">Peta tidak tersedia (Offline)</div>';
-            }
-
-            // JALANKAN KIRAAN (TEXT DATA TETAP BOLEH KIRA)
-            runFilter('n');
-        }
-        // --- FUNGSI KEMASKINI LABEL MASA ---
-        function updateLastUpdateLabel(timeStr, isOnline) {
-            const el = document.getElementById('lastUpdate');
-            if (isOnline) {
-                el.innerHTML = `<span class="text-success"><i class="bi bi-cloud-check-fill"></i> Data Terkini: ${timeStr}</span>`;
-            } else {
-                el.innerHTML = `<span class="text-danger fw-bold"><i class="bi bi-clock-history"></i> Data Offline (${timeStr || "Tiada Tarikh"})</span>`;
-            }
-        }
-
-      function runFilter(source) {
-            const n=v('selNegeri'), d=v('selDaerah'), t=v('selTanaman'), p=v('selPerosak'), k=v('selKategori'), s=v('dS'), e=v('dE');
-            
-            fData = mData.filter(r => { 
-                let pestOk = true; 
-                if (p.length > 0) {
-                    pestOk = false;
-                    if (r.p) {
-                        try { 
-                            const pestObj = (typeof r.p==='string' ? JSON.parse(r.p) : r.p);
-                            pestOk = p.some(selectedPest => pestObj[selectedPest]);
-                        } catch(err) {}
-                    }
-                }
-                return (n.length===0 || n.includes(r.n)) && 
-                       (d.length===0 || d.includes(r.d)) && 
-                       (t.length===0 || t.includes(r.tn)) && 
-                       (k.length===0 || k.includes(r.kt)) && 
-                       pestOk && (!s||r.t>=s) && (!e||r.t<=e);
-            });
-
-            // Bekalkan parameter source code ('d', 't', 'k', 'p') supaya sistem tahu siapa yang trigger
-            if(source === 'n' || !source) { 
-                const dataD = mData.filter(r => n.length===0 || n.includes(r.n)); 
-                updateDropdown('selDaerah', [...new Set(dataD.map(x=>x.d).filter(x=>x))].sort(), d, 'd'); 
-            }
-            if(source === 'd' || source === 'n' || !source) { 
-                const dataT = mData.filter(r => (n.length===0 || n.includes(r.n)) && (d.length===0 || d.includes(r.d))); 
-                updateDropdown('selTanaman', [...new Set(dataT.map(x=>x.tn).filter(x=>x))].sort(), t, 't'); 
-            }
-            if(source === 't' || source === 'd' || source === 'n' || !source) {
-                const dataRest = mData.filter(r => (n.length===0 || n.includes(r.n)) && (d.length===0 || d.includes(r.d)) && (t.length===0 || t.includes(r.tn)));
-                updateDropdown('selKategori', [...new Set(dataRest.map(x=>x.kt).filter(x=>x))].sort(), k, 'k');
-                
-                let allPests = new Set(); 
-                dataRest.forEach(r => { try { let obj=typeof r.p==='string'?JSON.parse(r.p):r.p; if(obj) Object.keys(obj).forEach(x=>allPests.add(x)); } catch(err){} });
-                updateDropdown('selPerosak', [...allPests].sort(), p, 'p');
-            }
-            pg = 1; calcUI();
-        }
-      function updateDropdown(id, list, curValArray, srcCode) { 
-            const menu = document.getElementById('list' + id); 
-            if(!menu) return;
-            menu.innerHTML = ''; 
-            list.forEach(x => { 
-                const isChecked = (curValArray && curValArray.includes(x)) ? 'checked' : '';
-                const cleanId = 'chk_' + id + '_' + x.replace(/[^a-zA-Z0-9]/g, '');
-                const div = document.createElement('div');
-                div.className = 'form-check mb-1';
-                // Lukis Checkbox
-                div.innerHTML = `<input class="form-check-input chk-${id}" type="checkbox" value="${x}" id="${cleanId}" ${isChecked}>
-                                 <label class="form-check-label w-100 text-truncate" style="font-size:0.85rem; cursor:pointer;" for="${cleanId}">${x}</label>`;
-                
-                // Arahan bila di-tick: Tukar teks butang & jalankan tapisan
-                div.querySelector('input').addEventListener('change', () => {
-                    updateBtnText(id);
-                    runFilter(srcCode);
-                });
-                menu.appendChild(div);
-            }); 
-            updateBtnText(id);
-        }
-
-        function updateBtnText(id) {
-            const btn = document.getElementById('btn' + id);
-            if(!btn) return;
-            const checked = Array.from(document.querySelectorAll('.chk-' + id + ':checked')).map(cb => cb.value);
-            if (checked.length === 0) { btn.innerText = '- Semua -'; btn.classList.remove('fw-bold','text-primary'); }
-            else if (checked.length === 1) { btn.innerText = checked[0]; btn.classList.add('fw-bold','text-primary'); }
-            else { btn.innerText = checked.length + ' Dipilih'; btn.classList.add('fw-bold','text-primary'); }
-        }
-
-        function v(id){ 
-            if(id === 'dS' || id === 'dE') { const el = document.getElementById(id); return el ? el.value : ""; }
-            const checkboxes = document.querySelectorAll('.chk-' + id + ':checked');
-            return Array.from(checkboxes).map(cb => cb.value); // Pulangkan dalam bentuk Array
-        }
-
-        function fillSel(id, arr, srcCode) { updateDropdown(id, arr, [], srcCode); }
-
-        function resetFilter(){ 
-            document.querySelectorAll('.form-check-input').forEach(cb => { if(!cb.disabled) cb.checked = false; });
-            document.querySelectorAll('input[type=date]').forEach(e => e.value=""); 
-            ['selNegeri', 'selDaerah', 'selTanaman', 'selPerosak', 'selKategori'].forEach(id => updateBtnText(id));
-            runFilter('n'); 
-        }
-        function calcUI() {
-            let tt=0, ts=0, pm={}, km={1:0,2:0,3:0,4:0,5:0}, pts=[], hData={};
-            fData.forEach(d => {
-                tt += (d.lt||0); ts += (d.ls||0);
-                try{ let p=typeof d.p==='string'?JSON.parse(d.p):d.p; if(p) Object.entries(p).forEach(([k,v])=>pm[k]=(pm[k]||0)+parseFloat(v)); else if(d.ls>0) pm["Umum"]=(pm["Umum"]||0)+d.ls; }catch(e){ if(d.ls>0) pm["Umum"]=(pm["Umum"]||0)+d.ls; }
-                let l = parseInt(d.k)||0; if(l>0 && l<=5) km[l]++;
-                if(d.c && d.c.includes(',')) { let p = d.c.split(',').map(Number); if(p.length===2 && !isNaN(p[0])) pts.push({ coord: p, data: d }); }
-                if(d.ls > 0 && d.d !== "-") hData[d.d] = (hData[d.d]||0) + d.ls;
-            });
-            document.getElementById('k1').innerText = tt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('k2').innerText = ts.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            document.getElementById('k3').innerText = tt>0 ? ((ts/tt)*100).toFixed(1)+"%" : "0%";
-            document.getElementById('k4').innerText = fData.length.toLocaleString('en-US');
-            updateCharts(pm, km); updateMap(pts); updateHotspot(hData); genSummary(pm, tt, ts); renTab();
-        } 
-        function genSummary(pm, tt, ts) {
-            const el = document.getElementById('smartSummary');
-            if (!el) return;
-            if (ts === 0 || fData.length === 0) { el.innerHTML = `<div class="d-flex align-items-center"><div class="bg-light rounded-circle p-3 me-3 text-secondary"><i class="bi bi-robot fs-2"></i></div><div><h6 class="text-primary fw-bold mb-1">Analisis Pintar</h6><span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Tiada rekod serangan dilaporkan setakat ini.</span></div></div>`; return; }
-            let locGroups = {};
-            fData.forEach(d => {
-                const locKey = d.l; const ls = parseFloat(d.ls) || 0; const lt = parseFloat(d.lt) || 0;
-                if (ls > 0) {
-                    if (!locGroups[locKey]) { locGroups[locKey] = { name: locKey, negeri: d.n, daerah: d.d, totalLS: 0, totalLT: 0, crops: {}, pests: {}, severitySum: 0, count: 0 }; }
-                    let g = locGroups[locKey]; g.totalLS += ls; g.totalLT += lt; g.count++; g.severitySum += (parseInt(d.k) || 0); g.crops[d.tn] = (g.crops[d.tn] || 0) + ls;
-                    try { let pObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p; if (pObj) Object.entries(pObj).forEach(([pN, pA]) => g.pests[pN] = (g.pests[pN] || 0) + (parseFloat(pA)||0)); } catch (e) {}
-                }
-            });
-            const sortedLocs = Object.values(locGroups).sort((a, b) => b.totalLS - a.totalLS);
-            if (sortedLocs.length === 0) { el.innerHTML = "Data tidak mencukupi."; return; }
-            const topLoc = sortedLocs[0];
-            const topCropEntry = Object.entries(topLoc.crops).sort((a,b) => b[1] - a[1])[0]; const topCrop = topCropEntry ? topCropEntry[0] : "Tanaman";
-            const topPestEntry = Object.entries(topLoc.pests).sort((a,b) => b[1] - a[1])[0]; const topPest = topPestEntry ? topPestEntry[0] : "Perosak";
-            const avgSev = topLoc.count > 0 ? (topLoc.severitySum / topLoc.count).toFixed(1) : "0.0";
-            let score = parseFloat(avgSev), sevText = "Rendah", sevColor = "#22c55e";
-            if (score >= 4.5) { sevText = "Sangat Teruk"; sevColor = "#ef4444"; } else if (score >= 4.0) { sevText = "Teruk"; sevColor = "#f97316"; } else if (score >= 3.0) { sevText = "Sederhana"; sevColor = "#eab308"; } else if (score >= 2.0) { sevText = "Rendah"; sevColor = "#84cc16"; }
-            let locPct = topLoc.totalLT > 0 ? ((topLoc.totalLS / topLoc.totalLT) * 100).toFixed(2) : "0.00";
-            el.innerHTML = `<div class="d-flex align-items-start"><div class="d-none d-sm-flex bg-white shadow-sm border rounded-circle p-3 me-4 align-items-center justify-content-center" style="width: 60px; height: 60px; flex-shrink: 0;"><i class="bi bi-robot fs-3 text-primary"></i></div><div style="flex-grow: 1;"><h6 class="text-primary fw-bold mb-3">Analisis Pintar</h6><div class="mb-2" style="font-size: 0.95rem;"><i class="bi bi-geo-alt-fill text-danger me-2"></i> Lokasi Hotspot: <b class="text-uppercase text-dark">${topLoc.daerah}, ${topLoc.negeri}</b></div><div class="mb-2" style="font-size: 0.95rem; line-height: 1.5;"><i class="bi bi-flower1 text-success me-2"></i> Tanaman <b class="text-uppercase text-dark">${topCrop}</b> paling terkesan akibat serangan <b class="text-uppercase text-dark">${topPest}</b></div><div class="mb-2" style="font-size: 0.95rem;"><i class="bi bi-exclamation-circle-fill text-warning me-2"></i> Luas Serangan: <b class="text-dark">${topLoc.totalLS.toFixed(2)} Ha</b> <span class="text-muted">(${locPct}%)</span></div><div style="font-size: 0.95rem;"><i class="bi bi-bar-chart-fill me-2" style="color: ${sevColor}"></i> Indeks Keterukan: <b class="text-dark">${avgSev}</b> - <span style="color: ${sevColor}; font-weight: bold;">${sevText}</span></div></div></div>`;
-        }
-        // --- PEMBOLEHUBAH UNTUK CARTA 3 TAHAP ---
-        var myPestChart = null; 
-        var chartLevel = 1; 
-        var pilihanPerosak = ""; 
-        var pilihanTanaman = "";
-
-        // --- FUNGSI BARU: LUKIS CARTA INTERAKTIF ---
-        function lukisCartaPerosak(level, namaPest = "", namaTanaman = "") {
-            if (typeof Chart === 'undefined') return;
-            const ctx = document.getElementById('cBar').getContext('2d'); 
-            if(myPestChart) myPestChart.destroy();
-
-            let labelX = [], dataY = [], tajuk = "", warna = "", sub = "";
-
-            if (level === 1) {
-                // TAHAP 1: TOP 10 PEROSAK
-                let kiraPerosak = {};
-                fData.forEach(item => { 
-                    try { 
-                        let pObj = typeof item.p === 'string' ? JSON.parse(item.p) : item.p; 
-                        if(pObj) Object.entries(pObj).forEach(([nPest, luas]) => { kiraPerosak[nPest] = (kiraPerosak[nPest]||0) + parseFloat(luas); }); 
-                    } catch(e){} 
-                });
-                let top10 = Object.entries(kiraPerosak).sort((a,b)=>b[1]-a[1]).slice(0,10);
-                labelX = top10.map(x=>x[0]); dataY = top10.map(x=>x[1]); 
-                tajuk = "Top 10 Perosak Tertinggi (Ha)"; sub = "Klik pada bar untuk lihat pecahan tanaman"; 
-                warna = "#ef4444"; chartLevel = 1; 
-                document.getElementById('btnBackPest').style.display = 'none';
-            } 
-            else if (level === 2) {
-                // TAHAP 2: PECAHAN TANAMAN
-                let kiraTanaman = {};
-                fData.forEach(item => { 
-                    try { 
-                        let pObj = typeof item.p === 'string' ? JSON.parse(item.p) : item.p; 
-                        if(pObj && pObj[namaPest]) kiraTanaman[item.tn] = (kiraTanaman[item.tn]||0) + parseFloat(pObj[namaPest]); 
-                    } catch(e){} 
-                });
-                let susun = Object.entries(kiraTanaman).sort((a,b)=>b[1]-a[1]);
-                labelX = susun.map(x=>x[0]); dataY = susun.map(x=>x[1]); 
-                tajuk = `Tanaman Diserang: ${namaPest} (Ha)`; sub = "Klik pada bar untuk lihat pecahan daerah"; 
-                warna = "#eab308"; chartLevel = 2; pilihanPerosak = namaPest; 
-                document.getElementById('btnBackPest').style.display = 'inline-block';
-            } 
-            else if (level === 3) {
-                // TAHAP 3: PECAHAN DAERAH
-                let kiraDaerah = {};
-                fData.forEach(item => { 
-                    try { 
-                        let pObj = typeof item.p === 'string' ? JSON.parse(item.p) : item.p; 
-                        if(pObj && pObj[namaPest] && item.tn === namaTanaman) kiraDaerah[item.d] = (kiraDaerah[item.d]||0) + parseFloat(pObj[namaPest]); 
-                    } catch(e){} 
-                });
-                let susun = Object.entries(kiraDaerah).sort((a,b)=>b[1]-a[1]);
-                labelX = susun.map(x=>x[0]); dataY = susun.map(x=>x[1]); 
-                tajuk = `Daerah Terlibat: ${namaTanaman} - ${namaPest} (Ha)`; sub = "Pecahan terperinci mengikut daerah"; 
-                warna = "#3b82f6"; chartLevel = 3; pilihanTanaman = namaTanaman; 
-                document.getElementById('btnBackPest').style.display = 'inline-block';
-            }
-
-            const tajukEl = document.getElementById('tajukCBar');
-            const subEl = document.getElementById('subCBar');
-            if(tajukEl) tajukEl.innerText = tajuk;
-            if(subEl) subEl.innerHTML = `<i class="bi bi-hand-index-thumb-fill text-primary me-1"></i> ${sub}`;
-
-            myPestChart = new Chart(ctx, { 
-                type: 'bar', 
-                data: { labels: labelX, datasets: [{ label: 'Luas Serangan (Ha)', data: dataY, backgroundColor: warna, borderRadius: 4 }] }, 
-                options: { 
-                    indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
-                    plugins: { legend: { display: false }, title: { display: false } },
-                    onClick: (event, elements) => { 
-                        if (elements.length > 0) { 
-                            const index = elements[0].index; 
-                            const labelDiKlik = myPestChart.data.labels[index]; 
-                            if (chartLevel === 1) lukisCartaPerosak(2, labelDiKlik); 
-                            else if (chartLevel === 2) lukisCartaPerosak(3, pilihanPerosak, labelDiKlik); 
-                        } 
-                    } 
-                } 
-            });
-        }
-
-        // --- FUNGSI BUTANG KEMBALI ---
-        function patahBalikCarta() { 
-            if (chartLevel === 3) lukisCartaPerosak(2, pilihanPerosak); 
-            else if (chartLevel === 2) lukisCartaPerosak(1); 
-        }
-
-        // --- GANTIKAN FUNGSI ASAL INI ---
-        function updateCharts(pm, km) { 
-            if (typeof Chart === 'undefined') return;
-            
-            // Carta Pie dikekalkan
-            if(charts.p) charts.p.destroy(); 
-            charts.p = new Chart(document.getElementById('cPie'), { 
-                type: 'doughnut', 
-                data: { labels: ['T1','T2','T3','T4','T5'], datasets: [{ data: Object.values(km), backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], borderWidth:0 }] }, 
-                options: { maintainAspectRatio: false, plugins:{legend:{position:'right'}} } 
-            }); 
-            
-            // Panggil Carta Bar interaktif yang baru
-            lukisCartaPerosak(1);
-        }
-        
-        function updateMap(pts) { 
-            if(!map) return;
-            if(layer) map.removeLayer(layer); 
-            if(pts.length) { 
-                const markers = pts.map(item => {
-                    const p = item.coord; const d = item.data; let pestHTML = ""; let pestObj = {}; try { pestObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p; } catch(e) { pestObj = {}; }
-                    if (pestObj && Object.keys(pestObj).length > 0) { pestHTML = `<div style="margin-top:5px; border-top:1px dashed #ccc; padding-top:5px;"><small class="fw-bold text-muted">PERINCIAN PEROSAK:</small><ul style="padding-left: 15px; margin-bottom: 0; font-size: 0.8rem;">`; Object.entries(pestObj).forEach(([nama, luas]) => { pestHTML += `<li>${nama}: <b class="text-danger">${parseFloat(luas).toFixed(2)} Ha</b></li>`; }); pestHTML += `</ul></div>`; } else { pestHTML = `<div class="mt-2 text-muted small fst-italic">- Tiada data perosak terperinci -</div>`; }
-                    const popupContent = `<div style="font-family: sans-serif; font-size: 0.85rem; min-width: 200px;"><div style="background-color: #f8f9fa; padding: 5px; border-bottom: 1px solid #ddd; margin-bottom: 5px;"><b class="text-success text-uppercase">${d.tn}</b></div><div class="mb-1"><i class="bi bi-geo-alt-fill text-danger"></i> <b>${d.l}</b><br><span class="text-muted small">${d.d}, ${d.n}</span></div><div class="d-flex justify-content-between bg-light border rounded p-1 mb-2" style="font-size: 0.8rem;"><div><span class="d-block text-muted" style="font-size:0.7rem">LUAS TANAM</span><b>${d.lt.toFixed(2)} Ha</b></div><div class="text-end border-start ps-2"><span class="d-block text-muted" style="font-size:0.7rem">JUMLAH SERANGAN</span><b class="text-danger">${d.ls.toFixed(2)} Ha</b></div></div>${pestHTML}<div class="text-end mt-2"><small class="text-muted" style="font-size: 0.7rem;">Tarikh: ${d.t}</small></div></div>`;
-                    const marker = L.circleMarker(p, { radius: 6, color: 'white', weight: 1, fillColor: '#dc2626', fillOpacity: 0.8 });
-                    marker.bindPopup(popupContent); marker.bindTooltip(`<b>${d.tn}</b>: ${d.l}`, { direction: 'top', offset: [0, -5], opacity: 0.9 }); return marker;
-                });
-                layer = L.layerGroup(markers).addTo(map); 
-                try { map.fitBounds(L.latLngBounds(pts.map(x => x.coord))); } catch(e){}
-            } 
-        }
-        function updateHotspot(hData) { const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); document.getElementById('hotspotTable').innerHTML = s.length ? s.map(x=>`<tr><td>${x[0]}</td><td class="text-end fw-bold text-danger">${x[1].toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted">Tiada Data</td></tr>'; }
-        
-      function renTab() { 
-            const st = (pg-1)*pSize; 
-            const dt = fData.slice(st, st+pSize); 
-            document.getElementById('tBody').innerHTML = dt.length ? dt.map((d, i) => { 
-                const realIndex = st + i; 
-                return `
-                <tr style="cursor: pointer;" title="Klik baris untuk butiran">
-                    <td onclick="viewRec(${realIndex})">${formatDateDisplay(d.t)}</td>
-                    <td onclick="viewRec(${realIndex})">${d.n}</td>
-                    <td onclick="viewRec(${realIndex})">${d.l}</td>
-                    <td onclick="viewRec(${realIndex})"><span class="badge bg-light text-dark border">${d.tn}</span></td>
-                    <td onclick="viewRec(${realIndex})">${d.lt.toFixed(2)}</td>
-                    <td onclick="viewRec(${realIndex})" class="text-danger fw-bold">${d.ls.toFixed(2)}</td>
-                    <td class="text-center">
-                      <button class="btn btn-sm btn-danger" 
-                        data-lokasi="${d.l}" 
-                        data-pegawai="${d.pg}" 
-                        data-coord="${d.c}" 
-                        data-tarikh="${d.t}" 
-                        onclick="event.stopPropagation(); klikJanaPDF(this)">
-                        <i class="bi bi-file-earmark-pdf-fill"></i> PDF
-                    </button>
-                    </td>
-                </tr>`; 
-            }).join('') : '<tr><td colspan="7" class="text-center text-muted p-4">Tiada rekod.</td></tr>'; 
-            document.getElementById('pgInfo').innerText = `Page ${pg}`; 
-        }
-
-        async function loadMyTasks() {
-            const container = document.getElementById('taskContainer');
-            container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>';
-            try {
-                const d = await postData('getMyTasks', { name: uProf.name });
-                myTasksData = d.rows || [];
-                currentHeaders = d.headers || []; 
-                const b = document.getElementById('badgeTask');
-                b.innerText = myTasksData.length; b.style.display = myTasksData.length ? "inline-block" : "none";
-                if (!myTasksData.length) { container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed">Tiada tugasan aktif.</div>'; return; }
-                container.innerHTML = ""; myTasksData.forEach(r => renderCard(r, container, 'TASK'));
-            } catch(e) { container.innerHTML = "Ralat memuatkan tugasan."; }
-        }
-
-      // --- KEMASKINI: FUNGSI LOAD PENDING (FIX DATE) ---
-        async function loadPend() { 
-            const container = document.getElementById('verifyContainer'); 
-            container.innerHTML = '<div class="col-12 text-center p-5"><div class="spinner-border text-primary"></div></div>'; 
-            try { 
-                const d = await postData('getPending', {state: uProf.state}); 
-                currentPendingRows = d.rows || []; 
-                
-                // Simpan header untuk mapping
-                if(d.headers) currentHeaders = d.headers; 
-                
-                const b = document.getElementById('badgePending');
-                b.innerText = currentPendingRows.length; 
-                b.style.display = currentPendingRows.length ? "inline-block" : "none";
-
-                if(!d.rows || !d.rows.length) { 
-                    container.innerHTML = '<div class="col-12 text-center p-5 text-muted bg-white rounded border border-dashed"><i class="bi bi-check-circle fs-3 text-success d-block mb-2"></i>Tiada data baru untuk disahkan.</div>'; 
-                    return; 
-                } 
-                
-                container.innerHTML = ""; 
-                
-                // Helper Images
-                const cleanImageLink = (raw) => { if (!raw) return []; let str = String(raw).trim(); if(str.length < 5) return []; str = str.replace(/[\[\]"'\\]/g, ''); return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http')); }; 
-                const toViewLink = (link) => { const idMatch = link.match(/[-\w]{25,}/); if(idMatch) return `https://drive.google.com/file/d/${idMatch[0]}/view?usp=sharing`; return link; };
-
-                d.rows.forEach((r) => { 
-                    const getVal = (key) => { const i = d.headers.findIndex(h => h.toLowerCase().includes(key.toLowerCase())); return i > -1 ? r.data[i] : ""; }; 
-                    
-                    // --- PEMBETULAN TARIKH DI SINI ---
-                    // Kita guna formatDateDisplay (Global Function) dan bukan formatTkh (Local Function lama)
-                    const timestamp = getVal('Timestamp'); 
-                    const tkhHantar = formatDateDisplay(timestamp); 
-                    
-                    const rawTarikhBancian = getVal('Tarikh Bancian') || getVal('Tarikh') || getVal('Date');
-                    const tarikhBancian = formatDateDisplay(rawTarikhBancian);
-                    // ---------------------------------
-
-                    const nama = getVal('Nama') || getVal('Pegawai'); 
-                    const email = getVal('Email') || "-"; 
-                    const negeri = getVal('Negeri') || "-"; 
-                    const daerah = getVal('Daerah') || "-"; 
-                    const lokasi = getVal('Lokasi') || getVal('Kebun') || "-"; 
-                    const koordinat = String(getVal('Koordinat') || "-"); 
-                    const tanaman = getVal('Nama Tanaman') || getVal('Tanaman') || "-"; 
-                    const varieti = getVal('Varieti') || "-"; 
-                    const umur = getVal('Umur') || "-"; 
-                    const kategori = getVal('Kategori') || "-"; 
-                    const luasTanam = getVal('Luas Bertanam') || getVal('Luas') || "-"; 
-                    const syor = getVal('Syor') || "-"; 
-                    
-                    let btnMap = ""; 
-                    if(koordinat && koordinat.includes(',') && koordinat.length > 5) { 
-                        const cleanCoord = koordinat.trim().replace(/\s/g, ''); 
-                        const mapUrl = `https://www.google.com/maps/search/?api=1&query=$${cleanCoord}`; 
-                        btnMap = `<a href="${mapUrl}" target="_blank" class="btn btn-sm btn-outline-primary border-0 py-0 px-1 ms-2" title="Lihat di Google Maps" style="line-height:1;"><i class="bi bi-geo-alt-fill"></i></a>`; 
-                    }
-
-                    let pestRows = ""; 
-                    try { 
-                        const lsObj = JSON.parse(getVal('Luas Serangan') || "{}"); 
-                        const pctObj = JSON.parse(getVal('Peratus') || "{}"); 
-                        const kObj = JSON.parse(getVal('Keterukan') || "{}"); 
-                        if(Object.keys(lsObj).length > 0) { 
-                            Object.keys(lsObj).forEach(k => { 
-                                let level = kObj[k] || 0; 
-                                let badgeColor = level < 3 ? 'success' : (level < 4 ? 'warning' : 'danger'); 
-                                pestRows += `<tr><td class="text-start text-uppercase" style="font-size:0.8rem; vertical-align:middle;">${k}</td><td class="text-center fw-bold" style="vertical-align:middle;">${lsObj[k]}</td><td class="text-center small" style="vertical-align:middle;">${pctObj[k]||0}%</td><td class="text-center" style="vertical-align:middle;"><span class="badge bg-${badgeColor}">T${level}</span></td></tr>`; 
-                            }); 
-                        } else { 
-                            pestRows = `<tr><td colspan="4" class="text-center text-muted fst-italic small">Tiada Serangan</td></tr>`; 
-                        } 
-                    } catch(e) { pestRows = `<tr><td colspan="4" class="text-center text-muted small">Ralat Data</td></tr>`; } 
-                    
-                    const rawImg = getVal('IMAGE LINKS (COMMA SEPARATED)') || getVal('Gambar') || getVal('Image') || getVal('Foto'); 
-                    const imgLinks = cleanImageLink(rawImg); 
-                    
-                    let imgHTML = imgLinks.length > 0 ? `<div class="mt-3 pt-2 border-top"><h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-images me-1"></i> LAMPIRAN GAMBAR (${imgLinks.length})</h6><div class="d-flex flex-wrap gap-2">` + imgLinks.map((lnk, i) => `<a href="${toViewLink(lnk)}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate fw-bold" style="max-width: 140px; font-size:0.75rem"><i class="bi bi-eye me-1"></i> Gambar ${i+1}</a>`).join('') + `</div></div>` : `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic small text-uppercase"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR</small></div>`; 
-                    
-                    const cardHTML = `
-                    <div class="col-md-6 col-xl-4">
-                        <div class="verify-card bg-white rounded-3 shadow-sm border mb-3 h-100 d-flex flex-column">
-                            <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-start">
-                                <div style="overflow:hidden;"><div class="small text-muted mb-1"><i class="bi bi-clock me-1"></i> Tarikh Hantar: ${tkhHantar}</div><div class="fw-bold text-uppercase text-dark text-truncate">${nama}</div><div class="small text-muted fst-italic text-truncate">${email}</div></div>
-                                <span class="badge bg-warning text-dark shadow-sm flex-shrink-0 ms-2">BARU</span>
-                            </div>
-                            <div class="p-3 flex-grow-1">
-                                <div class="mb-4">
-                                    <h6 class="fw-bold text-success mb-3 small border-bottom pb-2 text-uppercase"><i class="bi bi-info-circle-fill me-1"></i> LOKASI & TANAMAN</h6>
-                                    <div class="row g-2 mb-1" style="font-size:0.85rem"><div class="col-4 fw-bold text-secondary text-uppercase">TARIKH BANCIAN:</div><div class="col-8 fw-bold text-primary">${tarikhBancian}</div></div>
-                                    <div class="row g-2 mb-1" style="font-size:0.85rem"><div class="col-4 fw-bold text-secondary text-uppercase">NEGERI:</div><div class="col-8 fw-bold text-dark">${negeri}</div></div>
-                                    <div class="row g-2 mb-1" style="font-size:0.85rem"><div class="col-4 fw-bold text-secondary text-uppercase">DAERAH:</div><div class="col-8 fw-bold text-dark">${daerah}</div></div>
-                                    <div class="row g-2 mb-1" style="font-size:0.85rem"><div class="col-4 fw-bold text-secondary text-uppercase">LOKASI:</div><div class="col-8 fw-bold text-dark text-break">${lokasi}</div></div>
-                                    <div class="row g-2 mb-1" style="font-size:0.85rem"><div class="col-4 fw-bold text-secondary text-uppercase">KOORDINAT:</div><div class="col-8 font-monospace text-muted small d-flex align-items-center"><span>${koordinat}</span>${btnMap}</div></div>
-                                    <hr class="my-2 text-muted opacity-25">
-                                    <div class="row g-2 mb-1" style="font-size:0.85rem"><div class="col-4 fw-bold text-secondary text-uppercase">KATEGORI TANAMAN:</div><div class="col-8 fw-bold text-dark text-uppercase">${kategori}</div></div>
-                                    <div class="row g-2 mb-1" style="font-size:0.85rem"><div class="col-4 fw-bold text-secondary text-uppercase">TANAMAN:</div><div class="col-8 fw-bold text-success text-uppercase">${tanaman}</div></div>
-                                    <div class="row g-2 mb-1" style="font-size:0.85rem"><div class="col-4 fw-bold text-secondary text-uppercase">VARIETI:</div><div class="col-8 text-uppercase">${varieti}</div></div>
-                                    <div class="row g-2 mb-1" style="font-size:0.85rem"><div class="col-4 fw-bold text-secondary text-uppercase">UMUR TANAMAN:</div><div class="col-8 text-uppercase">${umur}</div></div>
-                                    <div class="row g-2 mb-1" style="font-size:0.85rem"><div class="col-4 fw-bold text-secondary text-uppercase">LUAS TANAMAN:</div><div class="col-8 text-dark fw-bold">${luasTanam} HA</div></div>
-                                </div>
-                                <div>
-                                    <h6 class="fw-bold text-danger mb-2 small border-bottom pb-1 text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
-                                    <div class="table-responsive border rounded bg-white"><table class="table table-sm table-striped mb-0" style="font-size:0.75rem"><thead class="table-light"><tr><th class="text-start ps-2 text-uppercase">Perosak Dikesan</th><th class="text-center text-wrap text-uppercase">Luas Serangan(Ha)</th><th class="text-center text-wrap uppercase">Peratus serangan</th><th class="text-center text-wrap uppercase">Keterukan Serangan</th></tr></thead><tbody>${pestRows}</tbody></table></div>
-                                    ${imgHTML}
-                                </div>
-                            </div>
-                            <div class="p-3 mt-auto border-top">
-                                <div class="alert alert-warning border-warning mb-3 py-2 px-3 small d-flex align-items-start"><i class="bi bi-lightbulb-fill text-warning me-2 mt-1"></i> <div><strong class="text-uppercase d-block mb-1">SYOR KAWALAN:</strong><span class="text-dark">${syor}</span></div></div>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-outline-danger flex-grow-1 fw-bold text-uppercase btn-sm py-2" onclick="subVer(${r.row},'REJECT')"><i class="bi bi-x-lg me-1"></i> TOLAK</button>
-                                    <button class="btn btn-success flex-grow-1 fw-bold shadow-sm text-uppercase btn-sm py-2" onclick="subVer(${r.row},'APPROVE')"><i class="bi bi-check-lg me-1"></i> SAHKAN</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`; 
-                    container.innerHTML += cardHTML; 
-                }); 
-            } catch(e) { console.error(e); container.innerHTML='<div class="col-12 text-center p-5 text-danger">Ralat memuatkan data.</div>'; } 
-        }
-
-       function renderCard(r, container, type) {
-            const getV = (key) => { const i = currentHeaders.findIndex(h => h.toUpperCase().includes(key.toUpperCase())); return i > -1 ? r.data[i] : ""; };
-            const lokasi = getV('LOKASI') || getV('KEBUN');
-            const tanaman = getV('NAMA TANAMAN') || getV('TANAMAN');
-            const kategori = getV('KATEGORI') || "-";
-            const tarikh = formatDateDisplay(getV('TARIKH') || getV('DATE'));
-            const statusRekod = getV('STATUS') || ""; // Tarik status sebenar dari sheet
-            const log = getV('LOG') || "";
-            
-            let btnAction = "";
-            let badgeHtml = "";
-            let cardBorder = "primary";
-            let bgHeader = "light";
-
-            if (type === 'TASK') {
-                if (statusRekod.toUpperCase() === 'DRAF') {
-                    // PAPARAN UNTUK DRAF
-                    badgeHtml = `<span class="badge bg-secondary">DRAF</span>`;
-                    cardBorder = "secondary";
-                    btnAction = `<button class="btn btn-success w-100 fw-bold btn-sm shadow-sm" onclick="openTaskEdit(${r.row})"><i class="bi bi-pencil-square"></i> SAMBUNG ISI / HANTAR</button>`;
-                } else {
-                    // PAPARAN UNTUK DITOLAK
-                    badgeHtml = `<span class="badge bg-danger">DITOLAK</span>`;
-                    cardBorder = "danger";
-                    bgHeader = "danger bg-opacity-10";
-                    let reason = log.includes("DITOLAK") ? log.split("Sebab:").pop() : "Sila semak log.";
-                    btnAction = `<div class="task-reject-box p-2 mb-2 small"><i class="bi bi-exclamation-triangle-fill"></i> ${reason}</div><button class="btn btn-danger w-100 fw-bold btn-sm" onclick="openTaskEdit(${r.row})">KEMASKINI & HANTAR</button>`;
-                }
-            } else {
-                // PAPARAN UNTUK ADMIN/PENYELIA (BARU)
-                badgeHtml = `<span class="badge bg-warning text-dark">BARU</span>`;
-                btnAction = `<div class="d-flex gap-2"><button class="btn btn-outline-danger flex-grow-1 btn-sm fw-bold" onclick="subVer(${r.row},'REJECT')">TOLAK</button><button class="btn btn-success flex-grow-1 btn-sm fw-bold" onclick="subVer(${r.row},'APPROVE')">SAHKAN</button></div>`;
-            }
-
-            container.innerHTML += `
-            <div class="col-md-6 col-xl-4">
-                <div class="verify-card bg-white rounded-3 shadow-sm border mb-3 h-100 border-${cardBorder}">
-                    <div class="p-3 border-bottom bg-${bgHeader} d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="fw-bold text-dark">${lokasi}</div>
-                            <div class="small text-muted">${kategori} - ${tanaman}</div>
-                            <div class="small text-muted mt-1"><i class="bi bi-calendar-event"></i> ${tarikh}</div>
-                        </div>
-                        ${badgeHtml}
-                    </div>
-                    <div class="p-3 mt-auto">
-                        ${btnAction}
-                    </div>
-                </div>
-            </div>`;
-        }
-
-        async function openTaskEdit(rowId) {
-            const task = myTasksData.find(t => t.row === rowId);
-            if(!task) { alert("Data tidak dijumpai."); return; }
-            renderEditForm(task.row, task.data);
-        }
-
-        function handleFileSelect(input) {
-            const file = input.files[0];
-            const preview = document.getElementById('fe_imgPreview');
-            const label = document.getElementById('fe_fileLabel');
-            if (file) {
-                if (file.size > 5 * 1024 * 1024) { alert("Saiz gambar terlalu besar!"); input.value = ""; return; }
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const rawBase64 = e.target.result.split(',')[1]; 
-                    currentFile = { data: rawBase64, name: "UPDATED_" + file.name, type: file.type };
-                    preview.src = e.target.result; preview.style.display = 'block'; label.innerText = `Terpilih: ${file.name}`; label.classList.add('text-success');
-                };
-                reader.readAsDataURL(file);
-            } else { currentFile = null; preview.style.display = 'none'; label.innerText = "Tiada gambar dipilih"; label.classList.remove('text-success'); }
-        }
-
-        // --- NEW EDIT FORM FUNCTIONS ---
-        function updateDistricts(srcId, targetId) {
-            const state = document.getElementById(srcId).value;
-            const target = document.getElementById(targetId);
-            target.innerHTML = '<option value="">- Pilih -</option>';
-            if(state && districtData[state]) {
-                districtData[state].forEach(d => { let opt = document.createElement('option'); opt.value=d; opt.innerText=d; target.appendChild(opt); });
-            }
-        }
-
-        function updateTanamanList() {
-            const kat = document.getElementById('fe_kategori').value;
-            const el = document.getElementById('fe_tanaman');
-            el.innerHTML = '<option value="">- Pilih -</option>';
-            if(kat && pestMasterData[kat]) {
-                Object.keys(pestMasterData[kat]).sort().forEach(t => { let opt = document.createElement('option'); opt.value=t; opt.innerText=t; el.appendChild(opt); });
-            }
-        }
-
-       function getPestOptionsHTML(selectedValue) {
-            const kat = document.getElementById('fe_kategori').value;
-            const tan = document.getElementById('fe_tanaman').value;
-            let pests = [];
-            
-            if(kat && tan && pestMasterData[kat] && pestMasterData[kat][tan]) { 
-                pests = pestMasterData[kat][tan]; 
-            }
-            
-            let html = ''; 
-            pests.forEach(p => {
-                html += `<option value="${p}">`;
-            });
-            
-            return html;
-        }
-        
-       function updatePestRowsOnCropChange() {
-            document.querySelectorAll('.p-name').forEach(input => {
-                // Cari datalist yang berada tepat di sebelah kotak input
-                const datalist = input.nextElementSibling; 
-                if(datalist && datalist.tagName === 'DATALIST') {
-                    datalist.innerHTML = getPestOptionsHTML(input.value);
-                }
-            });
-        }
-
-        
-        function setDropdownValue(el, val) {
-            if(!val) return;
-            for(let i=0; i<el.options.length; i++) { 
-                if(el.options[i].value.toUpperCase() === String(val).toUpperCase()) { el.selectedIndex = i; return; } 
-            }
-            let opt = document.createElement('option'); opt.value = val; opt.innerText = val + " (Data Asal)"; opt.selected = true; el.appendChild(opt);
-        }
-
-       // --- RENDER EDIT FORM (GALERI PINTAR) ---
-        function renderEditForm(rowID, rowData) {
-            currentFile = null;
-            const d = rowData;
-            const getIdx = (key) => { if(!currentHeaders || currentHeaders.length === 0) return -1; return currentHeaders.findIndex(h => h.toUpperCase().includes(key.toUpperCase())); };
-            const getV = (key) => { const i = getIdx(key); return i > -1 ? d[i] : ""; };
-
-            const valCaption = getV('CAPTION') || getV('TAJUK') || "";
-            const savedNegeri = getV('NEGERI');
-            const savedDaerah = getV('DAERAH');
-            const savedKat = getV('KATEGORI');
-           const savedTan = getV('NAMA TANAMAN') || getV('TANAMAN');
-            
-            // --- KOD BARU: TARIK, TUKAR LINK & LUKIS GAMBAR LAMA ---
-            const savedImg = getV('IMAGE LINKS (COMMA SEPARATED)') || getV('GAMBAR') || getV('IMAGE') || getV('FOTO') || "";
-            let oldImgPreviewHTML = "";
-            
-            if(savedImg && savedImg.trim() !== "") {
-                const arr = savedImg.split(',');
-                oldImgPreviewHTML = `<div class="mt-2 pt-2 border-top"><small class="text-success fw-bold d-block mb-1"><i class="bi bi-images"></i> Gambar Sedia Ada:</small>` +
-                arr.map(lnk => {
-                    let cleanLnk = lnk.trim().replace(/[\[\]"'\\]/g, '');
-                    if(!cleanLnk) return "";
-                    
-                    // Magik: Cari ID Google Drive dan tukar ke direct link (thumbnail)
-                    let directSrc = cleanLnk;
-                    const idMatch = cleanLnk.match(/[-\w]{25,}/);
-                    if (idMatch) {
-                        // Guna sz=w200 supaya gambar ringan & terus keluar dalam tag <img>
-                        directSrc = `https://drive.google.com/thumbnail?id=${idMatch[0]}&sz=w200`;
-                    }
-                    
-                    return `<a href="${cleanLnk}" target="_blank" title="Klik untuk lihat saiz penuh">
-                                <img src="${directSrc}" style="width: 60px; height: 60px; object-fit: cover; margin-right: 5px; border-radius: 5px; border: 1px solid #ccc; display: inline-block;">
-                            </a>`;
-                }).join('') + `</div>`;
-            }
-            // ---------------------------------------------
-          let html = `
-            <div id="fullEditForm">
-                <input type="hidden" id="fe_row" value="${rowID}">
-                <h6 class="text-primary border-bottom pb-2">A. Lokasi</h6>
-                <div class="row g-2 mb-2">
-                    <div class="col-6"><label class="small fw-bold">Negeri</label><select id="fe_negeri" class="form-select form-select-sm" onchange="updateDistricts('fe_negeri','fe_daerah')"><option value="">- Pilih -</option>${Object.keys(districtData).sort().map(n => `<option value="${n}">${n}</option>`).join('')}</select></div>
-                    <div class="col-6"><label class="small fw-bold">Daerah</label><select id="fe_daerah" class="form-select form-select-sm"></select></div>
-                </div>
-                <div class="mb-2"><label class="small fw-bold">Lokasi/Kebun</label><input type="text" id="fe_lokasi" class="form-control form-control-sm" value="${getV('LOKASI')}"></div>
-                <div class="mb-2"><label class="small fw-bold">Koordinat</label><input type="text" id="fe_coord" class="form-control form-control-sm" value="${getV('KOORDINAT')}"></div>
-                <div class="row g-2 mb-2">
-                    <div class="col-6"><label class="small fw-bold">Tarikh</label><input type="date" id="fe_tarikh" class="form-control form-control-sm" value="${formatDateForInput(getV('TARIKH'))}"></div>
-                    <div class="col-6"><label class="small fw-bold">Pegawai</label><input type="text" id="fe_pegawai" class="form-control form-control-sm" readonly value="${getV('NAMA')||getV('PEGAWAI')}"></div>
-                </div>
-                
-                <h6 class="text-primary border-bottom pb-2 mt-3">B. Tanaman</h6>
-                <div class="row g-2 mb-2">
-                    <div class="col-6"><label class="small fw-bold">Kategori</label><select id="fe_kategori" class="form-select form-select-sm" onchange="updateTanamanList()"><option value="">- Pilih -</option>${Object.keys(pestMasterData).sort().map(k => `<option value="${k}">${k}</option>`).join('')}</select></div>
-                    <div class="col-6"><label class="small fw-bold">Tanaman</label><select id="fe_tanaman" class="form-select form-select-sm" onchange="updatePestRowsOnCropChange()"><option value="">- Pilih Kategori Dulu -</option></select></div>
-                </div>
-                <div class="row g-2 mb-2">
-                    <div class="col-6"><label class="small fw-bold">Varieti</label><input type="text" id="fe_varieti" class="form-control form-control-sm" value="${getV('VARIETI')}"></div>
-                    <div class="col-6"><label class="small fw-bold">Umur</label><input type="text" id="fe_umur" class="form-control form-control-sm" value="${getV('UMUR')}"></div>
-                </div>
-                <div class="mb-2"><label class="small fw-bold">Luas Tanam (Ha)</label><input type="number" id="fe_luasT" class="form-control form-control-sm" value="${getV('LUAS')}"></div>
-                
-                <h6 class="text-primary border-bottom pb-2 mt-3">C. Data Serangan</h6>
-                <div class="alert alert-info py-1 px-2 mb-2 small"><i class="bi bi-info-circle"></i> Pilihan perosak bergantung kepada Tanaman.</div>
-                <table class="table table-sm table-bordered" id="fe_pestTable">
-                    <thead class="table-light"><tr><th>Perosak</th><th width="70">Luas(Ha)</th><th width="70">Tahap</th><th></th></tr></thead>
-                    <tbody></tbody>
-                </table>
-                <button type="button" class="btn btn-outline-primary btn-sm w-100 mb-3" onclick="addPestRow()">+ Tambah Perosak</button>
-                
-                <h6 class="text-primary border-bottom pb-2 mt-3">D. Gambar & Kapsyen</h6>
-                <div class="mb-3 p-3 bg-white border rounded">
-                    <label class="form-label fw-bold small">Gambar Laporan Sedia Ada</label>
-                    <div id="edit_image_preview" class="d-flex flex-wrap gap-2 mb-3"></div>
-                    
-                    <label class="small fw-bold mb-1">Tambah Gambar Baru (Optional)</label>
-                    <input type="file" id="fe_img" class="form-control form-control-sm" accept="image/*" multiple>
-                    <small class="text-muted d-block fst-italic mt-1" style="font-size:0.75rem">Pilih lebih dari 1 gambar jika perlu. Gambar lama boleh dipadam dengan butang X merah di atas.</small>
-
-                    <label class="small fw-bold mb-1 mt-3">Tajuk Gambar / Kapsyen</label>
-                    <input type="text" id="fe_caption" class="form-control form-control-sm mb-2" value="${valCaption}" placeholder="Masukkan tajuk gambar...">
-                    </div>
-                
-                <div class="mb-3"><label class="small fw-bold text-success">Syor Kawalan</label><textarea id="fe_syor" class="form-control" rows="3">${getV('SYOR')}</textarea></div>
-                <button class="btn btn-success w-100 py-2 fw-bold" onclick="saveFullEdit()">SIMPAN PERUBAHAN</button>
-            </div>`;
-
-            document.getElementById('detailBody').innerHTML = html;
-            
-            const elNeg = document.getElementById('fe_negeri'); setDropdownValue(elNeg, savedNegeri); updateDistricts('fe_negeri','fe_daerah'); 
-            const elDae = document.getElementById('fe_daerah'); setDropdownValue(elDae, savedDaerah);
-            const elKat = document.getElementById('fe_kategori'); setDropdownValue(elKat, savedKat); updateTanamanList();
-            const elTan = document.getElementById('fe_tanaman'); setDropdownValue(elTan, savedTan);
-
-            let luasObj = {}, sevObj = {};
-            try { luasObj = JSON.parse(getV('LUAS SERANGAN')||"{}"); } catch(e){}
-            try { sevObj = JSON.parse(getV('KETERUKAN')||"{}"); } catch(e){}
-            const pests = Object.keys(luasObj);
-            const pestManual = getV('PEROSAK'); 
-            if(pests.length > 0) { pests.forEach(p => addPestRow(p, luasObj[p], sevObj[p])); } 
-            else if (pestManual) { addPestRow(pestManual, getV('LUAS SERANGAN'), getV('KETERUKAN')); } 
-            else { addPestRow(); }
-            
-            // --- PANGGIL FUNGSI BLOK 2 DI SINI UNTUK LUKIS GAMBAR LAMA ---
-            renderEditImages(savedImg); 
-            // -------------------------------------------------------------
-
-            document.getElementById('modalTitle').innerText = "KEMASKINI DATA";
-            new bootstrap.Modal(document.getElementById('detailModal')).show();
-        }
-
-
-        function renderEditImages(imgString) {
-            const container = document.getElementById('edit_image_preview');
-            container.innerHTML = '';
-            retainedImagesGlobal = [];
-
-            if (imgString && imgString.trim() !== "" && imgString !== "-") {
-                const links = imgString.split(',').map(s => s.trim());
-                links.forEach((link, index) => {
-                    if(link) {
-                        retainedImagesGlobal.push(link);
-                        
-                        // --- KOD BARU: Tukar link Drive jadi Thumbnail URL ---
-                        let imgSrc = link; 
-                        const matchId = link.match(/[-\w]{25,}/); 
-                        if (matchId && matchId[0]) {
-                            // Guna API thumbnail Drive. sz=w150 maksudnya resize lebar 150px (loading laju sikit)
-                            imgSrc = `https://drive.google.com/thumbnail?id=${matchId[0]}&sz=w150`;
-                        }
-                        // ----------------------------------------------------
-
-                        // Bina kotak thumbnail dengan butang X
-                        const div = document.createElement('div');
-                        div.className = "position-relative";
-                        div.style = "width: 75px; height: 75px; border: 1px solid #ccc; border-radius: 5px; overflow: hidden;";
-                        div.innerHTML = `
-                            <a href="${link}" target="_blank">
-                               <img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: cover;" alt="Gambar">
-                            </a>
-                            <button type="button" class="btn btn-danger position-absolute top-0 end-0 p-0" 
-                                    style="width: 22px; height: 22px; line-height: 1; font-size:12px; font-weight:bold; border-radius:0; border-bottom-left-radius:5px;" 
-                                    onclick="removeRetainedImage(${index}, this)">X</button>
-                        `;
-                        container.appendChild(div);
-                    }
-                });
-            }
-        }
-
-        // Fungsi bila staf tekan butang X (Kekal sama)
-        function removeRetainedImage(index, btnElement) {
-            retainedImagesGlobal[index] = null; 
-            btnElement.parentElement.remove(); 
-        }
-
-       function addPestRow(name="", area="", sev="") {
-            const tbody = document.querySelector('#fe_pestTable tbody');
-            const tr = document.createElement('tr');
-            
-            // Cipta ID unik untuk datalist supaya tak bertembung jika ada banyak baris perosak
-            const uniqueId = 'dl_pest_' + Math.floor(Math.random() * 10000); 
-            const pestOptions = getPestOptionsHTML(name);
-            
-            tr.innerHTML = `
-                <td>
-                    <input type="text" class="form-control form-control-sm p-name" list="${uniqueId}" value="${name}" placeholder="Pilih atau Taip...">
-                    <datalist id="${uniqueId}">${pestOptions}</datalist>
-                </td>
-                <td><input type="number" class="form-control form-control-sm p-area" value="${area}" step="0.01"></td>
-                <td>
-                    <select class="form-select form-select-sm p-sev">
-                        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
-                    </select>
-                </td>
-                <td class="text-center">
-                    <button class="btn btn-link text-danger p-0" onclick="this.closest('tr').remove()"><i class="bi bi-x-circle"></i></button>
-                </td>`;
-                
-            if(sev) tr.querySelector('.p-sev').value = sev;
-            tbody.appendChild(tr);
-        }
-
-        function formatDateForInput(dateStr) { if(!dateStr) return ""; const d = new Date(dateStr); return isNaN(d) ? "" : d.toISOString().split('T')[0]; }
-
-       async function saveFullEdit() {
-            if(!confirm("Hantar kemaskini?")) return;
-            
-            const btn = event.target; 
-            btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> Memproses...'; 
-            btn.disabled=true;
-
-            const rowID = document.getElementById('fe_row').value;
-            const captionVal = document.getElementById('fe_caption').value.trim();
-            const luasT = parseFloat(document.getElementById('fe_luasT').value) || 0;
-            const luasS = {}, sevS = {}, pctS = {};
-            
-            document.querySelectorAll('#fe_pestTable tbody tr').forEach(tr => {
-                const n = tr.querySelector('.p-name').value.toUpperCase().trim();
-                const a = parseFloat(tr.querySelector('.p-area').value) || 0;
-                const s = tr.querySelector('.p-sev').value;
-                if(n) { luasS[n]=a; sevS[n]=s; pctS[n] = luasT>0 ? ((a/luasT)*100).toFixed(2):0; }
-            });
-
-            // --- KUTIP GAMBAR LAMA & BARU ---
-            const finalRetainedImages = typeof retainedImagesGlobal !== 'undefined' ? retainedImagesGlobal.filter(link => link !== null) : [];
-            const fileInput = document.getElementById('fe_img');
-            const files = fileInput ? fileInput.files : [];
-            let newImagesArray = [];
-
-            if (files.length > 0) {
-                Swal.fire({ title: 'Memproses Gambar...', html: 'Sila tunggu sebentar...', showConfirmButton: false, allowOutsideClick: false });
-                
-                const readPromises = Array.from(files).map(file => {
-                    return new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            let ext = ".jpg"; 
-                            if(file.name.includes('.')) ext = file.name.substring(file.name.lastIndexOf('.'));
-                            let finalName = captionVal ? (captionVal + ext) : file.name;
-                            
-                            resolve({ imgName: finalName, imgType: file.type, imgData: e.target.result.split(',')[1] });
-                        };
-                        reader.readAsDataURL(file);
-                    });
-                });
-                newImagesArray = await Promise.all(readPromises);
-            } else {
-                Swal.fire({ title: 'Menghantar Data...', showConfirmButton: false, allowOutsideClick: false });
-            }
-
-            const payload = {
-                action: 'updateEntry',
-                row: rowID, tarikh: document.getElementById('fe_tarikh').value, pegawai: document.getElementById('fe_pegawai').value,
-                negeri: document.getElementById('fe_negeri').value, daerah: document.getElementById('fe_daerah').value, lokasi: document.getElementById('fe_lokasi').value,
-                coord: document.getElementById('fe_coord').value, kategori: document.getElementById('fe_kategori').value, tanaman: document.getElementById('fe_tanaman').value,
-                varieti: document.getElementById('fe_varieti').value, umurT: document.getElementById('fe_umur').value, luasT: luasT,
-                luasS: luasS, keterukan: sevS, peratus: pctS, syor: document.getElementById('fe_syor').value, name: uProf.name, caption: captionVal,
-                retainedImages: finalRetainedImages,
-                newImages: newImagesArray
-            };
-
-            try {
-                const r = await postData('updateEntry', payload); 
-                Swal.close(); 
-                if(r.success) {
-                    alert("✅ Berjaya!"); 
-                    bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
-                    if(document.getElementById('view-tasks').style.display !== 'none') loadMyTasks(); 
-                    else if(document.getElementById('view-verify').style.display !== 'none') loadPend(); 
-                    else initDash();
-                    checkPendingCount();
-                } else { 
-                    alert("❌ Ralat: "+r.message); 
-                    btn.innerHTML="SIMPAN PERUBAHAN"; btn.disabled=false; 
-                }
-            } catch(err) {
-                Swal.close();
-                alert("❌ Gagal berhubung dengan pelayan.");
-                btn.innerHTML="SIMPAN PERUBAHAN"; btn.disabled=false;
-            }
-        }
-        // --- DASHBOARD VIEW MODAL ---
-        function viewRec(idx) {
-            const d = fData[idx]; if (!d) return;
-            const cleanImg = (raw) => { if (!raw) return []; let str = String(raw).trim().replace(/[\[\]"'\\]/g, ''); return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http')); };
-            let pestRows = "";
-            if (d.p && Object.keys(d.p).length > 0) { 
-                Object.keys(d.p).forEach(k => { 
-                    let luasVal = parseFloat(d.p[k]) || 0;
-                    
-                    // 👇 KIRAAN PERATUS AUTOMATIK DI PAPARAN 👇
-                    let luasTanam = parseFloat(d.lt) || 0;
-                    let pctVal = luasTanam > 0 ? ((luasVal / luasTanam) * 100).toFixed(2) : "0.00";
-                    
-                    // Tangkap tahap keterukan (Jika spesifik tiada, guna purata)
-                    let sevVal = (d.pk && d.pk[k]) ? d.pk[k] : (d.k || 0); 
-                    let level = parseInt(sevVal) || 0; 
-                    let badgeColor = level < 3 ? 'success' : (level < 4 ? 'warning' : 'danger'); 
-                    
-                    pestRows += `<tr><td style="font-size:0.85rem" class="text-uppercase">${k}</td><td class="text-center fw-bold">${luasVal.toFixed(2)}</td><td class="text-center small">${pctVal}%</td><td class="text-center"><span class="badge bg-${badgeColor}">T${level}</span></td></tr>`; 
-                }); 
-            } else { 
-                pestRows = `<tr><td colspan="4" class="text-center text-muted small">Tiada Data Terperinci</td></tr>`; 
-            }
-            const imgLinks = cleanImg(d.im);
-            let imgHTML = imgLinks.length > 0 ? `<div class="mt-3 pt-2 border-top"><h6 class="fw-bold text-secondary small mb-2 text-uppercase"><i class="bi bi-paperclip me-1"></i> LAMPIRAN GAMBAR</h6><div class="d-flex flex-wrap gap-2">` + imgLinks.map((lnk,i)=>`<a href="${lnk}" target="_blank" class="btn btn-sm btn-outline-primary bg-white shadow-sm text-truncate fw-bold" style="max-width:140px;"><i class="bi bi-image me-1"></i> Gambar ${i+1}</a>`).join('') + `</div></div>` : `<div class="mt-3 pt-2 border-top"><small class="text-muted fst-italic text-uppercase"><i class="bi bi-slash-circle me-1"></i> TIADA GAMBAR</small></div>`;
-            let adminBtns = "";
-            if (uProf.role === "ADMIN") { adminBtns = `<div class="border-top pt-3 mt-3 d-flex justify-content-between gap-2"><button onclick="enableEditMode(${d.id})" class="btn btn-outline-primary btn-sm flex-grow-1"><i class="bi bi-pencil-square me-1"></i> KEMASKINI</button><button onclick="doDeleteRec(${d.id})" class="btn btn-outline-danger btn-sm flex-grow-1"><i class="bi bi-trash-fill me-1"></i> PADAM</button></div>`; }
-
-            const html = `
-            <div class="verify-card bg-white rounded-3 shadow-sm border h-100 position-relative">
-                <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-start">
-                    <div><div class="fw-bold text-uppercase text-dark">${d.pg}</div><div class="small text-muted fst-italic">${d.em}</div></div>
-                    <span class="badge bg-success text-white shadow-sm">DISAHKAN</span>
-                </div>
-                <div class="p-3 pb-0">
-                    <div id="view_info_${d.id}">
-                        <h6 class="fw-bold text-success mb-3 small border-bottom pb-2 text-uppercase"><i class="bi bi-info-circle-fill me-1"></i> LOKASI & TANAMAN</h6>
-                        <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">TARIKH BANCIAN:</div><div class="col-8 fw-bold text-primary">${formatDateDisplay(d.t)}</div></div>
-                        <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">NEGERI:</div><div class="col-8 fw-bold text-dark">${d.n}</div></div>
-                        <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">DAERAH:</div><div class="col-8 fw-bold text-dark">${d.d}</div></div>
-                        <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">LOKASI:</div><div class="col-8 fw-bold text-dark">${d.l}</div></div>
-                        <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">KOORDINAT:</div><div class="col-8 font-monospace text-muted small">${d.c}</div></div>
-                        <hr class="my-2 text-muted opacity-25">
-                        <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">KATEGORI TANAMAN:</div><div class="col-8 fw-bold text-dark text-uppercase">${d.kt || "-"}</div></div>
-                        <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">TANAMAN:</div><div class="col-8 fw-bold text-success">${d.tn}</div></div>
-                        <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">VARIETI:</div><div class="col-8 text-uppercase">${d.vr}</div></div>
-                        <div class="row g-2 mb-1" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">UMUR TANAMAN:</div><div class="col-8 text-uppercase">${d.um || "-"}</div></div>
-                        <div class="row g-2 mb-3" style="font-size:0.9rem"><div class="col-4 fw-bold text-secondary">LUAS TANAMAN:</div><div class="col-8 text-dark">${d.lt.toFixed(2)} HA</div></div>
-                    </div>
-                    <div id="edit_mode_${d.id}" style="display:none;" class="bg-light p-3 rounded border mb-3">
-                        <div class="text-center text-muted">Sila gunakan fungsi 'Tugasan Saya' atau Admin panel.</div>
-                        <button onclick="cancelEdit(${d.id})" class="btn btn-secondary btn-sm w-100">Tutup</button>
-                    </div>
-                </div>
-                <div class="px-3" id="view_pest_${d.id}">
-                    <h6 class="fw-bold text-success mb-2 small text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
-                    <div class="table-responsive border rounded mb-2"><table class="table table-sm table-striped mb-0" style="font-size:0.8rem"><thead class="table-light"><tr><th>PEROSAK</th><th class="text-center">LUAS SERANGAN(HA)</th><th class="text-center">PERATUS SERANGAN</th><th class="text-center">KETERUKAN SERANGAN</th></tr></thead><tbody>${pestRows}</tbody></table></div>
-                    <div class="alert alert-warning border-warning mb-0 py-2 px-3 small"><i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong>SYOR:</strong> ${d.s}</div>${imgHTML}
-                </div>
-                <div class="p-3 mt-auto"><div class="bg-success bg-opacity-10 border border-success rounded p-2 text-center"><small class="text-success fw-bold text-uppercase mb-1 d-block">DISAHKAN OLEH:</small><div class="text-dark small fw-bold">${d.vb}</div></div>${adminBtns}</div>
-            </div>`;
-            document.getElementById('detailBody').innerHTML = html;
-            document.getElementById('modalTitle').innerText = "BUTIRAN REKOD DISAHKAN";
-            new bootstrap.Modal(document.getElementById('detailModal')).show();
-        }
-        function enableEditMode(id) { document.getElementById(`view_info_${id}`).style.display = 'none'; document.getElementById(`view_pest_${id}`).style.display = 'none'; document.getElementById(`edit_mode_${id}`).style.display = 'block'; }
-        function cancelEdit(id) { document.getElementById(`view_info_${id}`).style.display = 'block'; document.getElementById(`view_pest_${id}`).style.display = 'block'; document.getElementById(`edit_mode_${id}`).style.display = 'none'; }
-        async function doDeleteRec(rowID) { if(!confirm("Padam rekod ini?")) return; const btn = event.target.closest('button'); btn.innerHTML='...'; btn.disabled=true; const r = await postData('deleteEntry', {row:rowID}); alert(r.message); if(r.success) location.reload(); }
-        function movePg(v) { pg = Math.max(1, pg+v); renTab(); }
-        async function subVer(row, act) { let re = ""; if(act==='REJECT'){ re=prompt("Sebab:"); if(!re) return; } else if(!confirm("Sahkan?")) return; const r = await postData('submitVerify', {row:row, act:act, reason:re, name:uProf.name}); alert(r.message); if(r.success) { loadPend(); checkPendingCount(); initDash(); } }
-        async function approveAll() { 
-            if(!confirm("Sahkan SEMUA data yang telah diisi?")) return; 
-            
-            // 1. Kunci butang supaya tak boleh double-click
-            const btn = event.target.closest('button');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Memproses...';
-            btn.disabled = true;
-
-            // 2. Tunjuk Progress Bar (HTML sedia ada Tuan)
-            const progBox = document.getElementById('bulkProgress');
-            const progBar = document.getElementById('progBar');
-            const progText = document.getElementById('progText');
-            if(progBox) progBox.style.display = 'block';
-            if(progBar) progBar.style.width = '0%';
-            if(progText) progText.innerText = '0%';
-
-            // 3. Tarik senarai data yang perlu disahkan
-            const d = await postData('getPending', {state: uProf.state}); 
-            
-            if(!d.rows || !d.rows.length) {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                if(progBox) progBox.style.display = 'none';
-                alert("Tiada data untuk disahkan.");
-                return; 
-            } 
-            
-            let total = d.rows.length;
-            let count = 0;
-
-            // 4. Mula proses satu persatu (Looping)
-            for (const r of d.rows) { 
-                await postData('submitVerify', {row: r.row, act: 'APPROVE', reason: 'Bulk', name: uProf.name}); 
-                
-                // 5. Update Progress Bar supaya Penyelia nampak pergerakan
-                count++;
-                let pct = Math.round((count / total) * 100);
-                if(progBar) progBar.style.width = pct + '%';
-                if(progText) progText.innerText = pct + '%';
-            } 
-            
-            alert("✅ Selesai! Semua data berjaya disahkan."); 
-            
-            // 6. Reset UI dan Butang kembali kepada asal
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            if(progBox) progBox.style.display = 'none';
-            
-            loadPend(); 
-            initDash(); 
-            checkPendingCount();
-        }
-        async function downloadDualExcel() { if (!fData.length) { alert("Tiada data!"); return; } const workbook = new ExcelJS.Workbook(); const worksheet = workbook.addWorksheet('Laporan Penuh'); worksheet.columns = [{ header: 'ID', key: 'id', width: 6 }, { header: 'Nama Pegawai', key: 'pg', width: 25 }, { header: 'Tarikh', key: 't', width: 12 }, { header: 'Negeri', key: 'n', width: 15 }, { header: 'Daerah', key: 'd', width: 15 }, { header: 'Lokasi', key: 'l', width: 22 }, { header: 'Koordinat', key: 'c', width: 22 }, { header: 'Kategori', key: 'kt', width: 18 }, { header: 'Tanaman', key: 'tn', width: 18 }, { header: 'Luas Bancian (Ha)', key: 'lt', width: 18 }, { header: 'Perosak', key: 'p', width: 20 }, { header: 'Keterukan', key: 'k', width: 15 }, { header: 'Luas Serangan (Ha)', key: 'ls', width: 18 }, { header: '% Serangan', key: 'pct', width: 15 }, { header: 'Syor Kawalan', key: 's', width: 50 }]; worksheet.getRow(1).font = { bold: true }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' }; let rowIndex = 2; fData.forEach(d => { let pestEntries = (d.p && Object.keys(d.p).length > 0) ? Object.entries(d.p) : [["TIADA", 0]]; let startRow = rowIndex; let luasTanam = parseFloat(d.lt) || 0; pestEntries.forEach(([pName, pArea]) => { let luasSerang = parseFloat(pArea) || 0; let pctVal = (luasTanam > 0) ? ((luasSerang / luasTanam) * 100).toFixed(2) + '%' : "0%"; const row = worksheet.getRow(rowIndex); row.values = { id: d.id, pg: d.pg || "-", t: d.t, n: d.n, d: d.d, l: d.l, c: d.c || "-", kt: d.kt || "-", tn: d.tn, lt: luasTanam, p: pName, k: d.k, ls: luasSerang, pct: pctVal, s: d.s }; row.eachCell({ includeEmpty: true }, (cell) => { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; }); rowIndex++; }); if (pestEntries.length > 1) { for (let c = 1; c <= 10; c++) { worksheet.mergeCells(startRow, c, rowIndex - 1, c); } worksheet.mergeCells(startRow, 15, rowIndex - 1, 15); } }); const buffer = await workbook.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = window.URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'PNR_Laporan_Lengkap.xlsx'; anchor.click(); window.URL.revokeObjectURL(url); }
-        async function dlPDF() { const btn = document.querySelector('button[onclick="dlPDF()"]'); btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Jana...'; btn.disabled = true; let dateLabel = "Terkini"; if (fData.length > 0) { const sortedDates = fData.map(d => d.t).sort(); const fmt = (d) => d.split('-').reverse().join('/'); dateLabel = fmt(sortedDates[0]) === fmt(sortedDates[sortedDates.length - 1]) ? fmt(sortedDates[0]) : `${fmt(sortedDates[0])} - ${fmt(sortedDates[sortedDates.length - 1])}`; } try { let targetName = document.getElementById('selNegeri').value; if (uProf && uProf.state === "CAMERON HIGHLANDS") { targetName = "PAHANG"; } else if (uProf && uProf.state !== "ALL") { targetName = uProf.state; } if (!targetName) targetName = "SEMUA"; const m = { user: uProf.name, negeri: targetName, dates: dateLabel }; const r = await postData('genPDF', { data: fData, meta: m }); if (r.success) { const a = document.createElement('a'); a.href = "data:application/pdf;base64," + r.base64; a.download = r.filename; a.click(); } else { alert("Gagal menjana PDF: " + r.message); } } catch (e) { console.error(e); alert("Ralat sistem semasa menjana PDF."); } btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF'; btn.disabled = false; }
-     
-    // --- FUNGSI KLIK MUAT TURUN PDF (AUTO-DOWNLOAD BASE64) ---
-        async function klikJanaPDF(btnElement) {
-            // Cek jika tiada internet
-            if (!navigator.onLine) {
-                Swal.fire('Mod Offline', 'Harap maklum, penjanaan PDF memerlukan capaian internet.', 'warning');
-                return;
-            }
-
-            // 1. Ambil data dari butang yang ditekan (KITA TAMBAH COORD & TARIKH DI SINI)
-            const lokasiStr = btnElement.getAttribute('data-lokasi');
-            const pegawaiStr = btnElement.getAttribute('data-pegawai');
-            const coordStr = btnElement.getAttribute('data-coord');     // <--- TAMBAH INI
-            const tarikhStr = btnElement.getAttribute('data-tarikh');   // <--- TAMBAH INI
-
-            // Papar loading screen
-            Swal.fire({
-                title: 'Menjana Laporan PDF...',
-                html: 'Sila tunggu sebentar. Memproses data & gambar...<br><br><div class="spinner-border text-danger" role="status"></div>',
-                showConfirmButton: false,
-                allowOutsideClick: false
-            });
-
-            try {
-                // 2. Panggil backend API (HANTAR 4 DATA KE BACKEND)
-                const r = await postData('janaPDFBaris', { 
-                    lokasi: lokasiStr, 
-                    pegawai: pegawaiStr,
-                    coord: coordStr,      // <--- HANTAR KOORDINAT
-                    tarikh: tarikhStr     // <--- HANTAR TARIKH
-                });
-                
-                // Semak jika backend memulangkan status success dan data base64
-                if ((r.success || r.status === 'success') && r.base64) {
-                    
-                    // Proses Muat Turun Terus (Auto-Download) ke Peranti
-                    const link = document.createElement('a');
-                    link.href = "data:application/pdf;base64," + r.base64;
-                    
-                    // Guna nama fail dari backend, atau buat nama default jika tiada
-                    link.download = r.fileName || ("Laporan_" + lokasiStr.replace(/[^a-zA-Z0-9]/g, "_") + ".pdf");
-                    
-                    // Simulasikan butang ditekan oleh pengguna (tanpa nampak di skrin)
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    // Tutup loading dan tunjuk mesej Berjaya
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berjaya!',
-                        text: 'Laporan PDF telah disimpan ke dalam peranti anda.',
-                        timer: 3000,
-                        showConfirmButton: false
-                    });
-
-                } else {
-                    Swal.fire('Ralat', r.message || r.error || 'Gagal memuatkan data PDF.', 'error');
-                }
-            } catch (err) {
-                Swal.fire('Ralat API', 'Gagal berhubung dengan pelayan. Sila cuba lagi.', 'error');
-            }
-        }
-// ==========================================
-        // FUNGSI PENDAFTARAN AKAUN BARU (SWEETALERT2)
-        // ==========================================
-        async function toggleDaftar() {
-            const { value: formValues } = await Swal.fire({
-                title: 'Daftar Akaun Baru',
-                width: '500px',
-                html: `
-                    <div class="text-start mt-3" style="font-size: 0.9rem;">
-                        <div class="alert alert-info py-2 small mb-3"><i class="bi bi-info-circle-fill"></i> Akaun baru perlu disahkan oleh Admin sebelum boleh digunakan.</div>
-                        
-                        <label class="fw-bold mb-1 text-secondary">Nama Penuh (Seperti Kad Pengenalan)</label>
-                        <input id="reg-nama" class="form-control form-control-sm mb-3 text-uppercase" placeholder="Nama penuh anda">
-                        
-                        <div class="row g-2 mb-3">
-                            <div class="col-6">
-                                <label class="fw-bold mb-1 text-secondary">No. K/P (Tanpa Sengkang)</label>
-                                <input id="reg-ic" type="number" class="form-control form-control-sm" placeholder="900101011234">
-                            </div>
-                            <div class="col-6">
-                                <label class="fw-bold mb-1 text-secondary">Jawatan</label>
-                                <input id="reg-jawatan" class="form-control form-control-sm text-uppercase" placeholder="Cth: PEGAWAI PERTANIAN">
-                            </div>
-                        </div>
-                        
-                        <label class="fw-bold mb-1 text-secondary">Negeri Bertugas</label>
-                        <select id="reg-negeri" class="form-select form-select-sm mb-4">
-                            <option value="">- Pilih Negeri -</option>
-                            <option value="JOHOR">JOHOR</option>
-                            <option value="KEDAH">KEDAH</option>
-                            <option value="KELANTAN">KELANTAN</option>
-                            <option value="MELAKA">MELAKA</option>
-                            <option value="NEGERI SEMBILAN">NEGERI SEMBILAN</option>
-                            <option value="PAHANG">PAHANG</option>
-                            <option value="PERAK">PERAK</option>
-                            <option value="PERLIS">PERLIS</option>
-                            <option value="PULAU PINANG">PULAU PINANG</option>
-                            <option value="SABAH">SABAH</option>
-                            <option value="SARAWAK">SARAWAK</option>
-                            <option value="SELANGOR">SELANGOR</option>
-                            <option value="TERENGGANU">TERENGGANU</option>
-                            <option value="W.P. KUALA LUMPUR">W.P. KUALA LUMPUR</option>
-                            <option value="W.P. LABUAN">W.P. LABUAN</option>
-                            <option value="W.P. PUTRAJAYA">W.P. PUTRAJAYA</option>
-                        </select>
-
-                        <hr class="my-3 text-muted">
-
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="fw-bold mb-1 text-primary">ID Pengguna (Username)</label>
-                                <input id="reg-uid" class="form-control form-control-sm text-lowercase" placeholder="Pilih username anda">
-                            </div>
-                            <div class="col-6">
-                                <label class="fw-bold mb-1 text-danger">Kata Laluan</label>
-                                <input id="reg-pwd" type="password" class="form-control form-control-sm" placeholder="Pilih kata laluan">
-                            </div>
-                        </div>
-                    </div>
-                `,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: '<i class="bi bi-person-plus-fill me-1"></i> Hantar Pendaftaran',
-                cancelButtonText: 'Batal',
-                confirmButtonColor: '#198754',
-                preConfirm: () => {
-                    const nama = document.getElementById('reg-nama').value.trim();
-                    const ic = document.getElementById('reg-ic').value.trim();
-                    const jawatan = document.getElementById('reg-jawatan').value.trim();
-                    const negeri = document.getElementById('reg-negeri').value;
-                    const uid = document.getElementById('reg-uid').value.trim();
-                    const pwd = document.getElementById('reg-pwd').value.trim();
-
-                    if(!nama || !ic || !jawatan || !negeri || !uid || !pwd) {
-                        Swal.showValidationMessage('Sila isi SEMUA maklumat yang diwajibkan!');
-                        return false;
-                    }
-                    
-                    // Kembalikan data dalam format yang Backend perlukan
-                    return { 
-                        nama: nama.toUpperCase(), 
-                        ic: ic, 
-                        jawatan: jawatan.toUpperCase(), 
-                        negeri: negeri, 
-                        uid: uid.toLowerCase(), 
-                        pwd: pwd,
-                        role: "STAF",        // Default sistem
-                        status: "MENUNGGU",  // Default sistem
-                        catatan: "Didaftar melalui PWA"
-                    };
-                }
-            });
-
-            if (formValues) {
-                Swal.fire({ 
-                    title: 'Menghantar Pendaftaran...', 
-                    allowOutsideClick: false, 
-                    showConfirmButton: false, 
-                    didOpen: () => Swal.showLoading() 
-                });
-                
-                // Panggil API registerUser di Backend
-                const r = await postData('registerUser', formValues);
-                
-                if (r.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berjaya!',
-                        text: r.message,
-                        confirmButtonColor: '#198754'
-                    });
-                } else {
-                    Swal.fire('Gagal Mendaftar', r.message, 'error');
-                }
-            }
-        }
-
-
-        
-        // ==========================================
-        // FUNGSI LUPA KATA LALUAN (SEMAKAN IC & NAMA)
-        // ==========================================
-        async function lupaKatalaluan() {
-            const { value: formValues } = await Swal.fire({
-                title: 'Lupa Akses Log Masuk?',
-                html: `
-                    <div class="text-start mt-3">
-                        <label class="small fw-bold">Nama Penuh</label>
-                        <input id="swal-nama" class="form-control mb-3 text-uppercase" placeholder="Sama seperti dalam sistem">
-                        <label class="small fw-bold">No. K/P (Tanpa Sengkang)</label>
-                        <input id="swal-ic" type="number" class="form-control" placeholder="Cth: 900101011234">
-                    </div>
-                `,
-                focusConfirm: false, showCancelButton: true, confirmButtonText: 'Semak Data', cancelButtonText: 'Batal',
-                preConfirm: () => {
-                    const nama = document.getElementById('swal-nama').value.trim();
-                    const ic = document.getElementById('swal-ic').value.trim();
-                    if(!nama || !ic) { Swal.showValidationMessage('Sila isi kedua-dua maklumat!'); return false; }
-                    return { nama, ic };
-                }
-            });
-
-            if (formValues) {
-                Swal.fire({ title: 'Menyemak Data...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
-                const r = await postData('verifyForgotPwd', formValues);
-
-                if (r.success) {
-                    const { value: updateValues } = await Swal.fire({
-                        title: 'Rekod Dijumpai!',
-                        html: `
-                            <div class="alert alert-success small mb-3">Kekalkan atau tukar kata laluan baru di sini.</div>
-                            <div class="text-start">
-                                <label class="small fw-bold text-success">Username</label>
-                                <input id="upd-uid" class="form-control mb-3" value="${r.uid}">
-                                <label class="small fw-bold text-success">Kata Laluan</label>
-                                <input id="upd-pwd" class="form-control" value="${r.pwd}">
-                            </div>
-                        `,
-                        showCancelButton: true, confirmButtonText: '<i class="bi bi-save"></i> Simpan & Log Masuk', cancelButtonText: 'Tutup',
-                        preConfirm: () => {
-                            const uid = document.getElementById('upd-uid').value.trim();
-                            const pwd = document.getElementById('upd-pwd').value.trim();
-                            if(!uid || !pwd) { Swal.showValidationMessage('Tidak boleh kosong!'); return false; }
-                            return { uid, pwd, row: r.row };
-                        }
-                    });
-
-                    if (updateValues) {
-                        Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
-                        const u = await postData('updateMyAccess', updateValues);
-                        if (u.success) {
-                            Swal.fire('Berjaya!', 'Akses telah dikemaskini.', 'success');
-                            document.getElementById('uid').value = updateValues.uid;
-                            document.getElementById('pwd').value = updateValues.pwd;
-                        } else { Swal.fire('Ralat', u.message, 'error'); }
-                    }
-                } else { Swal.fire('Tidak Dijumpai', r.message, 'error'); }
-            }
-        }
-
-        // ==========================================
-        // FUNGSI PENGURUSAN PENGGUNA (ADMIN PANEL)
-        // ==========================================
-        let allUsersData = [];
-
-        async function loadUsers() {
-            const tbody = document.getElementById('userTableBody');
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-5"><div class="spinner-border text-primary"></div></td></tr>';
-            try {
-                const d = await postData('getUserList', {});
-                if(d.success) {
-                    allUsersData = d.users || [];
-                    renderUsers(allUsersData);
-                } else { tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${d.message}</td></tr>`; }
-            } catch(e) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Ralat memuatkan senarai pengguna.</td></tr>'; }
-        }
-
-        function renderUsers(dataList) {
-            const tbody = document.getElementById('userTableBody');
-            if(dataList.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tiada data dijumpai.</td></tr>'; return; }
-            
-            tbody.innerHTML = dataList.map(u => {
-                let statusBadge = u.status.toUpperCase() === 'AKTIF' ? '<span class="badge bg-success">AKTIF</span>' : 
-                                  u.status.toUpperCase() === 'MENUNGGU' ? '<span class="badge bg-warning text-dark">MENUNGGU</span>' :
-                                  '<span class="badge bg-danger">' + u.status.toUpperCase() + '</span>';
-                                  
-                let actionBtn = u.status.toUpperCase() === 'MENUNGGU' ? 
-                    `<button class="btn btn-sm btn-success fw-bold me-1" onclick="updateUserStatus(${u.row}, 'AKTIF')"><i class="bi bi-check-lg"></i> LULUS</button>` : '';
-                
-                return `
-                <tr>
-                    <td><div class="fw-bold text-dark text-uppercase">${u.nama}</div><div class="small text-muted">${u.jawatan} - ${u.negeri}</div></td>
-                    <td>${maskIC(u.ic)}</td>
-                    <td>
-                        <span class="d-block small text-primary fw-bold"><i class="bi bi-person me-1"></i>${u.uid}</span>
-                        <span class="d-block small text-danger fw-bold"><i class="bi bi-key me-1"></i>${u.pwd}</span>
-                    </td>
-                    <td><span class="badge bg-light text-dark border">${u.role}</span></td>
-                    <td class="text-center">${statusBadge}</td>
-                    <td class="text-center">
-                        ${actionBtn}
-                        <button class="btn btn-sm btn-outline-primary" onclick="editUser(${u.row})" title="Kemaskini"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteUser(${u.row})" title="Padam Akaun"><i class="bi bi-trash-fill"></i></button>
-                    </td>
-                </tr>`;
-            }).join('');
-        }
-
-        function filterUsers() {
-            const term = document.getElementById('searchUser').value.toLowerCase();
-            const filtered = allUsersData.filter(u => (u.nama && u.nama.toLowerCase().includes(term)) || (u.ic && String(u.ic).includes(term)) || (u.uid && u.uid.toLowerCase().includes(term)));
-            renderUsers(filtered);
-        }
-
-        async function updateUserStatus(row, newStatus) {
-            if(!confirm(`Tukar status kepada ${newStatus}?`)) return;
-            const r = await postData('updateUser', { row: row, field: 'status', value: newStatus });
-            if(r.success) { loadUsers(); } else { alert("Ralat: " + r.message); }
-        }
-
-        async function deleteUser(row) {
-            const res = await Swal.fire({
-                title: 'Padam Akaun?', text: "Tindakan ini KEKAL!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6c757d', confirmButtonText: '<i class="bi bi-trash"></i> Ya, Padam!', cancelButtonText: 'Batal'
-            });
-            if (res.isConfirmed) {
-                Swal.fire({ title: 'Memadam...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                const r = await postData('deleteUser', { row: row });
-                if (r.success) { Swal.fire('Berjaya!', 'Akaun dipadam.', 'success'); loadUsers(); } else { Swal.fire('Ralat', r.message, 'error'); }
-            }
-        }
-
-        async function editUser(row) {
-            const u = allUsersData.find(x => x.row === row);
-            if(!u) return;
-            
-            const { value: formValues } = await Swal.fire({
-                title: 'Kemaskini Pengguna', width: '600px',
-                html: `
-                    <div class="text-start row g-3">
-                        <div class="col-12"><label class="small fw-bold">Nama Penuh</label><input id="swal-nama" class="form-control form-control-sm text-uppercase" value="${u.nama}"></div>
-                        <div class="col-6"><label class="small fw-bold">No. K/P</label><input id="swal-ic" type="number" class="form-control form-control-sm" value="${u.ic}"></div>
-                        <div class="col-6"><label class="small fw-bold">Jawatan</label><input id="swal-jawatan" class="form-control form-control-sm text-uppercase" value="${u.jawatan}"></div>
-                        <div class="col-12"><label class="small fw-bold">Negeri Bertugas</label><select id="swal-negeri" class="form-select form-select-sm"><option value="HQ / IBU PEJABAT" ${u.negeri==='HQ / IBU PEJABAT'?'selected':''}>HQ / IBU PEJABAT</option><option value="Johor" ${u.negeri==='Johor'?'selected':''}>Johor</option><option value="Kedah" ${u.negeri==='Kedah'?'selected':''}>Kedah</option><option value="Kelantan" ${u.negeri==='Kelantan'?'selected':''}>Kelantan</option><option value="Melaka" ${u.negeri==='Melaka'?'selected':''}>Melaka</option><option value="Negeri Sembilan" ${u.negeri==='Negeri Sembilan'?'selected':''}>Negeri Sembilan</option><option value="Pahang" ${u.negeri==='Pahang'?'selected':''}>Pahang</option><option value="Perak" ${u.negeri==='Perak'?'selected':''}>Perak</option><option value="Perlis" ${u.negeri==='Perlis'?'selected':''}>Perlis</option><option value="Pulau Pinang" ${u.negeri==='Pulau Pinang'?'selected':''}>Pulau Pinang</option><option value="Sabah" ${u.negeri==='Sabah'?'selected':''}>Sabah</option><option value="Sarawak" ${u.negeri==='Sarawak'?'selected':''}>Sarawak</option><option value="Selangor" ${u.negeri==='Selangor'?'selected':''}>Selangor</option><option value="Terengganu" ${u.negeri==='Terengganu'?'selected':''}>Terengganu</option><option value="W.P. Kuala Lumpur" ${u.negeri==='W.P. Kuala Lumpur'?'selected':''}>W.P. Kuala Lumpur</option><option value="W.P. Labuan" ${u.negeri==='W.P. Labuan'?'selected':''}>W.P. Labuan</option><option value="W.P. Putrajaya" ${u.negeri==='W.P. Putrajaya'?'selected':''}>W.P. Putrajaya</option></select></div>
-                        <div class="col-6 mt-3"><label class="small fw-bold text-primary">Username</label><input id="swal-uid" class="form-control form-control-sm" value="${u.uid}"></div>
-                        <div class="col-6 mt-3"><label class="small fw-bold text-danger">Password</label><input id="swal-pwd" class="form-control form-control-sm" value="${u.pwd}"></div>
-                        <div class="col-6 mt-3"><label class="small fw-bold">Peranan</label><select id="swal-role" class="form-select form-select-sm"><option value="STAF" ${u.role==='STAF'?'selected':''}>STAF</option><option value="PENYELIA" ${u.role==='PENYELIA'?'selected':''}>PENYELIA</option><option value="ADMIN" ${u.role==='ADMIN'?'selected':''}>ADMIN</option></select></div>
-                        <div class="col-6 mt-3"><label class="small fw-bold text-warning">Status Akaun</label><select id="swal-status" class="form-select form-select-sm"><option value="AKTIF" ${u.status.toUpperCase()==='AKTIF'?'selected':''}>AKTIF</option><option value="MENUNGGU" ${u.status.toUpperCase()==='MENUNGGU'?'selected':''}>MENUNGGU</option><option value="DITOLAK" ${u.status.toUpperCase()==='DITOLAK'?'selected':''}>DITOLAK</option><option value="DIGANTUNG" ${u.status.toUpperCase()==='DIGANTUNG'?'selected':''}>DIGANTUNG</option></select></div>
-                    </div>
-                `,
-                focusConfirm: false, showCancelButton: true, confirmButtonText: 'Simpan',
-                preConfirm: () => {
-                    return {
-                        row: u.row, uid: document.getElementById('swal-uid').value.trim(), pwd: document.getElementById('swal-pwd').value.trim(), nama: document.getElementById('swal-nama').value.trim().toUpperCase(), negeri: document.getElementById('swal-negeri').value, role: document.getElementById('swal-role').value, jawatan: document.getElementById('swal-jawatan').value.trim().toUpperCase(), ic: document.getElementById('swal-ic').value.trim(), status: document.getElementById('swal-status').value
-                    }
-                }
-            });
-            if (formValues) {
-                Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                const r = await postData('updateUser', { field: 'full_edit', ...formValues });
-                if(r.success) { Swal.fire('Berjaya!', 'Maklumat pengguna dikemaskini.', 'success'); loadUsers(); } else { Swal.fire('Ralat', r.message, 'error'); }
-            }
-        }
-
-      // --- FUNGSI TUTUP NO IC (MASKING) ---
-function maskIC(ic) {
-    if (!ic || ic.length < 12) return ic;
-    // Contoh output: 900101-**-1234
-    let clean = ic.replace(/[^0-9]/g, ""); // Buang sengkang jika ada
-    return clean.substring(0, 6) + "-**-" + clean.substring(10);
-}
-
-// ==========================================
-// 1. FUNGSI MUAT TURUN GEOJSON (Individu Perosak untuk QGIS/ArcMap)
-// ==========================================
-function downloadGeoJSON() {
-    if (!fData.length) { alert("Tiada data untuk dimuat turun!"); return; }
-
-    let featuresArray = [];
-
-    fData.forEach(d => {
-        let pestObj = {};
-        try {
-            pestObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p;
-        } catch(e) { pestObj = {}; }
-
-        if (!pestObj || Object.keys(pestObj).length === 0) {
-            pestObj = { "Serangan Umum": d.ls };
-        }
-
-        Object.entries(pestObj).forEach(([pestName, luasSerangPerosak]) => {
-            const coord = d.c.split(',').map(Number);
-            const luasS = parseFloat(luasSerangPerosak) || 0;
-            const luasT = parseFloat(d.lt) || 0;
-            const peratus = luasT > 0 ? ((luasS / luasT) * 100).toFixed(2) : 0;
-            let sevVal = (d.pk && d.pk[pestName]) ? d.pk[pestName] : (d.k || 0);
-
-            featuresArray.push({
-                "type": "Feature",
-                "geometry": { "type": "Point", "coordinates": [coord[1], coord[0]] }, // Format GeoJSON mesti [Long, Lat]
-                "properties": {
-                    "ID": d.id,
-                    "Tarikh": d.t,
-                    "Negeri": d.n,
-                    "Daerah": d.d,
-                    "Lokasi": d.l,
-                    "Tanaman": d.tn,
-                    "Perosak": pestName,                     // Lajur spesifik untuk perosak
-                    "Luas_Tanam_Ha": luasT,
-                    "Luas_Serangan_Ha": luasS,             // Luas serangan spesifik perosak
-                    "Peratus_Serangan": parseFloat(peratus), // Peratus spesifik perosak
-                    "Keterukan": "T" + sevVal,
-                    "Pegawai": d.pg
-                }
-            });
-        });
-    });
-
-    const geojson = {
-        "type": "FeatureCollection",
-        "features": featuresArray
-    };
-
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(geojson));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "PNR_Data_Spatial_Individu.geojson");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-}
-// ==========================================
-// 2. FUNGSI MUAT TURUN KML (INDIVIDU PEROSAK - KALIS OVER 100%)
-// ==========================================
-function downloadKML() {
-    if (!fData.length) { alert("Tiada data!"); return; }
-
-    const colorMap = {
-        "JOHOR": "ff0000ff", "KEDAH": "ff00ff00", "KELANTAN": "ff00a5ff",
-        "MELAKA": "ffff00ff", "NEGERI SEMBILAN": "ff13458b", "PAHANG": "ff00ffff",
-        "PERAK": "ffff0000", "PERLIS": "ff800080", "PULAU PINANG": "ffffff00",
-        "SABAH": "ff0080ff", "SARAWAK": "ffcbc0ff", "SELANGOR": "ff000080",
-        "TERENGGANU": "ffd0e040", "W.P. KUALA LUMPUR": "ff808080",
-        "W.P. LABUAN": "ff008000", "W.P. PUTRAJAYA": "ff8080c0", "HQ / IBU PEJABAT": "ff000000"
-    };
-
-    let kml = `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-<Document>
-    <name>Laporan Spatial PNR - Individu Perosak</name>
-    <LookAt>
-        <longitude>101.9758</longitude>
-        <latitude>4.2105</latitude>
-        <range>1500000</range>
-    </LookAt>\n`;
-
-    fData.forEach(d => {
-        let pestObj = {};
-        try {
-            // Pecahkan data perosak daripada JSON string
-            pestObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p;
-        } catch(e) { pestObj = {}; }
-
-        // Jika tiada perincian perosak di d.p, gunakan data ls (luas serangan) sebagai "Umum"
-        if (!pestObj || Object.keys(pestObj).length === 0) {
-            pestObj = { "Serangan Umum": d.ls };
-        }
-
-        // LOOP SETIAP PEROSAK DALAM SATU LOKASI
-        Object.entries(pestObj).forEach(([pestName, luasSerangPerosak]) => {
-            const coord = d.c.split(',').map(Number);
-            const luasS = parseFloat(luasSerangPerosak) || 0;
-            const luasT = parseFloat(d.lt) || 0;
-            
-            // KIRA PERATUS BERDASARKAN INDIVIDU PEROSAK SAHAJA
-            const peratus = luasT > 0 ? ((luasS / luasT) * 100) : 0;
-            
-            const namaNegeri = (d.n || "").toUpperCase();
-            const warna = colorMap[namaNegeri] || "ffffffff";
-            
-            // Saiz ikon (skala) ikut peratus individu perosak tersebut
-            const skala = Math.max(0.5, (peratus / 100) * 2.5).toFixed(1);
-
-            // Ambil tahap keterukan spesifik perosak jika ada (d.pk), kalau tak guna purata (d.k)
-            let sevVal = (d.pk && d.pk[pestName]) ? d.pk[pestName] : (d.k || 0);
-
-            kml += `
-    <Placemark>
-        <name><![CDATA[${pestName} - ${d.l}]]></name>
-        <description><![CDATA[
-            <table border="1" padding="5" style="border-collapse:collapse; font-family:Arial; font-size:12px;">
-                <tr><td bgcolor="#f2f2f2"><b>PEROSAK</b></td><td><b>${pestName}</b></td></tr>
-                <tr><td bgcolor="#f2f2f2"><b>LOKASI</b></td><td>${d.l}</td></tr>
-                <tr><td bgcolor="#f2f2f2"><b>TANAMAN</b></td><td>${d.tn}</td></tr>
-                <tr><td bgcolor="#f2f2f2"><b>LUAS TANAM</b></td><td>${luasT.toFixed(2)} Ha</td></tr>
-                <tr><td bgcolor="#f2f2f2"><b>LUAS SERANGAN</b></td><td><font color="red">${luasS.toFixed(2)} Ha</font></td></tr>
-                <tr><td bgcolor="#f2f2f2"><b>PERATUS</b></td><td><b>${peratus.toFixed(1)}%</b></td></tr>
-                <tr><td bgcolor="#f2f2f2"><b>KETERUKAN</b></td><td>Tahap ${sevVal}</td></tr>
-                <tr><td bgcolor="#f2f2f2"><b>TARIKH</b></td><td>${d.t}</td></tr>
-            </table>
-        ]]></description>
-        <Style>
-            <IconStyle>
-                <color>${warna}</color>
-                <scale>${skala}</scale>
-                <Icon><href>http://maps.google.com/mapfiles/kml/shapes/shaded_dot.png</href></Icon>
-            </IconStyle>
-            <LabelStyle><scale>0</scale></LabelStyle>
-        </Style>
-        <Point><coordinates>${coord[1]},${coord[0]},0</coordinates></Point>
-    </Placemark>`;
-        });
-    });
-
-    kml += `\n</Document></kml>`;
-
-    const blob = new Blob([kml], {type: 'application/vnd.google-earth.kml+xml'});
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = "PNR_Data_Perosak_Individu.kml";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-}
-        
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+
+    <script src="./js/config.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/auth.js"></script>
+    <script src="./js/map.js"></script>
+    <script src="./js/filter.js"></script>
+    <script src="./js/charts.js"></script>
+    <script src="./js/exports.js"></script>
+    <script src="./js/users.js"></script>
+    <script src="./js/records.js"></script>
+    <script src="./js/dashboard.js"></script>
+    <script src="./js/kpi.js"></script>
+    <script src="./js/main.js"></script>
 </body>
 </html>
