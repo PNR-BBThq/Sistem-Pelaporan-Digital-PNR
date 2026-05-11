@@ -1,5 +1,5 @@
 // ==========================================
-// FAIL: js/kpi.js (ENTERPRISE GRADE VERSION)
+// FAIL: js/kpi.js (ENTERPRISE GRADE VERSION - FIXED)
 // ==========================================
 
 const KPIManager = {
@@ -22,14 +22,15 @@ const KPIManager = {
     init: async function() {
         Swal.fire({ title: 'Memuatkan Data SKU...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
-            const r = await API.postData('getKPIData', {}); // TUKAR KEPADA MOCK DATA JIKA NAK TEST DI LOCALHOST VS CODE
+            // TUKAR KEPADA MOCK DATA JIKA NAK TEST DI LOCALHOST VS CODE
+            const r = await API.postData('getKPIData', {}); 
             Swal.close();
             if(r.success) {
                 this.targetData = r.dataSasaran;
                 this.targetCrops = r.dataSenarai;
                 this.extractUniqueCrops();
                 
-                // WOW FACTOR #4: CAP MASA LIVE
+                // CAP MASA LIVE
                 const d = new Date();
                 const elDate = document.getElementById('lastUpdatedText');
                 if(elDate) elDate.innerHTML = `<i class="bi bi-circle-fill text-success live-indicator"></i> Dikemas kini pada: Hari ini, ${d.toLocaleTimeString('ms-MY', {hour: '2-digit', minute:'2-digit'})}`;
@@ -49,7 +50,7 @@ const KPIManager = {
         const currentNegeri = FilterManager.v('selNegeri'); 
         this.renderKPICards(currentNegeri);
         this.renderStateChart(currentNegeri);
-        this.renderStateLeaderboard(currentNegeri);
+        this.renderStateLeaderboard(currentNegeri); // PAPAN PENDAHULU DIPANGGIL DI SINI
         this.renderTrendChart(currentNegeri); 
         this.renderMatrixGrid(currentNegeri);
         this.renderExtraCrops(currentNegeri);
@@ -83,14 +84,14 @@ const KPIManager = {
             AppState.mData.forEach(d => {
                 const effNegeri = this.getEffectiveState(d);
                 if(filterNegeri.length === 0 || filterNegeri.includes(effNegeri)) {
-                    let dbKat = (d.kt || "").toUpperCase();
-                    let dbTan = (d.tn || "").toUpperCase();
+                    let dbK = (d.kt || "").toUpperCase();
+                    let dbT = (d.tn || "").toUpperCase();
                     let isMatch = false;
 
-                    if (cat.id === "BUAH-BUAHAN" && dbKat.includes("BUAH")) isMatch = true;
-                    else if (cat.id === "SAYUR-SAYURAN" && dbKat.includes("SAYUR")) isMatch = true;
-                    else if (cat.id === "KONTAN" && (dbKat.includes("KONTAN") || dbKat.includes("SINGKAT") || dbKat.includes("LAIN"))) isMatch = true;
-                    else if (cat.id === "KELAPA" && (dbKat.includes("KELAPA") || dbKat.includes("INDUSTRI") || dbTan.includes("KELAPA"))) isMatch = true;
+                    if (cat.id === "BUAH-BUAHAN" && dbK.includes("BUAH")) isMatch = true;
+                    else if (cat.id === "SAYUR-SAYURAN" && dbK.includes("SAYUR")) isMatch = true;
+                    else if (cat.id === "KONTAN" && (dbK.includes("KONTAN") || dbK.includes("SINGKAT") || dbK.includes("LAIN"))) isMatch = true;
+                    else if (cat.id === "KELAPA" && (dbK.includes("KELAPA") || dbK.includes("INDUSTRI") || dbT.includes("KELAPA"))) isMatch = true;
 
                     if (isMatch) totalActual += (parseFloat(d.lt) || 0);
                 }
@@ -124,7 +125,6 @@ const KPIManager = {
                 </div>`;
         });
 
-        // WOW FACTOR #1: Update Overall Progress Bar
         const overallPeratus = globalTarget > 0 ? Math.min(100, (globalActual / globalTarget) * 100).toFixed(1) : 0;
         const bar = document.getElementById('overallProgressBar');
         const txt = document.getElementById('overallProgressText');
@@ -132,7 +132,7 @@ const KPIManager = {
         if(txt) txt.innerText = `${overallPeratus}% (${globalActual.toLocaleString(undefined,{maximumFractionDigits:1})} / ${globalTarget.toLocaleString()} Ha)`;
     },
 
-// 2. GRAF PERBANDINGAN NEGERI (DENGAN ANALISIS PERATUSAN)
+    // 2. GRAF PERBANDINGAN NEGERI (DENGAN PERATUSAN)
     renderStateChart: function(filterNegeri) {
         const ctx = document.getElementById('stateAchievementChart');
         if(!ctx) return;
@@ -149,7 +149,6 @@ const KPIManager = {
             colors = ['#198754', '#0d6efd', '#ffc107', '#0dcaf0']; 
             
             cats.forEach(cId => {
-                // Kira Sasaran & Sebenar Kategori
                 let sasaran = 0; if(this.targetData[this.currentDrillDownState]) sasaran = this.targetData[this.currentDrillDownState][cId] || 0;
                 let area = 0;
                 AppState.mData.forEach(d => {
@@ -162,7 +161,7 @@ const KPIManager = {
                 let pct = sasaran > 0 ? ((area / sasaran) * 100).toFixed(1) : 0;
                 let shortCat = cId === "BUAH-BUAHAN" ? "Buah" : cId === "SAYUR-SAYURAN" ? "Sayur" : cId === "KONTAN" ? "Kontan" : "Kelapa";
                 
-                labels.push([shortCat, `${pct}%`]); // Label Berkembar (Multiline)
+                labels.push([shortCat, `${pct}%`]); 
                 data.push(area.toFixed(2));
                 targets.push(sasaran);
             });
@@ -172,8 +171,6 @@ const KPIManager = {
             
             stateList.forEach((neg, index) => {
                 let shortNeg = neg.replace("W.P. ", "").replace("CAMERON HIGHLANDS", "C. HIGHLANDS");
-                
-                // Kira Sasaran & Sebenar Negeri
                 let sasaran = 0;
                 if(this.targetData[neg]) {
                     sasaran += (this.targetData[neg]["BUAH-BUAHAN"] || 0) + (this.targetData[neg]["SAYUR-SAYURAN"] || 0) + (this.targetData[neg]["KONTAN"] || 0) + (this.targetData[neg]["KELAPA"] || 0);
@@ -183,7 +180,7 @@ const KPIManager = {
                 
                 let pct = sasaran > 0 ? ((total / sasaran) * 100).toFixed(1) : 0;
 
-                labels.push([shortNeg, `${pct}%`]); // Label Berkembar (Multiline)
+                labels.push([shortNeg, `${pct}%`]); 
                 data.push(total.toFixed(2));
                 targets.push(sasaran);
                 colors.push(modernPalette[index % modernPalette.length]);
@@ -222,7 +219,57 @@ const KPIManager = {
 
     backToAllStates: function() { this.currentDrillDownState = null; this.renderStateChart(FilterManager.v('selNegeri')); },
 
-    // 3. GRAF TREND BULANAN SEBENAR
+    // 3. FUNGSI BARU: PAPAN PENDAHULU (LEADERBOARD)
+    renderStateLeaderboard: function(filterNegeri) {
+        const container = document.getElementById('stateProgressContainer');
+        if(!container) return; container.innerHTML = '';
+        
+        let stateList = filterNegeri.length > 0 ? filterNegeri : Object.keys(this.targetCrops);
+        if(stateList.length === 0) return;
+
+        let arr = [];
+        stateList.forEach(neg => {
+            let sasaran = 0;
+            if(this.targetData[neg]) {
+                sasaran += (this.targetData[neg]["BUAH-BUAHAN"] || 0) + (this.targetData[neg]["SAYUR-SAYURAN"] || 0) + (this.targetData[neg]["KONTAN"] || 0) + (this.targetData[neg]["KELAPA"] || 0);
+            }
+            let actual = 0;
+            AppState.mData.forEach(d => { if(this.getEffectiveState(d) === neg) actual += (parseFloat(d.lt) || 0); });
+            
+            let pct = sasaran > 0 ? (actual / sasaran) * 100 : 0;
+            arr.push({ state: neg, pct: pct, actual: actual, target: sasaran });
+        });
+
+        arr.sort((a, b) => b.pct - a.pct);
+
+        let html = '';
+        arr.forEach((item, index) => {
+            let shortNeg = item.state.replace("NEGERI SEMBILAN", "N. SEMBILAN").replace("W.P. ", "").replace("CAMERON HIGHLANDS", "C. HIGHLANDS");
+            let color = item.pct >= 100 ? 'success' : (item.pct >= 50 ? 'primary' : 'danger');
+            let medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : ''));
+            
+            html += `
+            <div class="col">
+                <div class="bg-white p-2 rounded border shadow-sm h-100 d-flex flex-column justify-content-center" style="transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="d-flex justify-content-between small fw-bold mb-1">
+                        <span class="text-dark text-truncate pe-2" title="${item.state}">${medal} ${shortNeg}</span>
+                        <span class="text-${color}">${item.pct.toFixed(1)}%</span>
+                    </div>
+                    <div class="progress" style="height: 6px; border-radius: 10px;">
+                        <div class="progress-bar bg-${color}" style="width: ${Math.min(100, item.pct)}%"></div>
+                    </div>
+                    <div class="text-muted mt-1 d-flex justify-content-between" style="font-size: 0.65rem;">
+                        <span>Capai: ${item.actual.toLocaleString(undefined,{maximumFractionDigits:1})}</span>
+                        <span>Sasaran: ${item.target.toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+    },
+
+    // 4. GRAF TREND BULANAN SEBENAR
     renderTrendChart: function(filterNegeri) {
         const ctx = document.getElementById('skuTrendChart');
         if(!ctx) return;
@@ -246,7 +293,7 @@ const KPIManager = {
         });
     },
 
-    // 4. PENAPIS KANBAN PANTAS (WOW FACTOR #2)
+    // 5. PENAPIS KANBAN PANTAS
     filterKanban: function(type, btn) {
         if(btn) {
             let btns = btn.parentElement.querySelectorAll('.btn');
@@ -268,7 +315,7 @@ const KPIManager = {
         }
     },
 
-    // 5. MATRIK TUGASAN KANBAN (DENGAN SKOR PERATUSAN)
+    // 6. MATRIK TUGASAN KANBAN (DENGAN SKOR PERATUSAN)
     renderMatrixGrid: function(filterNegeri) {
         const container = document.getElementById('kanbanMatrixContainer');
         if(!container) return;
@@ -281,7 +328,6 @@ const KPIManager = {
             const targetList = this.targetCrops[neg] || [];
             if(targetList.length === 0) return; 
 
-            // Pengiraan Peratusan untuk tajuk Lajur
             let sasaranKanban = 0;
             if(this.targetData[neg]) {
                 sasaranKanban += (this.targetData[neg]["BUAH-BUAHAN"] || 0) + (this.targetData[neg]["SAYUR-SAYURAN"] || 0) + (this.targetData[neg]["KONTAN"] || 0) + (this.targetData[neg]["KELAPA"] || 0);
@@ -290,7 +336,6 @@ const KPIManager = {
             AppState.mData.forEach(d => { if(this.getEffectiveState(d) === neg) actualKanban += (parseFloat(d.lt) || 0); });
             let pctKanban = sasaranKanban > 0 ? ((actualKanban / sasaranKanban) * 100).toFixed(1) : 0;
             
-            // Logik Warna Peratus (Merah <50%, Biru >50%, Hijau >100%)
             let colorClass = pctKanban >= 100 ? 'text-success' : (pctKanban >= 50 ? 'text-primary' : 'text-danger');
             let shortNeg = neg.replace("NEGERI SEMBILAN", "N. SEMBILAN").replace("W.P. ", "").replace("CAMERON HIGHLANDS", "C. HIGHLANDS");
             
@@ -334,7 +379,7 @@ const KPIManager = {
         Swal.fire({ title: `<small class="text-muted">${negeri}</small><br>${crop}`, html: `<div class="row mt-3"><div class="col-6 border-end"><h3 class="fw-bold">${bilLokasi}</h3><small class="text-muted">LOKASI</small></div><div class="col-6"><h3 class="fw-bold text-primary">${luas.toFixed(1)}</h3><small class="text-muted">HEKTAR</small></div></div>`, confirmButtonText: 'Tutup' });
     },
 
-    // 6. TANAMAN EXTRA + KUANTITATIF (WOW FACTOR #3)
+    // 7. TANAMAN EXTRA
     renderExtraCrops: function(filterNegeri) {
         const container = document.getElementById('extraCropsContainer');
         if(!container) return; container.innerHTML = '';
@@ -368,7 +413,7 @@ const KPIManager = {
         if(!hasData) container.innerHTML = '<div class="col-12 text-center text-muted fst-italic py-3">Tiada tanaman luar sasaran dikesan.</div>';
     },
 
-    // 7. JADUAL RINGKASAN PDF KEMAS
+    // 8. JADUAL RINGKASAN PDF
     renderPrintSummaryTable: function(filterNegeri) {
         const tbody = document.querySelector('#printSummaryTable tbody');
         if(!tbody) return;
@@ -411,7 +456,7 @@ const KPIManager = {
         tbody.innerHTML = html;
     },
 
-    // 8. FUNGSI CETAK LAPORAN BERSAMA MAKLUMAT PEGAWAI
+    // 9. FUNGSI CETAK LAPORAN BERSAMA MAKLUMAT PEGAWAI
     printPDF: function() { 
         const d = new Date();
         const dateStr = d.toLocaleDateString('ms-MY', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
@@ -425,60 +470,3 @@ const KPIManager = {
         window.print(); 
     }
 };
-
-// FUNGSI BARU: PAPAN PENDAHULU PRESTASI NEGERI (LEADERBOARD)
-    renderStateLeaderboard: function(filterNegeri) {
-        const container = document.getElementById('stateProgressContainer');
-        if(!container) return; container.innerHTML = '';
-        
-        let stateList = filterNegeri.length > 0 ? filterNegeri : Object.keys(this.targetCrops);
-        if(stateList.length === 0) return;
-
-        let arr = [];
-
-        // 1. Kira prestasi untuk setiap negeri
-        stateList.forEach(neg => {
-            let sasaran = 0;
-            if(this.targetData[neg]) {
-                sasaran += (this.targetData[neg]["BUAH-BUAHAN"] || 0) + (this.targetData[neg]["SAYUR-SAYURAN"] || 0) + (this.targetData[neg]["KONTAN"] || 0) + (this.targetData[neg]["KELAPA"] || 0);
-            }
-            let actual = 0;
-            AppState.mData.forEach(d => { if(this.getEffectiveState(d) === neg) actual += (parseFloat(d.lt) || 0); });
-            
-            let pct = sasaran > 0 ? (actual / sasaran) * 100 : 0;
-            arr.push({ state: neg, pct: pct, actual: actual, target: sasaran });
-        });
-
-        // 2. Susun data dari peratusan paling TINGGI ke RENDAH
-        arr.sort((a, b) => b.pct - a.pct);
-
-        // 3. Bina UI Bar Progress
-        let html = '';
-        arr.forEach((item, index) => {
-            let shortNeg = item.state.replace("NEGERI SEMBILAN", "N. SEMBILAN").replace("W.P. ", "").replace("CAMERON HIGHLANDS", "C. HIGHLANDS");
-            // Warna: >100% Hijau, >50% Biru, <50% Merah
-            let color = item.pct >= 100 ? 'success' : (item.pct >= 50 ? 'primary' : 'danger');
-            
-            // Pingat untuk Top 3!
-            let medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : ''));
-            
-            html += `
-            <div class="col">
-                <div class="bg-white p-2 rounded border shadow-sm h-100 d-flex flex-column justify-content-center" style="transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                    <div class="d-flex justify-content-between small fw-bold mb-1">
-                        <span class="text-dark text-truncate pe-2" title="${item.state}">${medal} ${shortNeg}</span>
-                        <span class="text-${color}">${item.pct.toFixed(1)}%</span>
-                    </div>
-                    <div class="progress" style="height: 6px; border-radius: 10px;">
-                        <div class="progress-bar bg-${color}" style="width: ${Math.min(100, item.pct)}%"></div>
-                    </div>
-                    <div class="text-muted mt-1 d-flex justify-content-between" style="font-size: 0.65rem;">
-                        <span>Capai: ${item.actual.toLocaleString(undefined,{maximumFractionDigits:1})}</span>
-                        <span>Sasaran: ${item.target.toLocaleString()}</span>
-                    </div>
-                </div>
-            </div>`;
-        });
-
-        container.innerHTML = html;
-    },
