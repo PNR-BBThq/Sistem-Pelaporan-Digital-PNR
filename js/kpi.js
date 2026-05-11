@@ -10,12 +10,24 @@ const KPIManager = {
     stateChart: null,
     currentDrillDownState: null,
 
-    getEffectiveState: function(d) {
-        const negeri = (d.n || "").toUpperCase().trim();
+   getEffectiveState: function(d) {
+        let negeri = (d.n || "").toUpperCase().trim();
         const daerah = (d.d || "").toUpperCase().trim();
+        
+        // 1. Asingkan Cameron Highlands dari Pahang
         if (negeri === "PAHANG" && (daerah === "CAMERON HIGHLANDS" || daerah === "C. HIGHLANDS")) {
             return "CAMERON HIGHLANDS";
         }
+        
+        // 2. PENYELAMAT EJAAN: Tangkap semua variasi Wilayah Persekutuan
+        if (negeri.includes("LABUAN")) return "W.P. LABUAN";
+        if (negeri.includes("KUALA LUMPUR") || negeri === "KL") return "W.P. KUALA LUMPUR";
+        if (negeri.includes("PUTRAJAYA")) return "W.P. PUTRAJAYA";
+        
+        // 3. Langkah keselamatan untuk singkatan negeri lain
+        if (negeri === "N.SEMBILAN" || negeri === "N. SEMBILAN") return "NEGERI SEMBILAN";
+        if (negeri === "P.PINANG" || negeri === "P. PINANG" || negeri === "PENANG") return "PULAU PINANG";
+
         return negeri;
     },
 
