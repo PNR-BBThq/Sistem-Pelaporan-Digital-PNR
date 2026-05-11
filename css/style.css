@@ -198,4 +198,18 @@
     .text-success { color: #198754 !important; }
     .text-primary { color: #0d6efd !important; }
 }
+
+/* =========================================
+   ANIMASI LIVE INDICATOR (CAP MASA)
+   ========================================= */
+@keyframes blinkIndicator {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+.live-indicator {
+    font-size: 0.5rem; 
+    vertical-align: middle; 
+    animation: blinkIndicator 1.5s infinite;
+}
     </style>
