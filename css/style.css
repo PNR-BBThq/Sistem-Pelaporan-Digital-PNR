@@ -93,113 +93,6 @@
         }
 
 /* =========================================
-   STYLE CETAKAN A4 LANDSCAPE OPTIMUM (VERSI KORPORAT)
-   ========================================= */
-@media print {
-    @page { 
-        size: A4 landscape; 
-        margin: 10mm; 
-    }
-
-    body { 
-        background-color: white !important; 
-        font-size: 9pt; 
-        color: black !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    /* Sembunyikan elemen UI & butang */
-    .sidebar, .mobile-bottom-nav, .d-md-none, .btn-group, .d-print-none, #mobileOverlay { 
-        display: none !important; 
-    }
-
-    .main-content { 
-        margin: 0 !important; 
-        padding: 0 !important; 
-        width: 100% !important;
-    }
-
-    h4 { font-size: 14pt !important; margin-bottom: 15px !important; border-bottom: 2px solid #333; padding-bottom: 5px; }
-
-    /* 1. SUSUNAN KAD KPI (4 SEBARIS) */
-    #kpiCardsModern { 
-        display: flex !important; 
-        flex-wrap: nowrap !important; 
-        gap: 15px !important;
-        margin-bottom: 20px !important;
-    }
-    #kpiCardsModern .col-sm-6 { 
-        flex: 1 !important; 
-        max-width: 25% !important; 
-    }
-
-    /* 2. CARTA ATAS BAWAH (BUKAN SEBELAH-MENYEBELAH) */
-    .print-chart-row {
-        display: block !important; /* Paksa carta turun ke bawah */
-    }
-    .print-chart-row .card {
-        width: 100% !important;
-        margin-bottom: 20px !important;
-        page-break-inside: avoid;
-    }
-    .print-chart-row .card-body div {
-        height: 280px !important; /* Besarkan sikit tinggi carta untuk print */
-    }
-
-    /* 3. KEMASAN GARISAN MATRIK TABLE (BORDER) */
-    #matrixTable { 
-        font-size: 7.5pt !important; 
-        width: 100% !important;
-        border-collapse: collapse !important; /* Cantumkan border supaya tak nampak berlapis */
-    }
-    #matrixTable th, #matrixTable td { 
-        padding: 4px !important; 
-        border: 1px solid #333 !important; /* Paksa warna border hitam pekat sekata */
-    }
-    #matrixTable th {
-        background-color: #e9ecef !important;
-    }
-
-    /* Tanaman Extra (Susun 4 kotak sebaris padat) */
-    #extraCropsContainer {
-        display: grid !important;
-        grid-template-columns: repeat(4, 1fr) !important;
-        gap: 10px !important;
-    }
-
-    /* 4. PENYELESAIAN RUANG KOSONG JADUAL SUMMARY */
-    .d-print-block {
-        margin-top: 20px !important;
-    }
-    /* Pastikan tajuk dan jadual tidak terpisah */
-    .d-print-block h5 {
-        page-break-after: avoid !important;
-    }
-    #printSummaryTable { 
-        width: 100% !important;
-        border-collapse: collapse !important;
-        /* BUANG page-break-before di sini supaya dia boleh naik ke ruang kosong page 3 */
-    }
-    #printSummaryTable th, #printSummaryTable td {
-        border: 1px solid #333 !important; /* Garisan hitam pekat untuk jadual summary */
-        padding: 5px !important;
-    }
-    /* Elak baris (row) terpotong separuh di tengah-tengah muka surat */
-    #printSummaryTable tr {
-        page-break-inside: avoid !important;
-    }
-
-    .card { 
-        border: 1px solid #ccc !important; 
-        box-shadow: none !important; 
-    }
-
-    .text-success { color: #198754 !important; }
-    .text-primary { color: #0d6efd !important; }
-}
-
-/* =========================================
    ANIMASI LIVE INDICATOR (CAP MASA)
    ========================================= */
 @keyframes blinkIndicator {
@@ -211,5 +104,92 @@
     font-size: 0.5rem; 
     vertical-align: middle; 
     animation: blinkIndicator 1.5s infinite;
+}
+
+/* =========================================
+   STYLE PDF PRO-GRADE (A4 LANDSCAPE)
+   ========================================= */
+@media print {
+    @page { 
+        size: A4 landscape; 
+        margin: 12mm; 
+    }
+
+    body { 
+        font-family: 'Segoe UI', Roboto, Arial, sans-serif !important;
+        color: #1a1a1a !important;
+        background: white !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* 1. HEADER RASMI LAPORAN */
+    .print-header {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: flex-end;
+        border-bottom: 3px solid #0d6efd;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    .print-header-title h4 { margin: 0; color: #0d6efd; font-weight: 800; text-transform: uppercase; font-size: 14pt !important; }
+    .print-header-meta { text-align: right; font-size: 8pt; color: #666; }
+
+    /* 2. KPI CARDS - LEBIH PADAT */
+    #kpiCardsModern { 
+        display: flex !important; 
+        gap: 12px !important;
+        margin-bottom: 20px !important;
+    }
+    #kpiCardsModern .col-sm-6 { flex: 1 !important; max-width: 25% !important; padding: 0 !important; }
+    .card { border: 1px solid #e0e0e0 !important; border-radius: 8px !important; box-shadow: none !important; margin-bottom: 15px !important;}
+    .card-header { background-color: #f8f9fa !important; padding: 5px 10px !important; }
+    .card-body { padding: 10px !important; }
+
+    /* 3. CARTA - OPTIMASI SAIZ */
+    .print-chart-row { display: block !important; }
+    .print-chart-row .card { width: 100% !important; page-break-inside: avoid; }
+    .print-chart-row .card-body div { height: 260px !important; }
+
+    /* 4. MATRIK BLOK (KANBAN) - REKAAN GRID KEMAS */
+    #kanbanMatrixContainer {
+        display: grid !important;
+        grid-template-columns: repeat(5, 1fr) !important; /* 5 lajur tetap dalam A4 Landscape */
+        gap: 15px !important;
+        background: none !important;
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+    .kanban-column {
+        background: #fdfdfd !important;
+        border: 1px solid #eee !important;
+        border-radius: 6px;
+        padding: 8px !important;
+        page-break-inside: avoid !important;
+        margin-bottom: 15px !important;
+    }
+    .kanban-column .fw-bold { 
+        background: #0d6efd !important; 
+        color: white !important; 
+        padding: 5px !important; 
+        border-radius: 4px;
+        font-size: 7.5pt !important;
+    }
+    /* Matikan animasi hover masa print */
+    #kanbanMatrixContainer div[onclick] { transform: none !important; }
+
+    /* 5. TANAMAN EXTRA */
+    #extraCropsContainer { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 10px !important; }
+
+    /* 6. JADUAL RINGKASAN DATA (DETAIL) */
+    .d-print-block { margin-top: 30px !important; page-break-after: avoid !important; }
+    #printSummaryTable { width: 100% !important; border-collapse: collapse !important; border: 1.5px solid #333 !important; }
+    #printSummaryTable th { background-color: #0d6efd !important; color: white !important; padding: 6px !important; border: 1px solid #333 !important;}
+    #printSummaryTable td { border: 1px solid #ccc !important; padding: 5px !important;}
+    #printSummaryTable tr { page-break-inside: avoid !important; }
+
+    /* Sembunyikan elemen Web */
+    .sidebar, .mobile-bottom-nav, .d-md-none, .btn-group, .d-print-none, #mobileOverlay { display: none !important; }
+    .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
 }
     </style>
