@@ -56,7 +56,7 @@ const KPIManager = {
     renderDashboard: function() {
         const currentNegeri = FilterManager.v('selNegeri'); 
         
-        // 1. Ambil nilai tarikh dari sidebar
+       // 1. Ambil nilai tarikh dari sidebar
         const startDate = document.getElementById('filter-start-date') ? document.getElementById('filter-start-date').value : '';
         const endDate = document.getElementById('filter-end-date') ? document.getElementById('filter-end-date').value : '';
         
