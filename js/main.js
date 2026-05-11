@@ -137,9 +137,6 @@ function startBadgePolling() {
 
     // 1. Semak serta-merta selepas 3 saat sistem dibuka (memberi ruang untuk proses login selesai)
     setTimeout(semakBadges, 3000);
-
-    // 2. Semak secara automatik setiap 60 saat (1 Minit)
-    setInterval(semakBadges, 60000);
 }
 
 // Aktifkan sistem notifikasi
