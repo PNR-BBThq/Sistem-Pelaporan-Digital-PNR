@@ -34,6 +34,9 @@ const DashboardManager = {
                     
                     DashboardManager.processDataToUI(AppState.mData);
                     DashboardManager.updateLastUpdateLabel(now, true);
+               if (typeof TaskManager !== 'undefined') {
+                        TaskManager.checkTaskCount(); 
+                    }
                 }
             } catch (e) { console.log("Gagal tarik data server"); }
         }
