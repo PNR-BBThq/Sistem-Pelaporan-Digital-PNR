@@ -106,9 +106,6 @@
     animation: blinkIndicator 1.5s infinite;
 }
 
-/* =========================================
-   STYLE PDF PRO-GRADE (A4 LANDSCAPE)
-   ========================================= */
 @media print {
     @page { 
         size: A4 landscape; 
@@ -123,73 +120,51 @@
         print-color-adjust: exact;
     }
 
-    /* 1. HEADER RASMI LAPORAN */
+    /* 1. HEADER RASMI */
     .print-header {
         display: flex !important;
         justify-content: space-between;
         align-items: flex-end;
         border-bottom: 3px solid #0d6efd;
         padding-bottom: 10px;
-        margin-bottom: 20px;
+        margin-bottom: 25px;
     }
-    .print-header-title h4 { margin: 0; color: #0d6efd; font-weight: 800; text-transform: uppercase; font-size: 14pt !important; }
-    .print-header-meta { text-align: right; font-size: 8pt; color: #666; }
+    .print-header-title h4 { margin: 0; color: #0d6efd; font-weight: 800; text-transform: uppercase; font-size: 16pt !important; }
 
-    /* 2. KPI CARDS - LEBIH PADAT */
+    /* 2. KPI CARDS (4 Sebaris) */
     #kpiCardsModern { 
         display: flex !important; 
-        gap: 12px !important;
-        margin-bottom: 20px !important;
+        gap: 15px !important;
+        margin-bottom: 30px !important;
     }
     #kpiCardsModern .col-sm-6 { flex: 1 !important; max-width: 25% !important; padding: 0 !important; }
-    .card { border: 1px solid #e0e0e0 !important; border-radius: 8px !important; box-shadow: none !important; margin-bottom: 15px !important;}
-    .card-header { background-color: #f8f9fa !important; padding: 5px 10px !important; }
-    .card-body { padding: 10px !important; }
 
-    /* 3. CARTA - OPTIMASI SAIZ */
+    /* 3. CARTA (Letak satu page dengan KPI kalau muat) */
     .print-chart-row { display: block !important; }
-    .print-chart-row .card { width: 100% !important; page-break-inside: avoid; }
-    .print-chart-row .card-body div { height: 260px !important; }
+    .print-chart-row .card { width: 100% !important; border: 1px solid #eee !important; page-break-inside: avoid; margin-bottom: 20px !important; }
+    .print-chart-row .card-body div { height: 280px !important; }
 
-    /* 4. MATRIK BLOK (KANBAN) - REKAAN GRID KEMAS */
-    #kanbanMatrixContainer {
-        display: grid !important;
-        grid-template-columns: repeat(5, 1fr) !important; /* 5 lajur tetap dalam A4 Landscape */
-        gap: 15px !important;
-        background: none !important;
-        padding: 0 !important;
-        overflow: visible !important;
+    /* 4. JADUAL RINGKASAN DATA (DETAIL) - INI ADALAH HERO LAPORAN SEKARANG */
+    .d-print-block { 
+        display: block !important;
+        page-break-before: auto !important; /* Benarkan dia naik ke ruang kosong page sebelum jika ada */
+        margin-top: 10px !important;
     }
-    .kanban-column {
-        background: #fdfdfd !important;
-        border: 1px solid #eee !important;
-        border-radius: 6px;
-        padding: 8px !important;
-        page-break-inside: avoid !important;
-        margin-bottom: 15px !important;
+    #printSummaryTable { 
+        width: 100% !important; 
+        border-collapse: collapse !important; 
+        border: 1.5px solid #333 !important; 
+        margin-top: 10px !important;
     }
-    .kanban-column .fw-bold { 
-        background: #0d6efd !important; 
-        color: white !important; 
-        padding: 5px !important; 
-        border-radius: 4px;
-        font-size: 7.5pt !important;
-    }
-    /* Matikan animasi hover masa print */
-    #kanbanMatrixContainer div[onclick] { transform: none !important; }
-
-    /* 5. TANAMAN EXTRA */
-    #extraCropsContainer { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 10px !important; }
-
-    /* 6. JADUAL RINGKASAN DATA (DETAIL) */
-    .d-print-block { margin-top: 30px !important; page-break-after: avoid !important; }
-    #printSummaryTable { width: 100% !important; border-collapse: collapse !important; border: 1.5px solid #333 !important; }
-    #printSummaryTable th { background-color: #0d6efd !important; color: white !important; padding: 6px !important; border: 1px solid #333 !important;}
-    #printSummaryTable td { border: 1px solid #ccc !important; padding: 5px !important;}
+    #printSummaryTable th { background-color: #0d6efd !important; color: white !important; padding: 8px !important; border: 1px solid #333 !important; text-transform: uppercase; font-size: 9pt; }
+    #printSummaryTable td { border: 1px solid #ccc !important; padding: 6px 10px !important; font-size: 9pt; }
     #printSummaryTable tr { page-break-inside: avoid !important; }
 
-    /* Sembunyikan elemen Web */
-    .sidebar, .mobile-bottom-nav, .d-md-none, .btn-group, .d-print-none, #mobileOverlay { display: none !important; }
+    /* SEMBUNYIKAN SEMUA YANG X PERLU */
+    .sidebar, .mobile-bottom-nav, .btn-group, .d-print-none, .card-header small, #kanbanMatrixContainer, #extraCropsContainer { 
+        display: none !important; 
+    }
+    
     .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
 }
     </style>
