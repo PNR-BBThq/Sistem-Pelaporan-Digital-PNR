@@ -106,7 +106,7 @@ const AuthManager = {
         const formValues = { 
             nama: nama.toUpperCase(), ic: ic, jawatan: jawatan.toUpperCase(), 
             negeri: negeri, uid: uid.toLowerCase(), pwd: pwd,
-            role: "STAF", status: "MENUNGGU", catatan: "Didaftar melalui Web PNR"
+            role: "STAFF", status: "MENUNGGU", catatan: "Didaftar melalui Web PNR"
         };
 
         Swal.fire({ title: 'Menghantar Pendaftaran...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
