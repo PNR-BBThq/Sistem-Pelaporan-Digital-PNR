@@ -49,6 +49,7 @@ const KPIManager = {
         const currentNegeri = FilterManager.v('selNegeri'); 
         this.renderKPICards(currentNegeri);
         this.renderStateChart(currentNegeri);
+        this.renderStateLeaderboard(currentNegeri);
         this.renderTrendChart(currentNegeri); 
         this.renderMatrixGrid(currentNegeri);
         this.renderExtraCrops(currentNegeri);
@@ -382,3 +383,60 @@ const KPIManager = {
         window.print(); 
     }
 };
+
+// FUNGSI BARU: PAPAN PENDAHULU PRESTASI NEGERI (LEADERBOARD)
+    renderStateLeaderboard: function(filterNegeri) {
+        const container = document.getElementById('stateProgressContainer');
+        if(!container) return; container.innerHTML = '';
+        
+        let stateList = filterNegeri.length > 0 ? filterNegeri : Object.keys(this.targetCrops);
+        if(stateList.length === 0) return;
+
+        let arr = [];
+
+        // 1. Kira prestasi untuk setiap negeri
+        stateList.forEach(neg => {
+            let sasaran = 0;
+            if(this.targetData[neg]) {
+                sasaran += (this.targetData[neg]["BUAH-BUAHAN"] || 0) + (this.targetData[neg]["SAYUR-SAYURAN"] || 0) + (this.targetData[neg]["KONTAN"] || 0) + (this.targetData[neg]["KELAPA"] || 0);
+            }
+            let actual = 0;
+            AppState.mData.forEach(d => { if(this.getEffectiveState(d) === neg) actual += (parseFloat(d.lt) || 0); });
+            
+            let pct = sasaran > 0 ? (actual / sasaran) * 100 : 0;
+            arr.push({ state: neg, pct: pct, actual: actual, target: sasaran });
+        });
+
+        // 2. Susun data dari peratusan paling TINGGI ke RENDAH
+        arr.sort((a, b) => b.pct - a.pct);
+
+        // 3. Bina UI Bar Progress
+        let html = '';
+        arr.forEach((item, index) => {
+            let shortNeg = item.state.replace("NEGERI SEMBILAN", "N. SEMBILAN").replace("W.P. ", "").replace("CAMERON HIGHLANDS", "C. HIGHLANDS");
+            // Warna: >100% Hijau, >50% Biru, <50% Merah
+            let color = item.pct >= 100 ? 'success' : (item.pct >= 50 ? 'primary' : 'danger');
+            
+            // Pingat untuk Top 3!
+            let medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : ''));
+            
+            html += `
+            <div class="col">
+                <div class="bg-white p-2 rounded border shadow-sm h-100 d-flex flex-column justify-content-center" style="transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="d-flex justify-content-between small fw-bold mb-1">
+                        <span class="text-dark text-truncate pe-2" title="${item.state}">${medal} ${shortNeg}</span>
+                        <span class="text-${color}">${item.pct.toFixed(1)}%</span>
+                    </div>
+                    <div class="progress" style="height: 6px; border-radius: 10px;">
+                        <div class="progress-bar bg-${color}" style="width: ${Math.min(100, item.pct)}%"></div>
+                    </div>
+                    <div class="text-muted mt-1 d-flex justify-content-between" style="font-size: 0.65rem;">
+                        <span>Capai: ${item.actual.toLocaleString(undefined,{maximumFractionDigits:1})}</span>
+                        <span>Sasaran: ${item.target.toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+    },
