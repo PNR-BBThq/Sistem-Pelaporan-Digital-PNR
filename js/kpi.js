@@ -20,7 +20,7 @@ const KPIManager = {
         return negeri;
     },
 
-    init: async function() {
+   init: async function() {
         Swal.fire({ title: 'Memuatkan Data SKU...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
             const r = await API.postData('getKPIData', {});
@@ -29,6 +29,12 @@ const KPIManager = {
                 this.targetData = r.dataSasaran;
                 this.targetCrops = r.dataSenarai;
                 this.extractUniqueCrops();
+                
+                // WOW FACTOR #4: CAP MASA LIVE
+                const d = new Date();
+                const elDate = document.getElementById('lastUpdatedText');
+                if(elDate) elDate.innerHTML = `<i class="bi bi-circle-fill text-success live-indicator"></i> Dikemas kini pada: Hari ini, ${d.toLocaleTimeString('ms-MY', {hour: '2-digit', minute:'2-digit'})}`;
+
                 this.renderDashboard();
             } else { alert("Gagal ambil data sasaran: " + r.message); }
         } catch(e) { Swal.close(); console.error(e); }
