@@ -132,13 +132,13 @@ const KPIManager = {
         if(txt) txt.innerText = `${overallPeratus}% (${globalActual.toLocaleString(undefined,{maximumFractionDigits:1})} / ${globalTarget.toLocaleString()} Ha)`;
     },
 
-    // 2. GRAF PERBANDINGAN NEGERI (WARNA KORPORAT)
+// 2. GRAF PERBANDINGAN NEGERI (DENGAN ANALISIS PERATUSAN)
     renderStateChart: function(filterNegeri) {
         const ctx = document.getElementById('stateAchievementChart');
         if(!ctx) return;
         if(this.stateChart) this.stateChart.destroy();
         
-        let labels = [], data = [], colors = [];
+        let labels = [], data = [], colors = [], targets = [];
         const stateList = filterNegeri.length > 0 ? filterNegeri : Object.keys(this.targetCrops).sort();
         const modernPalette = ['#0d6efd', '#20c997', '#fd7e14', '#6f42c1', '#e83e8c', '#198754', '#0dcaf0', '#f1c40f', '#dc3545', '#6610f2', '#e67e22', '#16a085', '#2980b9', '#8e44ad'];
 
@@ -146,10 +146,11 @@ const KPIManager = {
             document.getElementById('stateChartTitle').innerHTML = `<i class="bi bi-pie-chart-fill me-2 text-primary"></i> Pecahan Kategori: ${this.currentDrillDownState}`;
             document.getElementById('btnBackState').style.display = 'block';
             const cats = ["BUAH-BUAHAN", "SAYUR-SAYURAN", "KONTAN", "KELAPA"];
-            labels = ["Buah", "Sayur", "Kontan", "Kelapa"]; 
             colors = ['#198754', '#0d6efd', '#ffc107', '#0dcaf0']; 
             
             cats.forEach(cId => {
+                // Kira Sasaran & Sebenar Kategori
+                let sasaran = 0; if(this.targetData[this.currentDrillDownState]) sasaran = this.targetData[this.currentDrillDownState][cId] || 0;
                 let area = 0;
                 AppState.mData.forEach(d => {
                     if(this.getEffectiveState(d) === this.currentDrillDownState) {
@@ -157,24 +158,65 @@ const KPIManager = {
                         if((cId==="BUAH-BUAHAN" && dbK.includes("BUAH")) || (cId==="SAYUR-SAYURAN" && dbK.includes("SAYUR")) || (cId==="KONTAN" && (dbK.includes("KONTAN")||dbK.includes("LAIN"))) || (cId==="KELAPA" && (dbK.includes("KELAPA")||(d.tn||"").toUpperCase().includes("KELAPA")))) area += parseFloat(d.lt)||0;
                     }
                 });
+                
+                let pct = sasaran > 0 ? ((area / sasaran) * 100).toFixed(1) : 0;
+                let shortCat = cId === "BUAH-BUAHAN" ? "Buah" : cId === "SAYUR-SAYURAN" ? "Sayur" : cId === "KONTAN" ? "Kontan" : "Kelapa";
+                
+                labels.push([shortCat, `${pct}%`]); // Label Berkembar (Multiline)
                 data.push(area.toFixed(2));
+                targets.push(sasaran);
             });
         } else {
-            document.getElementById('stateChartTitle').innerHTML = `<i class="bi bi-bar-chart-fill me-2"></i> Perbandingan Luas Pencapaian Mengikut Negeri (Ha)`;
+            document.getElementById('stateChartTitle').innerHTML = `<i class="bi bi-bar-chart-fill me-2"></i> Perbandingan Prestasi Mengikut Negeri (Ha & %)`;
             document.getElementById('btnBackState').style.display = 'none';
+            
             stateList.forEach((neg, index) => {
-                labels.push(neg.replace("W.P. ", "").replace("CAMERON HIGHLANDS", "C. HIGHLANDS"));
+                let shortNeg = neg.replace("W.P. ", "").replace("CAMERON HIGHLANDS", "C. HIGHLANDS");
+                
+                // Kira Sasaran & Sebenar Negeri
+                let sasaran = 0;
+                if(this.targetData[neg]) {
+                    sasaran += (this.targetData[neg]["BUAH-BUAHAN"] || 0) + (this.targetData[neg]["SAYUR-SAYURAN"] || 0) + (this.targetData[neg]["KONTAN"] || 0) + (this.targetData[neg]["KELAPA"] || 0);
+                }
                 let total = 0;
                 AppState.mData.forEach(d => { if(this.getEffectiveState(d) === neg) total += (parseFloat(d.lt) || 0); });
+                
+                let pct = sasaran > 0 ? ((total / sasaran) * 100).toFixed(1) : 0;
+
+                labels.push([shortNeg, `${pct}%`]); // Label Berkembar (Multiline)
                 data.push(total.toFixed(2));
+                targets.push(sasaran);
                 colors.push(modernPalette[index % modernPalette.length]);
             });
         }
         
         this.stateChart = new Chart(ctx, {
             type: 'bar',
-            data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderRadius: 5 }] },
-            options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, onClick: (e, elements) => { if (elements.length > 0 && !this.currentDrillDownState) { const idx = elements[0].index; this.currentDrillDownState = stateList[idx]; this.renderStateChart(filterNegeri); } } }
+            data: { labels: labels, datasets: [{ data: data, targetsArr: targets, backgroundColor: colors, borderRadius: 5 }] },
+            options: { 
+                maintainAspectRatio: false, 
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) { return context[0].label.replace(',', ' '); },
+                            label: function(context) {
+                                let actual = context.raw;
+                                let target = context.dataset.targetsArr[context.dataIndex];
+                                let pct = target > 0 ? ((actual / target) * 100).toFixed(1) : 0;
+                                return [`Sasaran: ${target.toLocaleString()} Ha`, `Dicapai: ${Number(actual).toLocaleString()} Ha`, `Prestasi: ${pct}%`];
+                            }
+                        }
+                    }
+                }, 
+                onClick: (e, elements) => { 
+                    if (elements.length > 0 && !this.currentDrillDownState) { 
+                        const idx = elements[0].index; 
+                        this.currentDrillDownState = stateList[idx]; 
+                        this.renderStateChart(filterNegeri); 
+                    } 
+                } 
+            }
         });
     },
 
@@ -226,7 +268,7 @@ const KPIManager = {
         }
     },
 
-    // 5. MATRIK TUGASAN KANBAN
+    // 5. MATRIK TUGASAN KANBAN (DENGAN SKOR PERATUSAN)
     renderMatrixGrid: function(filterNegeri) {
         const container = document.getElementById('kanbanMatrixContainer');
         if(!container) return;
@@ -239,17 +281,28 @@ const KPIManager = {
             const targetList = this.targetCrops[neg] || [];
             if(targetList.length === 0) return; 
 
+            // Pengiraan Peratusan untuk tajuk Lajur
+            let sasaranKanban = 0;
+            if(this.targetData[neg]) {
+                sasaranKanban += (this.targetData[neg]["BUAH-BUAHAN"] || 0) + (this.targetData[neg]["SAYUR-SAYURAN"] || 0) + (this.targetData[neg]["KONTAN"] || 0) + (this.targetData[neg]["KELAPA"] || 0);
+            }
+            let actualKanban = 0;
+            AppState.mData.forEach(d => { if(this.getEffectiveState(d) === neg) actualKanban += (parseFloat(d.lt) || 0); });
+            let pctKanban = sasaranKanban > 0 ? ((actualKanban / sasaranKanban) * 100).toFixed(1) : 0;
+            
+            // Logik Warna Peratus (Merah <50%, Biru >50%, Hijau >100%)
+            let colorClass = pctKanban >= 100 ? 'text-success' : (pctKanban >= 50 ? 'text-primary' : 'text-danger');
             let shortNeg = neg.replace("NEGERI SEMBILAN", "N. SEMBILAN").replace("W.P. ", "").replace("CAMERON HIGHLANDS", "C. HIGHLANDS");
             
             let stateHTML = `
             <div class="d-flex flex-column gap-2 kanban-column" style="min-width: 140px; max-width: 160px; flex: 0 0 auto;">
-                <div class="fw-bold text-center border-bottom border-2 border-dark pb-2 mb-1 text-dark text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
-                    ${shortNeg}
+                <div class="fw-bold text-center border-bottom border-2 border-dark pb-2 mb-2 text-dark text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                    ${shortNeg} <br>
+                    <span class="${colorClass} fs-6">${pctKanban}%</span>
                 </div>
             `;
 
             let siap = [], belum = [];
-            
             [...targetList].sort().forEach(crop => {
                 const stats = this.getCropStats(neg, crop);
                 if(stats.count > 0) siap.push({ name: crop, count: stats.count, area: stats.area });
@@ -257,22 +310,11 @@ const KPIManager = {
             });
             
             siap.forEach(item => {
-                stateHTML += `
-                <div class="kanban-item-done p-2 border border-success bg-success bg-opacity-10 rounded shadow-sm d-flex justify-content-between align-items-center"
-                     onclick="KPIManager.showDetails('${neg}', '${item.name}', ${item.count}, ${item.area})"
-                     style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Klik untuk maklumat">
-                    <span class="fw-bold text-success text-truncate me-1" style="font-size: 0.7rem;" title="${item.name}">${item.name}</span>
-                    <span style="font-size: 0.85rem;">✅</span>
-                </div>`;
+                stateHTML += `<div class="kanban-item-done p-2 border border-success bg-success bg-opacity-10 rounded shadow-sm d-flex justify-content-between align-items-center" onclick="KPIManager.showDetails('${neg}', '${item.name}', ${item.count}, ${item.area})" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" title="Klik untuk maklumat"><span class="fw-bold text-success text-truncate me-1" style="font-size: 0.7rem;" title="${item.name}">${item.name}</span><span style="font-size: 0.85rem;">✅</span></div>`;
             });
 
             belum.forEach(crop => {
-                stateHTML += `
-                <div class="kanban-item-pending p-2 border rounded d-flex justify-content-between align-items-center bg-white" 
-                     style="border-style: dashed !important; border-color: #adb5bd !important;">
-                    <span class="fw-bold text-muted text-truncate me-1" style="font-size: 0.7rem;" title="${crop}">${crop}</span>
-                    <span class="text-danger" style="font-size: 0.85rem;">⭕</span>
-                </div>`;
+                stateHTML += `<div class="kanban-item-pending p-2 border rounded d-flex justify-content-between align-items-center bg-white" style="border-style: dashed !important; border-color: #adb5bd !important;"><span class="fw-bold text-muted text-truncate me-1" style="font-size: 0.7rem;" title="${crop}">${crop}</span><span class="text-danger" style="font-size: 0.85rem;">⭕</span></div>`;
             });
 
             stateHTML += `</div>`; 
