@@ -334,13 +334,13 @@
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm mb-4 mt-4">
+            <div class="card border-0 shadow-sm mb-4 mt-4 d-print-none">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap">
-                    <h6 class="fw-bold m-0 text-secondary"><i class="bi bi-view-list me-2"></i> Status Tugasan Mengikut Negeri (Blok Sasaran)</h6>
+                    <h6 class="fw-bold m-0 text-secondary"><i class="bi bi-view-list me-2"></i> Status Tugasan Mengikut NegerI</h6>
                     <div class="btn-group btn-group-sm mt-2 mt-md-0 d-print-none shadow-sm">
                         <button class="btn btn-outline-secondary fw-bold active" onclick="KPIManager.filterKanban('all', this)">Semua</button>
-                        <button class="btn btn-outline-success fw-bold" onclick="KPIManager.filterKanban('done', this)">✅ Siap</button>
-                        <button class="btn btn-outline-danger fw-bold" onclick="KPIManager.filterKanban('pending', this)">⭕ Tertunggak</button>
+                        <button class="btn btn-outline-success fw-bold" onclick="KPIManager.filterKanban('done', this)">✅ Telah dibanci</button>
+                        <button class="btn btn-outline-danger fw-bold" onclick="KPIManager.filterKanban('pending', this)">⭕ Belum dibanci</button>
                     </div>
                 </div>
                 <div class="card-body bg-light">
@@ -348,8 +348,8 @@
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white py-3"><h6 class="fw-bold m-0 text-secondary"><i class="bi bi-stars me-2"></i> Tanaman Luar Sasaran (Kuantitatif)</h6></div>
+            <div class="card border-0 shadow-sm mb-4 d-print-none">
+                <div class="card-header bg-white py-3"><h6 class="fw-bold m-0 text-secondary"><i class="bi bi-stars me-2"></i> Tanaman Luar Sasaran</h6></div>
                 <div class="card-body bg-light">
                     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-3" id="extraCropsContainer"></div>
                 </div>
