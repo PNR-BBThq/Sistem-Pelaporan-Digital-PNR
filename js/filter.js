@@ -7,12 +7,15 @@ const FilterManager = {
     
     // Fungsi bantuan untuk dapatkan nilai kotak tapisan
     v: function(id) { 
-        if(id === 'dS' || id === 'dE') { const el = document.getElementById(id); return el ? el.value : ""; }
+        if(id === 'dS' || id === 'dE') { 
+            const el = document.getElementById(id); 
+            return el ? el.value : ""; 
+        }
         const checkboxes = document.querySelectorAll('.chk-' + id + ':checked');
         return Array.from(checkboxes).map(cb => cb.value);
     },
 
-runFilter: function(source) {
+    runFilter: function(source) {
         const n = this.v('selNegeri');
         const d = this.v('selDaerah');
         const t = this.v('selTanaman');
@@ -21,34 +24,36 @@ runFilter: function(source) {
         const s = this.v('dS');
         const e = this.v('dE');
         
+        // 1. TAPIS DATA UTAMA SISTEM
         AppState.fData = AppState.mData.filter(r => { 
             let pestOk = true; 
             if (p.length > 0) {
                 pestOk = false;
                 if (r.p) {
                     try { 
-                        const pestObj = (typeof r.p==='string' ? JSON.parse(r.p) : r.p);
+                        const pestObj = (typeof r.p === 'string' ? JSON.parse(r.p) : r.p);
                         pestOk = p.some(selectedPest => pestObj[selectedPest]);
                     } catch(err) {}
                 }
             }
-            return (n.length===0 || n.includes(r.n)) && 
-                   (d.length===0 || d.includes(r.d)) && 
-                   (t.length===0 || t.includes(r.tn)) && 
-                   (k.length===0 || k.includes(r.kt)) && 
-                   pestOk && (!s||r.t>=s) && (!e||r.t<=e);
+            return (n.length === 0 || n.includes(r.n)) && 
+                   (d.length === 0 || d.includes(r.d)) && 
+                   (t.length === 0 || t.includes(r.tn)) && 
+                   (k.length === 0 || k.includes(r.kt)) && 
+                   pestOk && (!s || r.t >= s) && (!e || r.t <= e);
         });
 
+        // 2. KEMASKINI DROPDOWN (Bergantung kepada pilihan sebelumnya)
         if(source === 'n' || !source) { 
-            const dataD = AppState.mData.filter(r => n.length===0 || n.includes(r.n)); 
+            const dataD = AppState.mData.filter(r => n.length === 0 || n.includes(r.n)); 
             this.updateDropdown('selDaerah', [...new Set(dataD.map(x=>x.d).filter(x=>x))].sort(), d, 'd'); 
         }
         if(source === 'd' || source === 'n' || !source) { 
-            const dataT = AppState.mData.filter(r => (n.length===0 || n.includes(r.n)) && (d.length===0 || d.includes(r.d))); 
+            const dataT = AppState.mData.filter(r => (n.length === 0 || n.includes(r.n)) && (d.length === 0 || d.includes(r.d))); 
             this.updateDropdown('selTanaman', [...new Set(dataT.map(x=>x.tn).filter(x=>x))].sort(), t, 't'); 
         }
         if(source === 't' || source === 'd' || source === 'n' || !source) {
-            const dataRest = AppState.mData.filter(r => (n.length===0 || n.includes(r.n)) && (d.length===0 || d.includes(r.d)) && (t.length===0 || t.includes(r.tn)));
+            const dataRest = AppState.mData.filter(r => (n.length === 0 || n.includes(r.n)) && (d.length === 0 || d.includes(r.d)) && (t.length === 0 || t.includes(r.tn)));
             this.updateDropdown('selKategori', [...new Set(dataRest.map(x=>x.kt).filter(x=>x))].sort(), k, 'k');
             
             let allPests = new Set(); 
@@ -61,11 +66,12 @@ runFilter: function(source) {
             this.updateDropdown('selPerosak', [...allPests].sort(), p, 'p');
         }
         
+        // 3. REFRESH DASHBOARD UTAMA
         AppState.pg = 1; 
         DashboardManager.calcUI();
 
         // ==========================================
-        // TAMBAH: UPDATE SKU JIKA TAB SKU SEDANG DIBUKA
+        // 4. REFRESH DASHBOARD SKU (JIKA SEDANG DIBUKA)
         // ==========================================
         const viewSKU = document.getElementById('view-sku');
         if (viewSKU && viewSKU.style.display !== 'none' && typeof KPIManager !== 'undefined') {
@@ -76,7 +82,6 @@ runFilter: function(source) {
     updateDropdown: function(id, list, curValArray, srcCode) { 
         const menu = document.getElementById('list' + id); 
         if(!menu) {
-            // Cipta struktur dropdown jika belum ada (dari HTML induk yang bersih)
             const container = document.getElementById('filterDropdownsContainer');
             if(container) {
                 const labelMap = { 'selNegeri': 'Negeri', 'selDaerah': 'Daerah', 'selTanaman': 'Tanaman', 'selPerosak': 'Perosak', 'selKategori': 'Kategori' };
