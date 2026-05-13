@@ -132,11 +132,38 @@ const UserManager = {
     }
 };
 
-// Pasangkan Event Listener untuk Carian Users
-document.addEventListener("DOMContentLoaded", () => {
-    const searchEl = document.getElementById('searchUser');
-    if (searchEl) searchEl.addEventListener('keyup', () => UserManager.filterUsers());
+// ==============================================================
+// FUNGSI CARIAN PENGGUNA (REAL-TIME & EXACT MATCH)
+// ==============================================================
+document.addEventListener("DOMContentLoaded", function() {
     
-    const refreshBtn = document.getElementById('btnRefreshUsers');
-    if (refreshBtn) refreshBtn.addEventListener('click', () => UserManager.loadUsers());
+    // Guna ID tepat dari HTML Tuan
+    const searchInput = document.getElementById("searchUser"); 
+    const tableBody = document.getElementById("userTableBody");
+
+    if (searchInput && tableBody) {
+        // Guna 'input' supaya ia tangkap setiap huruf yang baru masuk dengan serta-merta
+        searchInput.addEventListener("input", function() {
+            
+            // Ambil apa yang ditaip, huruf kecilkan, dan buang space di hujung
+            let filterValue = this.value.toLowerCase().trim();
+            
+            // Ambil semua baris <tr> di dalam jadual pengguna
+            let rows = tableBody.getElementsByTagName("tr");
+
+            for (let i = 0; i < rows.length; i++) {
+                let row = rows[i];
+                
+                // Ekstrak teks bersih dari baris tersebut (Nama, KP, Username, dll)
+                let textData = row.textContent || row.innerText;
+
+                // Buat semakan: Ada tak perkataan yang ditaip dalam baris ini?
+                if (textData.toLowerCase().includes(filterValue)) {
+                    row.style.display = ""; // Jika ada, paparkan
+                } else {
+                    row.style.display = "none"; // Jika tiada, sembunyikan
+                }
+            }
+        });
+    }
 });
