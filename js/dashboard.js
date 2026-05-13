@@ -159,8 +159,8 @@ const DashboardManager = {
                 <td>${d.n}</td>
                 <td>${d.l}</td>
                 <td><span class="badge bg-light text-dark border">${d.tn}</span></td>
-                <td>${d.lt.toFixed(2)}</td>
-                <td class="text-danger fw-bold">${d.ls.toFixed(2)}</td>
+                <td>${d.lt.toFixed(4)}</td>
+                <td class="text-danger fw-bold">${d.ls.toFixed(4)}</td>
                 <td class="text-center">
                   <button class="btn btn-sm btn-danger" 
                     data-lokasi="${d.l}" data-pegawai="${d.pg}" data-coord="${d.c}" data-tarikh="${d.t}" 
