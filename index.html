@@ -419,6 +419,37 @@
         </div>
     </div>
 
+     </style>
+
+<div id="nlp-chatbot-fab" onclick="SmartNLPBot.toggle()" title="Tanya AI PNR">
+    <i class="bi bi-robot"></i>
+</div>
+
+<div id="nlp-chatbot-window">
+    <div class="bot-header">
+        <span class="d-flex align-items-center"><i class="bi bi-robot fs-5 me-2"></i> PNR Smart AI</span>
+        <i class="bi bi-dash-lg fs-5" style="cursor:pointer;" onclick="SmartNLPBot.toggle()"></i>
+    </div>
+    
+    <div class="bot-body" id="nlp-chat-messages">
+        <div class="chat-bubble bubble-bot">
+            👋 Salam sejahtera! Saya adalah enjin analitik NLP. Anda boleh menaip soalan dalam bahasa biasa, atau klik cadangan pantas di bawah:<br>
+            <div class="bot-chips-container">
+                <div class="bot-chip" onclick="SmartNLPBot.handleInput('Rumusan Nasional')">📊 Status Nasional</div>
+                <div class="bot-chip" onclick="SmartNLPBot.handleInput('Top perosak buah')">🍎 Top Perosak Buah</div>
+                <div class="bot-chip" onclick="SmartNLPBot.handleInput('Top perosak sayur di Pahang')">🥬 Sayur di Pahang</div>
+                <div class="bot-chip" onclick="SmartNLPBot.handleInput('Senarai serangan FAW')">🐛 Status FAW</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bot-footer">
+        <input type="text" id="nlp-chat-input" placeholder="Tanya sesuatu (Cth: Apa perosak top di Johor?)..." onkeypress="if(event.key === 'Enter') SmartNLPBot.handleInput()">
+        <button onclick="SmartNLPBot.handleInput()"><i class="bi bi-send-fill"></i></button>
+    </div>
+</div>
+        
+        
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -437,5 +468,6 @@
     <script src="./js/dashboard.js"></script>
     <script src="./js/kpi.js"></script>
     <script src="./js/main.js"></script>
+    <script src="js/nlp-bot.js"></script>
 </body>
 </html>
