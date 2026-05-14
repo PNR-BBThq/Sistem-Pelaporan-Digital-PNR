@@ -331,6 +331,82 @@ const SmartNLPBot = {
             }
         }
 
-        return htmlResponse;
+        
+document.addEventListener("DOMContentLoaded", function() {
+    const fab = document.getElementById('nlp-chatbot-fab');
+    if (!fab) return;
+
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+    const dragThreshold = 5; // Berapa piksel bergerak baru dikira 'drag'
+
+    // Dengar event dari Tetikus (PC)
+    fab.addEventListener('mousedown', dragStart);
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', dragEnd);
+
+    // Dengar event dari Jari (Telefon)
+    fab.addEventListener('touchstart', dragStart, {passive: false});
+    document.addEventListener('touchmove', drag, {passive: false});
+    document.addEventListener('touchend', dragEnd);
+
+    function dragStart(e) {
+        // Semak adakah ia jari atau tetikus
+        let event = e.type === 'touchstart' ? e.touches[0] : e;
+        
+        startX = event.clientX;
+        startY = event.clientY;
+        
+        // Ambil kedudukan asal butang
+        let rect = fab.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+        isDragging = false;
+        
+        // Reset CSS asal supaya tak 'kacau' pergerakan kita
+        fab.style.transition = 'none'; 
+        fab.style.bottom = 'auto'; 
+        fab.style.right = 'auto';
     }
-};
+
+    function drag(e) {
+        if (startX === undefined) return; // Jika tak mula klik, jangan buat apa-apa
+        
+        let event = e.type === 'touchmove' ? e.touches[0] : e;
+        let dx = event.clientX - startX;
+        let dy = event.clientY - startY;
+        
+        // Kalau bergerak lebih 5 piksel, baru kita anggap dia 'drag' (bukan klik)
+        if (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold) {
+            isDragging = true;
+            if (e.type === 'touchmove') e.preventDefault(); // Halang skrin scroll bila seret
+            
+            let newLeft = initialLeft + dx;
+            let newTop = initialTop + dy;
+            
+            // HALANGAN (CONSTRAINT): Jangan bagi butang terkeluar dari skrin
+            let maxLeft = window.innerWidth - fab.offsetWidth;
+            let maxTop = window.innerHeight - fab.offsetHeight;
+            
+            newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+            newTop = Math.max(0, Math.min(newTop, maxTop));
+            
+            // Set kedudukan baru
+            fab.style.left = newLeft + 'px';
+            fab.style.top = newTop + 'px';
+        }
+    }
+
+    function dragEnd(e) {
+        if (startX === undefined) return;
+        startX = undefined; // Reset
+        
+        fab.style.transition = 'all 0.3s ease'; // Pulangkan efek hover
+        
+        // PENTING: Kalau dia tak drag (maknanya dia cuma klik biasa)
+        if (!isDragging) {
+            SmartNLPBot.toggle(); // Buka/Tutup Chatbot
+        }
+        isDragging = false;
+    }
+});
