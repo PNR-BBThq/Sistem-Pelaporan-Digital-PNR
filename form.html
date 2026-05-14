@@ -600,9 +600,7 @@ const stateBounds = {
         const mode = e.submitter ? e.submitter.value : 'BARU'; 
         const f = e.target; 
         
-        // ==========================================
-        // KAWALAN WAJIB ISI (HANYA UNTUK HANTAR BARU)
-        // ==========================================
+      
        // ==========================================
         // KAWALAN WAJIB ISI (HANYA UNTUK HANTAR BARU)
         // ==========================================
@@ -626,7 +624,7 @@ const stateBounds = {
             if (!semakPagarKoordinat(nilaiNegeri, nilaiKoordinat)) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Pencerobohan Sempadan!',
+                    title: Koordinat Tidak Tepat!',
                     html: `Titik koordinat <b>${nilaiKoordinat}</b> tidak berada di dalam peta negeri <b>${nilaiNegeri}</b>.<br><br>Sila semak semula lokasi anda atau pilih negeri yang betul.`,
                     confirmButtonColor: '#dc3545'
                 });
