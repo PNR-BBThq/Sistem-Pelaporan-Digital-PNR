@@ -1,5 +1,5 @@
 // =======================================================================
-// FILE: js/nlp-bot.js (NLP ENGINE V8.5 - PATCH SELAMAT)
+// FAIL: js/nlp-bot.js (NLP ENGINE V8 - THE ULTIMATE BULLETPROOF FIX)
 // =======================================================================
 
 const SmartNLPBot = {
@@ -14,6 +14,7 @@ const SmartNLPBot = {
             "pulau pinang": "PULAU PINANG", "sabah": "SABAH", "sarawak": "SARAWAK", 
             "selangor": "SELANGOR", "terengganu": "TERENGGANU", "kl": "W.P. KUALA LUMPUR", "labuan": "W.P. LABUAN"
         },
+        // 'Kelapa' dan 'Padi' dibuang dari sini supaya ia dibaca sebagai Tanaman (Crop) secara automatik
         kategori: {
             "buah": "BUAH-BUAHAN", "buahan": "BUAH-BUAHAN", 
             "sayur": "SAYUR-SAYURAN", "sayuran": "SAYUR-SAYURAN", 
@@ -50,8 +51,7 @@ const SmartNLPBot = {
         chatBody.scrollTop = chatBody.scrollHeight;
 
         setTimeout(() => {
-            const loadEl = document.getElementById(loadingId);
-            if (loadEl) loadEl.remove();
+            document.getElementById(loadingId).remove();
             const jawapan = this.prosesAyat(text);
             this.addMessage(jawapan, 'bot');
         }, 500);
@@ -88,7 +88,7 @@ const SmartNLPBot = {
     },
 
     // ==============================================================
-    // CORE AI ENGINE V8.5 (TAMBAH PERBANDINGAN & HELP SAHAJA)
+    // CORE AI ENGINE V8 (THE ULTIMATE MASTERPIECE)
     // ==============================================================
     prosesAyat: function(soalan) {
         const db = AppState.mData;
@@ -154,9 +154,6 @@ const SmartNLPBot = {
         let isTopPest = /top|tinggi|teruk|utama|perosak|ancaman|bahaya/.test(query);
         let isLocation = /mana|lokasi|tempat|senarai|kawasan|jejak/.test(query);
         let isTopCrop = /tanaman|pokok|komoditi|jenis/.test(query);
-        // --- TAMBAHAN BARU: Intent Perbandingan & Help ---
-        let isCompare = /beza|banding|vs\b|lawan|perbandingan/.test(query);
-        let isHelp = /help|bantuan|contoh|tolong|cara\s*guna/i.test(query);
 
         // BINA TAG FILTER UI
         let filterTags = [];
@@ -166,12 +163,7 @@ const SmartNLPBot = {
         if(fKategori && !fCrop) filterTags.push(fKategori);
         let tagHtml = filterTags.length > 0 ? `<div class="mb-3"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-2 py-1"><i class="bi bi-funnel-fill"></i> Konteks: ${filterTags.join(" | ")}</span></div>` : `<div class="mb-3"><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary px-2 py-1"><i class="bi bi-globe"></i> Konteks: Nasional</span></div>`;
 
-        // --- BLOK BANTUAN (HELP) ---
-        if (isHelp) {
-            return tagHtml + `<div class="bg-light p-2 rounded border"><b>Contoh soalan:</b><br>• "Rumusan serangan di Johor"<br>• "Top perosak kelapa sawit"<br>• "Kawasan diserang ulat ratus"<br>• "Senarai tanaman terjejas di Kedah"<br>• "Beza serangan Kelantan dan Terengganu"<br>• Taip <b>nasional</b> untuk reset.</div>`;
-        }
-
-        // 4. PENGIRAAN ASAS UNTUK KONTEKS INI
+        // 4. PENGIRAAN ASAS UNTUK KONTEKS INI (Sangat penting untuk semak kawasan selamat)
         let masterLuasTanam = 0, masterLuasSerang = 0;
         db.forEach(d => {
             let matchCrop = !fCrop || (d.tn||"").toUpperCase().includes(fCrop);
@@ -181,50 +173,10 @@ const SmartNLPBot = {
             }
         });
 
+        // Jika langsung tiada data bancian direkodkan untuk kombinasi ini
         if (masterLuasTanam === 0) {
             return `${tagHtml}✅ Tiada sebarang data bancian mahupun serangan ditemui untuk konteks ini.`;
         }
-
-        // --- BLOK PERBANDINGAN (TAMBAHAN BARU) ---
-        if (isCompare) {
-            let match = query.match(/beza|banding|vs\b|lawan|perbandingan/i);
-            if (match) {
-                // Cuba cari dua lokasi dalam ayat
-                let semuaNegeri = [...new Set(db.map(d => d.n).filter(Boolean))];
-                let entiti1 = null, entiti2 = null;
-                
-                // Cari dua entiti dalam query
-                for (let n of semuaNegeri) {
-                    if (query.includes(n.toLowerCase())) {
-                        if (!entiti1) entiti1 = n;
-                        else if (!entiti2) { entiti2 = n; break; }
-                    }
-                }
-                
-                if (entiti1 && entiti2) {
-                    let kira = function(negeri) {
-                        let lt = 0, ls = 0;
-                        db.forEach(d => {
-                            if ((d.n||"").toUpperCase().includes(negeri.toUpperCase())) {
-                                lt += (parseFloat(d.lt)||0);
-                                ls += (parseFloat(d.ls)||0);
-                            }
-                        });
-                        return { lt, ls, pct: lt > 0 ? ((ls/lt)*100).toFixed(2) : 0 };
-                    };
-                    
-                    let s1 = kira(entiti1);
-                    let s2 = kira(entiti2);
-                    
-                    htmlResponse += `<div class="bg-light p-2 rounded border mb-2"><b>Perbandingan: ${entiti1} vs ${entiti2}</b><br>`;
-                    htmlResponse += `${entiti1}: <b>${s1.lt.toLocaleString()} Ha</b> bancian, <b>${s1.ls.toLocaleString()} Ha</b> serangan (${s1.pct}%)<br>`;
-                    htmlResponse += `${entiti2}: <b>${s2.lt.toLocaleString()} Ha</b> bancian, <b>${s2.ls.toLocaleString()} Ha</b> serangan (${s2.pct}%)<br>`;
-                    htmlResponse += `</div>`;
-                    return htmlResponse;
-                }
-            }
-        }
-        // --- TAMAT BLOK PERBANDINGAN ---
 
         // AUTO-DASHBOARD (Jika soalan umum, kita beri Rumusan & Top Perosak)
         if (!isSummary && !isTopPest && !isLocation && !isTopCrop && !fPestSearch) {
@@ -331,7 +283,13 @@ const SmartNLPBot = {
             }
         }
 
-        
+        return htmlResponse;
+    }
+};
+
+// =======================================================================
+// FUNGSI BUTANG CHATBOT BOLEH DISERET (DRAGGABLE FAB)
+// =======================================================================
 document.addEventListener("DOMContentLoaded", function() {
     const fab = document.getElementById('nlp-chatbot-fab');
     if (!fab) return;
