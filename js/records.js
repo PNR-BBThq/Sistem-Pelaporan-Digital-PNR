@@ -34,7 +34,7 @@ const DataManager = {
                 pestRows += `<tr><td style="font-size:0.85rem" class="text-uppercase">${k}</td><td class="text-center fw-bold">${luasVal.toFixed(2)}</td><td class="text-center small">${pctVal}%</td><td class="text-center"><span class="badge bg-${badgeColor}">T${level}</span></td></tr>`; 
             }); 
         } else { 
-            pestRows = `<tr><td colspan="4" class="text-center text-muted small">Tiada Data Terperinci</td></tr>`; 
+            pestRows = `<tr><td colspan="4" class="text-center text-muted small">Tiada Serangan Perosak Dikesan</td></tr>`; 
         }
         
         const imgLinks = cleanImg(d.im);
@@ -312,7 +312,7 @@ const TaskManager = {
                         pestRows += `<tr><td class="text-start text-uppercase" style="font-size:0.8rem; vertical-align:middle;">${k}</td><td class="text-center fw-bold" style="vertical-align:middle;">${lsObj[k]}</td><td class="text-center small" style="vertical-align:middle;">${pctObj[k]||0}%</td><td class="text-center" style="vertical-align:middle;"><span class="badge bg-${badgeColor}">T${level}</span></td></tr>`; 
                     }); 
                 } else { 
-                    pestRows = `<tr><td colspan="4" class="text-center text-muted fst-italic small">Tiada Serangan</td></tr>`; 
+                    pestRows = `<tr><td colspan="4" class="text-center text-muted fst-italic small">Tiada Serangan Perosak Dikesan</td></tr>`; 
                 } 
             } catch(e) { pestRows = `<tr><td colspan="4" class="text-center text-muted small">Ralat Data</td></tr>`; } 
 
