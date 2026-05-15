@@ -600,8 +600,7 @@ const stateBounds = {
         const mode = e.submitter ? e.submitter.value : 'BARU'; 
         const f = e.target; 
         
-      
-       // ==========================================
+        // ==========================================
         // KAWALAN WAJIB ISI (HANYA UNTUK HANTAR BARU)
         // ==========================================
         if (mode === 'BARU') {
@@ -610,28 +609,10 @@ const stateBounds = {
                 f.reportValidity(); 
                 return; 
             }
-            
-            // 2. Check format koordinat GPS betul atau tak
-            const gpsInput = document.getElementById('gpsInput');
-            if (!validateCoord(gpsInput)) {
+            // 2. Check koordinat GPS betul atau tak
+            if (!validateCoord(document.getElementById('gpsInput'))) {
                 return;
             }
-
-            // 3. SEMAKAN PAGAR KOORDINAT NEGERI (GEOFENCING)
-            const nilaiNegeri = document.getElementById('negeriSelect').value;
-            const nilaiKoordinat = gpsInput.value;
-
-            if (!semakPagarKoordinat(nilaiNegeri, nilaiKoordinat)) {
-                Swal.fire({
-                    icon: 'error',
-                    title: Koordinat Tidak Tepat!',
-                    html: `Titik koordinat <b>${nilaiKoordinat}</b> tidak berada di dalam peta negeri <b>${nilaiNegeri}</b>.<br><br>Sila semak semula lokasi anda atau pilih negeri yang betul.`,
-                    confirmButtonColor: '#dc3545'
-                });
-                document.getElementById('gpsInput').classList.add('is-invalid');
-                return; // BERHENTI: Jangan hantar borang!
-            }
-            document.getElementById('gpsInput').classList.remove('is-invalid');
         }
         // ==========================================
 
@@ -766,36 +747,6 @@ const stateBounds = {
         btn.disabled = false; btn.innerText = "🔄 Tukar (Online Only)";
     }
 
-// =========================================================
-    // FUNGSI BARU: PENYEMAK PAGAR NEGERI (GEOFENCING)
-    // =========================================================
-    function semakPagarKoordinat(namaNegeri, coordString) {
-        if (!namaNegeri || !coordString) return true; // Lepaskan jika kosong (akan disekat oleh filter required borang)
-
-        // Pecahkan string "4.123, 101.456" kepada Lat dan Lng
-        let parts = coordString.split(',');
-        if (parts.length !== 2) return false;
-
-        let lat = parseFloat(parts[0].trim());
-        let lng = parseFloat(parts[1].trim());
-        let negeri = namaNegeri.toUpperCase().trim();
-
-        // Guna pembolehubah 'stateBounds' sedia ada dalam kod Tuan
-        let sempadan = stateBounds[negeri]; 
-
-        if (!sempadan) {
-            console.warn("Sempadan untuk " + negeri + " tidak ditemui.");
-            return true; // Fail-safe: Lepaskan jika nama negeri tak wujud dalam kamus
-        }
-
-        // Semak adakah terkeluar pagar (atas/bawah/kiri/kanan)
-        if (lat < sempadan.minLat || lat > sempadan.maxLat || lng < sempadan.minLng || lng > sempadan.maxLng) {
-            return false; // GAGAL: Terkeluar Pagar!
-        }
-        
-        return true; // LULUS: Dalam Sempadan
-    }
-    
     // --- PUSH NOTIFICATION & SYNC ---
     function hantarNotification() {
         if (Notification.permission === 'granted') {
