@@ -12,7 +12,6 @@
   <style>
     body { background-color: #f0f2f5; padding-bottom: 80px; font-family: 'Segoe UI', sans-serif; }
     
-    /* Container Utama Design Kad */
     .container { 
         max-width: 600px; 
         background: white; 
@@ -23,16 +22,14 @@
         margin-bottom: 20px;
     }
 
-    /* Tajuk Seksyen */
     h5.text-primary {
         font-weight: 700;
         margin-top: 20px;
-        color: #064e3b !important; /* Hijau Gelap PNR */
+        color: #064e3b !important;
         border-bottom: 2px solid #e9ecef;
         padding-bottom: 10px;
     }
 
-    /* Item Perosak */
     .perosak-item { 
         border: 1px solid #dee2e6; 
         padding: 15px; 
@@ -43,23 +40,17 @@
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
-    /* Loader Overlay */
     .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.9); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; visibility: hidden; }
     
-    /* Gambar Preview */
     .preview-img { width: 70px; height: 70px; margin: 5px; border-radius: 5px; border: 1px solid #ddd; object-fit: cover; }
     
-    /* Butang Close Custom */
     .btn-close-custom { position: absolute; top: 10px; right: 10px; background-color: white; border-radius: 50%; padding: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     
-    /* Validation Error */
     .is-invalid { border-color: #dc3545 !important; background-image: none; }
     
-    /* Status Bar Offline (Footer) */
     .offline-status { position: fixed; bottom: 0; left: 0; right: 0; background: #343a40; color: white; text-align: center; padding: 12px; font-weight: bold; font-size: 0.9rem; z-index: 1000; display: none; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); }
     .offline-status.active { display: block; background: #dc3545; }
     
-    /* Coordinate Styles */
     .coord-mode-selector .btn-check:checked + .btn { font-weight: bold; border-width: 2px; }
     .rso-container { background-color: #e9f7ef; border: 1px solid #c3e6cb; border-radius: 8px; padding: 15px; margin-bottom: 15px; display: none; }
   </style>
@@ -115,7 +106,7 @@
         <div class="col-6 mb-3">
             <label class="fw-bold form-label">Negeri <span class="text-danger">*</span></label>
             <select class="form-select" name="negeri" id="negeriSelect" onchange="updateDaerah()" required>
-                </select>
+            </select>
         </div>
         <div class="col-6 mb-3">
             <label class="fw-bold form-label">Daerah <span class="text-danger">*</span></label>
@@ -193,7 +184,7 @@
       
       <div id="perosakList"></div>
       
-      <button type="button" class="btn btn-outline-primary w-100 mb-4 fw-bold dashed-border" onclick="addPerosakField()">
+      <button type="button" class="btn btn-outline-primary w-100 mb-4 fw-bold" onclick="addPerosakField()">
           <i class="bi bi-plus-circle"></i> Tambah Perosak
       </button>
       
@@ -219,7 +210,7 @@
           </div>
       </div>
 
-    <div class="d-flex flex-column flex-md-row gap-2 mt-5">
+      <div class="d-flex flex-column flex-md-row gap-2 mt-5">
           <button type="submit" name="submitMode" value="DRAF" class="btn btn-secondary btn-lg fw-bold shadow-sm flex-grow-1" id="draftBtn" formnovalidate>
               <i class="bi bi-save"></i> SIMPAN DRAF
           </button>
@@ -236,139 +227,152 @@
   </div>
 
   <script>
-    // --- KONFIGURASI API (GANTI URL JIKA DEPLOY BARU) ---
+    // ============================================================
+    // KONFIGURASI API
+    // ============================================================
     const API_URL = "https://script.google.com/macros/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
-    
-    // --- DATA STATIK NEGERI ---
-const districtData = {
-  "JOHOR": ["BATU PAHAT", "JOHOR BAHRU", "KLUANG", "KOTA TINGGI", "KULAI", "MERSING", "MUAR", "PONTIAN", "SEGAMAT", "TANGKAK"],
-  "KEDAH": ["BALING", "BANDAR BAHARU", "KOTA SETAR", "KUALA MUDA", "KUBANG PASU", "KULIM", "LANGKAWI", "PADANG TERAP", "PENDANG", "POKOK SENA", "SIK", "YAN"],
-  "KELANTAN": ["BACHOK", "GUA MUSANG", "JELI", "KOTA BHARU", "KUALA KRAI","LOJING", "MACHANG", "PASIR MAS", "PASIR PUTEH", "TANAH MERAH", "TUMPAT"],
-  "MELAKA": ["ALOR GAJAH", "JASIN", "MELAKA TENGAH"],
-  "NEGERI SEMBILAN": ["JELEBU", "JEMPOL", "KUALA PILAH", "PORT DICKSON", "REMBAU", "SEREMBAN", "TAMPIN"],
-  "PAHANG": ["BENTONG", "BERA", "CAMERON HIGHLANDS", "JERANTUT", "KUANTAN", "LIPIS", "MARAN", "PEKAN", "RAUB", "ROMPIN", "TEMERLOH"],
-  "PERAK": ["BAGAN DATUK", "BATANG PADANG", "HILIR PERAK", "HULU PERAK", "KAMPAR", "KERIAN", "KINTA", "KUALA KANGSAR", "LARUT, MATANG DAN SELAMA", "MANJUNG", "MUALLIM", "PERAK TENGAH"],
-  "PERLIS": ["PERLIS"],
-  "PULAU PINANG": ["BARAT DAYA", "SEBERANG PERAI SELATAN", "SEBERANG PERAI TENGAH", "SEBERANG PERAI UTARA", "TIMUR LAUT"],
-  "SABAH": ["BEAUFORT", "BELURAN", "KALABAKAN", "KENINGAU", "KINABATANGAN", "KOTA BELUD", "KOTA KINABALU", "KOTA MARUDU", "KUALA PENYU", "KUDAT", "KUNAK", "LAHAD DATU", "NABAWAN", "PAPAR", "PENAMPANG", "PITAS", "PUTATAN", "RANAU", "SANDAKAN", "SEMPORNA", "SIPITANG", "TAMBUNAN", "TAWAU", "TELUPID", "TENOM", "TONGOD", "TUARAN"],
-  "SARAWAK": ["ASAJAYA", "BAU", "BELAGA", "BELURU", "BETONG", "BINTULU", "BUKIT MABONG", "DALAT", "DARO", "JULAU", "KABONG", "KANOWIT", "KAPIT", "KUCHING", "LAWAS", "LIMBANG", "LUBOK ANTU", "LUNDU", "MARUDI", "MATU", "MERADONG", "MIRI", "MUKAH", "PAKAN", "PUSA", "SAMARAHAN", "SARATOK", "SARIKEI", "SEBAUH", "SELANGAU", "SERIAN", "SIBU", "SIMUNJAN", "SONG", "SRI AMAN", "SUBIS", "TANJUNG MANIS", "TATAU", "TEBEDU", "TELANG USAN"],
-  "SELANGOR": ["GOMBAK", "HULU LANGAT", "HULU SELANGOR", "KLANG", "KUALA LANGAT", "KUALA SELANGOR", "PETALING", "SABAK BERNAM", "SEPANG"],
-  "TERENGGANU": ["BESUT", "DUNGUN", "HULU TERENGGANU", "KEMAMAN", "KUALA NERUS", "KUALA TERENGGANU", "MARANG", "SETIU"],
-  "W.P. KUALA LUMPUR": ["KUALA LUMPUR"],
-  "W.P. LABUAN": ["LABUAN"],
-  "W.P. PUTRAJAYA": ["PUTRAJAYA"]
-};
-const stateBounds = { 
-  "JOHOR": { minLat: 1.2, maxLat: 2.9, minLng: 102.4, maxLng: 104.6 }, 
-  "KEDAH": { minLat: 5.0, maxLat: 6.6, minLng: 99.5, maxLng: 101.2 }, 
-  "KELANTAN": { minLat: 4.5, maxLat: 6.3, minLng: 101.3, maxLng: 102.7 }, 
-  "MELAKA": { minLat: 2.0, maxLat: 2.5, minLng: 101.9, maxLng: 102.6 }, 
-  "NEGERI SEMBILAN": { minLat: 2.3, maxLat: 3.2, minLng: 101.8, maxLng: 102.7 }, 
-  "PAHANG": { minLat: 2.4, maxLat: 4.9, minLng: 101.3, maxLng: 104.3 }, 
-  "PERAK": { minLat: 3.5, maxLat: 6.0, minLng: 100.3, maxLng: 101.8 }, 
-  "PERLIS": { minLat: 6.2, maxLat: 6.75, minLng: 100.0, maxLng: 100.4 }, 
-  "PULAU PINANG": { minLat: 5.1, maxLat: 5.6, minLng: 100.1, maxLng: 100.6 }, 
-  "SABAH": { minLat: 4.0, maxLat: 7.5, minLng: 115.0, maxLng: 119.5 }, 
-  "SARAWAK": { minLat: 0.8, maxLat: 5.0, minLng: 109.0, maxLng: 115.6 }, 
-  "SELANGOR": { minLat: 2.6, maxLat: 3.9, minLng: 100.7, maxLng: 102.0 }, 
-  "TERENGGANU": { minLat: 3.9, maxLat: 5.9, minLng: 102.3, maxLng: 103.6 }, 
-  "W.P. KUALA LUMPUR": { minLat: 3.0, maxLat: 3.25, minLng: 101.6, maxLng: 101.8 }, 
-  "W.P. PUTRAJAYA": { minLat: 2.85, maxLat: 3.0, minLng: 101.6, maxLng: 101.75 }, 
-  "W.P. LABUAN": { minLat: 5.2, maxLat: 5.4, minLng: 115.1, maxLng: 115.3 } 
-};
-    let cachedMasterData = {}; 
+
+    // ============================================================
+    // DATA STATIK NEGERI & DAERAH
+    // ============================================================
+    const districtData = {
+      "JOHOR": ["BATU PAHAT","JOHOR BAHRU","KLUANG","KOTA TINGGI","KULAI","MERSING","MUAR","PONTIAN","SEGAMAT","TANGKAK"],
+      "KEDAH": ["BALING","BANDAR BAHARU","KOTA SETAR","KUALA MUDA","KUBANG PASU","KULIM","LANGKAWI","PADANG TERAP","PENDANG","POKOK SENA","SIK","YAN"],
+      "KELANTAN": ["BACHOK","GUA MUSANG","JELI","KOTA BHARU","KUALA KRAI","LOJING","MACHANG","PASIR MAS","PASIR PUTEH","TANAH MERAH","TUMPAT"],
+      "MELAKA": ["ALOR GAJAH","JASIN","MELAKA TENGAH"],
+      "NEGERI SEMBILAN": ["JELEBU","JEMPOL","KUALA PILAH","PORT DICKSON","REMBAU","SEREMBAN","TAMPIN"],
+      "PAHANG": ["BENTONG","BERA","CAMERON HIGHLANDS","JERANTUT","KUANTAN","LIPIS","MARAN","PEKAN","RAUB","ROMPIN","TEMERLOH"],
+      "PERAK": ["BAGAN DATUK","BATANG PADANG","HILIR PERAK","HULU PERAK","KAMPAR","KERIAN","KINTA","KUALA KANGSAR","LARUT, MATANG DAN SELAMA","MANJUNG","MUALLIM","PERAK TENGAH"],
+      "PERLIS": ["PERLIS"],
+      "PULAU PINANG": ["BARAT DAYA","SEBERANG PERAI SELATAN","SEBERANG PERAI TENGAH","SEBERANG PERAI UTARA","TIMUR LAUT"],
+      "SABAH": ["BEAUFORT","BELURAN","KALABAKAN","KENINGAU","KINABATANGAN","KOTA BELUD","KOTA KINABALU","KOTA MARUDU","KUALA PENYU","KUDAT","KUNAK","LAHAD DATU","NABAWAN","PAPAR","PENAMPANG","PITAS","PUTATAN","RANAU","SANDAKAN","SEMPORNA","SIPITANG","TAMBUNAN","TAWAU","TELUPID","TENOM","TONGOD","TUARAN"],
+      "SARAWAK": ["ASAJAYA","BAU","BELAGA","BELURU","BETONG","BINTULU","BUKIT MABONG","DALAT","DARO","JULAU","KABONG","KANOWIT","KAPIT","KUCHING","LAWAS","LIMBANG","LUBOK ANTU","LUNDU","MARUDI","MATU","MERADONG","MIRI","MUKAH","PAKAN","PUSA","SAMARAHAN","SARATOK","SARIKEI","SEBAUH","SELANGAU","SERIAN","SIBU","SIMUNJAN","SONG","SRI AMAN","SUBIS","TANJUNG MANIS","TATAU","TEBEDU","TELANG USAN"],
+      "SELANGOR": ["GOMBAK","HULU LANGAT","HULU SELANGOR","KLANG","KUALA LANGAT","KUALA SELANGOR","PETALING","SABAK BERNAM","SEPANG"],
+      "TERENGGANU": ["BESUT","DUNGUN","HULU TERENGGANU","KEMAMAN","KUALA NERUS","KUALA TERENGGANU","MARANG","SETIU"],
+      "W.P. KUALA LUMPUR": ["KUALA LUMPUR"],
+      "W.P. LABUAN": ["LABUAN"],
+      "W.P. PUTRAJAYA": ["PUTRAJAYA"]
+    };
+
+    // ============================================================
+    // DATA SEMPADAN NEGERI (UNTUK VALIDASI KOORDINAT)
+    // ============================================================
+    const stateBounds = {
+      "JOHOR":             { minLat: 1.2,  maxLat: 2.9,  minLng: 102.4, maxLng: 104.6 },
+      "KEDAH":             { minLat: 5.0,  maxLat: 6.6,  minLng: 99.5,  maxLng: 101.2 },
+      "KELANTAN":          { minLat: 4.5,  maxLat: 6.3,  minLng: 101.3, maxLng: 102.7 },
+      "MELAKA":            { minLat: 2.0,  maxLat: 2.5,  minLng: 101.9, maxLng: 102.6 },
+      "NEGERI SEMBILAN":   { minLat: 2.3,  maxLat: 3.2,  minLng: 101.8, maxLng: 102.7 },
+      "PAHANG":            { minLat: 2.4,  maxLat: 4.9,  minLng: 101.3, maxLng: 104.3 },
+      "PERAK":             { minLat: 3.5,  maxLat: 6.0,  minLng: 100.3, maxLng: 101.8 },
+      "PERLIS":            { minLat: 6.2,  maxLat: 6.75, minLng: 100.0, maxLng: 100.4 },
+      "PULAU PINANG":      { minLat: 5.1,  maxLat: 5.6,  minLng: 100.1, maxLng: 100.6 },
+      "SABAH":             { minLat: 4.0,  maxLat: 7.5,  minLng: 115.0, maxLng: 119.5 },
+      "SARAWAK":           { minLat: 0.8,  maxLat: 5.0,  minLng: 109.0, maxLng: 115.6 },
+      "SELANGOR":          { minLat: 2.6,  maxLat: 3.9,  minLng: 100.7, maxLng: 102.0 },
+      "TERENGGANU":        { minLat: 3.9,  maxLat: 5.9,  minLng: 102.3, maxLng: 103.6 },
+      "W.P. KUALA LUMPUR": { minLat: 3.0,  maxLat: 3.25, minLng: 101.6, maxLng: 101.8 },
+      "W.P. PUTRAJAYA":    { minLat: 2.85, maxLat: 3.0,  minLng: 101.6, maxLng: 101.75 },
+      "W.P. LABUAN":       { minLat: 5.2,  maxLat: 5.4,  minLng: 115.1, maxLng: 115.3 }
+    };
+
+    // ============================================================
+    // PEMBOLEH UBAH GLOBAL
+    // ============================================================
+    let cachedMasterData = {};
     let filesToUpload = [];
     let isOffline = !navigator.onLine;
 
-    // --- INITIALIZE ---
-        // --- INITIALIZE & AUTO-SAVE SETUP ---
+    // ============================================================
+    // INITIALIZE
+    // ============================================================
     window.onload = function() {
         checkConnectivity();
         loadDropdowns();
-        addPerosakField(); 
-        
-        // Minta izin notification
+        addPerosakField();
+
         if ('Notification' in window && Notification.permission !== 'granted') {
             Notification.requestPermission();
         }
-        
-        updateQueueBadge(); // Init badge button
 
-        // --- PASANG CCTV UNTUK AUTO-SAVE ---
+        updateQueueBadge();
+
         const form = document.getElementById('monitorForm');
         if (form) {
             form.addEventListener('input', autoSaveBorang);
             form.addEventListener('change', autoSaveBorang);
         }
-        
-        // --- SEMAK JIKA ADA DATA TERGANTUNG ---
-        setTimeout(semakAutoSave, 1000); // Tunggu 1 saat supaya dropdown negeri/tanaman siap di-load
+
+        setTimeout(semakAutoSave, 1000);
     };
 
-    // ==========================================
-    // CIRI GEMPAK: PENYELAMAT DATA (AUTO-RECOVER)
-    // ==========================================
+    // ============================================================
+    // AUTO-SAVE & RECOVER
+    // ============================================================
     function autoSaveBorang() {
         const form = document.getElementById('monitorForm');
         if (!form) return;
-        
         const formData = new FormData(form);
         const dataObj = Object.fromEntries(formData.entries());
-        
-        // Simpan maklumat asas borang ke memori telefon
         localStorage.setItem('pnrAutoSaveDraf', JSON.stringify(dataObj));
     }
 
     function semakAutoSave() {
         const savedStr = localStorage.getItem('pnrAutoSaveDraf');
-        
-        if (savedStr) {
-            const savedData = JSON.parse(savedStr);
-            // Kalau setakat ada tarikh, kita abaikan. Kita nak prompt kalau dia dah isi benda lain
-            if (Object.keys(savedData).length <= 1) return; 
+        if (!savedStr) return;
 
-            Swal.fire({
-                title: 'Sambung Borang Tergantung?',
-                text: 'Kami mengesan anda ada menaip borang sebelum ini tetapi belum dihantar. Mahu pulihkan data tersebut?',
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonText: '<i class="bi bi-pencil-square"></i> Ya, Pulihkan',
-                cancelButtonText: '<i class="bi bi-trash"></i> Buang',
-                confirmButtonColor: '#198754',
-                cancelButtonColor: '#d33',
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const form = document.getElementById('monitorForm');
-                    
-                    // Masukkan semula data ke dalam kotak input
-                    for (let key in savedData) {
-                        const input = form.querySelector(`[name="${key}"]`);
-                        if (input && input.type !== 'file') {
-                            input.value = savedData[key];
-                        }
+        const savedData = JSON.parse(savedStr);
+        if (Object.keys(savedData).length <= 1) return;
+
+        Swal.fire({
+            title: 'Sambung Borang Tergantung?',
+            text: 'Kami mengesan anda ada menaip borang sebelum ini tetapi belum dihantar. Mahu pulihkan data tersebut?',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-pencil-square"></i> Ya, Pulihkan',
+            cancelButtonText: '<i class="bi bi-trash"></i> Padam',
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#d33',
+            allowOutsideClick: false
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                const form = document.getElementById('monitorForm');
+                for (var key in savedData) {
+                    var input = form.querySelector('[name="' + key + '"]');
+                    if (input && input.type !== 'file') {
+                        input.value = savedData[key];
                     }
-                    
-                    // Trigger update dropdown secara manual supaya Daerah/Tanaman muncul
-                    if (savedData['negeri']) { updateDaerah(); setTimeout(() => { form.querySelector(`[name="daerah"]`).value = savedData['daerah']; }, 200); }
-                    if (savedData['kategori']) { updateTanamanList(); setTimeout(() => { form.querySelector(`[name="namaTanaman"]`).value = savedData['namaTanaman']; }, 200); }
-
-                    Swal.fire('Dipulihkan!', 'Data asas anda telah dikembalikan. Sila sambung mengisi.', 'success');
-                } else {
-                    // Staf pilih 'Buang'
-                    localStorage.removeItem('pnrAutoSaveDraf');
                 }
-            });
-        }
+                if (savedData['negeri']) {
+                    updateDaerah();
+                    setTimeout(function() {
+                        var daerahEl = form.querySelector('[name="daerah"]');
+                        if (daerahEl) daerahEl.value = savedData['daerah'];
+                    }, 200);
+                }
+                if (savedData['kategori']) {
+                    updateTanamanList();
+                    setTimeout(function() {
+                        var tanamanEl = form.querySelector('[name="namaTanaman"]');
+                        if (tanamanEl) tanamanEl.value = savedData['namaTanaman'];
+                    }, 200);
+                }
+                Swal.fire('Dipulihkan!', 'Data anda telah dikembalikan. Sila sambung mengisi.', 'success');
+            } else {
+                localStorage.removeItem('pnrAutoSaveDraf');
+            }
+        });
     }
-    // ==========================================
 
+    // ============================================================
+    // CONNECTIVITY CHECK
+    // ============================================================
     function checkConnectivity() {
         isOffline = !navigator.onLine;
-        const banner = document.getElementById('connectionStatus');
-        const qInfo = document.getElementById('queueInfo');
-        const btn = document.getElementById('submitBtn');
-        
+        var banner = document.getElementById('connectionStatus');
+        var qInfo = document.getElementById('queueInfo');
+        var btn = document.getElementById('submitBtn');
+
         if (isOffline) {
             banner.classList.add('active');
             banner.innerHTML = "<i class='bi bi-wifi-off'></i> ANDA SEDANG OFFLINE. Data akan disimpan di telefon.";
@@ -385,111 +389,124 @@ const stateBounds = {
         }
     }
 
+    // ============================================================
+    // LOAD DROPDOWNS
+    // ============================================================
     function loadDropdowns() {
-        const nSelect = document.getElementById('negeriSelect');
+        var nSelect = document.getElementById('negeriSelect');
         nSelect.innerHTML = '<option value="">- Pilih -</option>';
-        Object.keys(districtData).sort().forEach(n => nSelect.add(new Option(n, n)));
+        Object.keys(districtData).sort().forEach(function(n) {
+            nSelect.add(new Option(n, n));
+        });
 
-        const cached = localStorage.getItem('pnr_masterData');
+        var cached = localStorage.getItem('pnr_masterData');
         if (cached) {
             cachedMasterData = JSON.parse(cached);
             populateMasterData(cachedMasterData);
         }
-        
-        if(!isOffline) fetchMasterData();
+
+        if (!isOffline) fetchMasterData();
     }
 
-    // --- PENTING: Guna POST untuk tarik data dari doPost(e) ---
     async function fetchMasterData() {
         try {
-            const res = await fetch(API_URL, {
+            var res = await fetch(API_URL, {
                 method: 'POST',
                 headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({ action: 'getTanamanList' })
             });
-            const json = await res.json();
-            const cleanData = json.data || json;
-            
+            var json = await res.json();
+            var cleanData = json.data || json;
             if (cleanData && Object.keys(cleanData).length > 0) {
                 cachedMasterData = cleanData;
                 localStorage.setItem('pnr_masterData', JSON.stringify(cleanData));
                 populateMasterData(cleanData);
             }
-        } catch(e) { console.error("Gagal tarik data master", e); }
+        } catch(e) {
+            console.error("Gagal tarik data master", e);
+        }
     }
 
     function populateMasterData(data) {
-        const pestTree = data.pestTree || {};
-        const kSelect = document.getElementById('kategoriSelect');
-        const currentKat = kSelect.value;
+        var pestTree = data.pestTree || {};
+        var kSelect = document.getElementById('kategoriSelect');
+        var currentKat = kSelect.value;
         kSelect.innerHTML = '<option value="">- Pilih Kategori -</option>';
-        Object.keys(pestTree).sort().forEach(kat => kSelect.add(new Option(kat, kat)));
-        if(currentKat) kSelect.value = currentKat;
+        Object.keys(pestTree).sort().forEach(function(kat) {
+            kSelect.add(new Option(kat, kat));
+        });
+        if (currentKat) kSelect.value = currentKat;
 
-        const userList = data.userList || [];
-        const uList = document.getElementById('userListSuggestions');
+        var userList = data.userList || [];
+        var uList = document.getElementById('userListSuggestions');
         uList.innerHTML = "";
-        userList.forEach(name => {
-            const opt = document.createElement('option');
+        userList.forEach(function(name) {
+            var opt = document.createElement('option');
             opt.value = name;
             uList.appendChild(opt);
         });
 
-        const syorList = data.syorList || [];
-        const sContainer = document.getElementById('syorCheckboxContainer');
+        var syorList = data.syorList || [];
+        var sContainer = document.getElementById('syorCheckboxContainer');
         if (syorList.length > 0) {
             sContainer.innerHTML = "";
-            syorList.forEach((s, i) => {
-                sContainer.innerHTML += `
-                <div class="form-check">
-                    <input class="form-check-input syor-checkbox" type="checkbox" value="${s}" id="s${i}">
-                    <label class="form-check-label" for="s${i}">${s}</label>
-                </div>`;
+            syorList.forEach(function(s, i) {
+                sContainer.innerHTML += '<div class="form-check"><input class="form-check-input syor-checkbox" type="checkbox" value="' + s + '" id="s' + i + '"><label class="form-check-label" for="s' + i + '">' + s + '</label></div>';
             });
         } else {
             sContainer.innerHTML = "<small class='text-muted'>Tiada senarai syor.</small>";
         }
     }
 
-    // --- LOGIK UI BORANG ---
-    function updateDaerah() { 
-        const n = document.getElementById('negeriSelect').value; 
-        const d = document.getElementById('daerahSelect');
+    // ============================================================
+    // LOGIK UI BORANG
+    // ============================================================
+    function updateDaerah() {
+        var n = document.getElementById('negeriSelect').value;
+        var d = document.getElementById('daerahSelect');
         d.innerHTML = "<option value=''>- Pilih -</option>";
-        if(n && districtData[n]) districtData[n].forEach(x => d.add(new Option(x, x)));
+        if (n && districtData[n]) {
+            districtData[n].forEach(function(x) {
+                d.add(new Option(x, x));
+            });
+        }
     }
 
     function updateTanamanList() {
-        const kat = document.getElementById('kategoriSelect').value;
-        const tanSelect = document.getElementById('tanamanSelect');
+        var kat = document.getElementById('kategoriSelect').value;
+        var tanSelect = document.getElementById('tanamanSelect');
         tanSelect.innerHTML = '<option value="">- Pilih Kategori Dulu -</option>';
-        const tree = cachedMasterData.pestTree || {};
+        var tree = cachedMasterData.pestTree || {};
         if (kat && tree[kat]) {
             tanSelect.innerHTML = '<option value="">- Pilih Tanaman -</option>';
-            Object.keys(tree[kat]).sort().forEach(tan => tanSelect.add(new Option(tan, tan)));
+            Object.keys(tree[kat]).sort().forEach(function(tan) {
+                tanSelect.add(new Option(tan, tan));
+            });
         }
-        updatePestDatalist(); 
+        updatePestDatalist();
     }
 
     function updatePestDatalist() {
-        const kat = document.getElementById('kategoriSelect').value;
-        const tan = document.getElementById('tanamanSelect').value;
-        const dl = document.getElementById('existingPestList');
-        dl.innerHTML = ""; 
-        const tree = cachedMasterData.pestTree || {};
-        if(kat && tan && tree[kat] && tree[kat][tan]) {
-            tree[kat][tan].forEach(p => { 
-                const opt = document.createElement('option'); opt.value = p; dl.appendChild(opt); 
+        var kat = document.getElementById('kategoriSelect').value;
+        var tan = document.getElementById('tanamanSelect').value;
+        var dl = document.getElementById('existingPestList');
+        dl.innerHTML = "";
+        var tree = cachedMasterData.pestTree || {};
+        if (kat && tan && tree[kat] && tree[kat][tan]) {
+            tree[kat][tan].forEach(function(p) {
+                var opt = document.createElement('option');
+                opt.value = p;
+                dl.appendChild(opt);
             });
         }
     }
 
     function toggleCoordMode(mode) {
-        const area = document.getElementById('rsoInputArea');
-        const gpsInput = document.getElementById('gpsInput');
+        var area = document.getElementById('rsoInputArea');
+        var gpsInput = document.getElementById('gpsInput');
         if (mode === 'rso') {
             area.style.display = 'block';
-            gpsInput.readOnly = true; 
+            gpsInput.readOnly = true;
             gpsInput.placeholder = "Tekan butang 'Tukar' di atas";
         } else {
             area.style.display = 'none';
@@ -499,214 +516,233 @@ const stateBounds = {
     }
 
     function addPerosakField() {
-        const div = document.createElement('div'); div.className = "perosak-item";
-        div.innerHTML = `
-            <button type="button" class="btn-close btn-close-custom" onclick="this.parentElement.remove()"></button>
-            <div class="mb-2"><label class="small fw-bold">Nama Perosak</label><input type="text" class="form-control perosak-name" list="existingPestList" placeholder="Pilih atau taip : Sekiranya tiada perosak dikesan, Tidak Perlu isi bahagian ini"></div>
-            <div class="row g-2">
-                <div class="col-4"><label class="small">Luas Serangan(ha)</label><input type="number" step="0.001" class="form-control perosak-luas" oninput="calcPercent(this)"></div>
-                <div class="col-4"><label class="small">% serangan</label><input type="text" class="form-control perosak-percent" readonly></div>
-                <div class="col-4"><label class="small">Keterukan</label>
-                    <select class="form-select perosak-severity">
-                        <option value="1">1 - Sgt Rendah</option><option value="2">2 - Rendah</option><option value="3">3 - Sederhana</option><option value="4">4 - Teruk</option><option value="5">5 - Sgt Teruk</option>
-                    </select>
-                </div>
-            </div>`;
+        var div = document.createElement('div');
+        div.className = "perosak-item";
+        div.innerHTML = '<button type="button" class="btn-close btn-close-custom" onclick="this.parentElement.remove()"></button>' +
+            '<div class="mb-2"><label class="small fw-bold">Nama Perosak</label>' +
+            '<input type="text" class="form-control perosak-name" list="existingPestList" placeholder="Pilih atau taip : Sekiranya tiada perosak dikesan, Tidak Perlu isi bahagian ini"></div>' +
+            '<div class="row g-2">' +
+            '<div class="col-4"><label class="small">Luas Serangan(ha)</label><input type="number" step="0.001" class="form-control perosak-luas" oninput="calcPercent(this)"></div>' +
+            '<div class="col-4"><label class="small">% serangan</label><input type="text" class="form-control perosak-percent" readonly></div>' +
+            '<div class="col-4"><label class="small">Keterukan</label>' +
+            '<select class="form-select perosak-severity">' +
+            '<option value="1">1 - Sgt Rendah</option>' +
+            '<option value="2">2 - Rendah</option>' +
+            '<option value="3">3 - Sederhana</option>' +
+            '<option value="4">4 - Teruk</option>' +
+            '<option value="5">5 - Sgt Teruk</option>' +
+            '</select></div></div>';
         document.getElementById('perosakList').appendChild(div);
     }
 
     function calcPercent(el) {
-        const luasKebun = parseFloat(document.getElementById('luasBertanamInput').value) || 0;
-        const luasSakit = parseFloat(el.value) || 0;
-        const pctField = el.closest('.perosak-item').querySelector('.perosak-percent');
+        var luasKebun = parseFloat(document.getElementById('luasBertanamInput').value) || 0;
+        var luasSakit = parseFloat(el.value) || 0;
+        var pctField = el.closest('.perosak-item').querySelector('.perosak-percent');
         if (luasSakit > luasKebun) {
             Swal.fire({ icon: 'error', title: 'Ralat', text: "Luas serangan melebihi luas tanaman!" });
-            el.value = ""; pctField.value = 0; return;
+            el.value = "";
+            pctField.value = 0;
+            return;
         }
         pctField.value = (luasKebun > 0) ? ((luasSakit / luasKebun) * 100).toFixed(2) : 0;
     }
 
-    function recalcAllPercent() { document.querySelectorAll('.perosak-luas').forEach(el => calcPercent(el)); }
+    function recalcAllPercent() {
+        document.querySelectorAll('.perosak-luas').forEach(function(el) {
+            calcPercent(el);
+        });
+    }
 
     function previewImages() {
-        const c = document.getElementById('imagePreviewContainer'); 
-        const files = document.getElementById('imageInput').files;
-        
-        if(files.length > 0) {
-            // Kita padam isi kotak, automatik tulisan "Tiada gambar" tu pun hilang.
-            // TAK PERLU LAGI guna style.display = 'none'
-            c.innerHTML = ""; 
-            
+        var c = document.getElementById('imagePreviewContainer');
+        var files = document.getElementById('imageInput').files;
+        if (files.length > 0) {
+            c.innerHTML = "";
             filesToUpload = Array.from(files);
-            filesToUpload.forEach(f => {
-                const r = new FileReader(); 
-                r.onload = e => { c.innerHTML += `<img src="${e.target.result}" class="preview-img">`; }; 
+            filesToUpload.forEach(function(f) {
+                var r = new FileReader();
+                r.onload = function(e) {
+                    c.innerHTML += '<img src="' + e.target.result + '" class="preview-img">';
+                };
                 r.readAsDataURL(f);
             });
         } else {
             c.innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
-            filesToUpload = []; // PENTING: Untuk elak gambar lama tersangkut
+            filesToUpload = [];
         }
     }
 
-
-    function limitCaption(el) { 
-        if (el.value.length > 30) el.value = el.value.substring(0, 30); 
-        document.getElementById('captionCount').innerText = el.value.length + "/30"; 
+    function limitCaption(el) {
+        if (el.value.length > 30) el.value = el.value.substring(0, 30);
+        document.getElementById('captionCount').innerText = el.value.length + "/30";
     }
 
-   function getLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(p => {
-            const gpsBox = document.getElementById('gpsInput');
-            gpsBox.value = p.coords.latitude.toFixed(5) + ", " + p.coords.longitude.toFixed(5);
-            
-            // Semak format DAN sempadan negeri sekaligus
-            if (validateCoord(gpsBox)) {
-                validateCoordInNegeri(gpsBox); // Bagi amaran awal jika luar kawasan
-            }
-        }, (err) => {
-            Swal.fire('Gagal', 'Sila hidupkan GPS. ' + err.message, 'error');
-        });
+    // ============================================================
+    // GPS & VALIDASI KOORDINAT
+    // ============================================================
+
+    // Dapatkan lokasi semasa dan terus semak sempadan negeri
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(p) {
+                var gpsBox = document.getElementById('gpsInput');
+                gpsBox.value = p.coords.latitude.toFixed(5) + ", " + p.coords.longitude.toFixed(5);
+                // Semak format dulu, kemudian semak sempadan negeri
+                if (validateCoord(gpsBox)) {
+                    validateCoordInNegeri(gpsBox);
+                }
+            }, function(err) {
+                Swal.fire('Gagal', 'Sila hidupkan GPS. ' + err.message, 'error');
+            });
+        }
     }
-}
+
+    // Semak FORMAT koordinat sahaja (Lat, Long)
     function validateCoord(inputEl) {
-            if(!inputEl) return false;
-            const val = inputEl.value.trim();
-            
-            // 1. Cek kalau kotak kosong
-            if (!val) {
-                Swal.fire('Ralat GPS', 'Sila dapatkan koordinat GPS terlebih dahulu.', 'error');
-                return false;
-            }
-            
-            // 2. Cek format guna Regex (Mesti ada format: nombor, koma, nombor)
-            // Contoh yang LULUS: "3.1234, 101.5678" atau "3.1234,101.5678"
-            const regexKetat = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/;
-            
-            if (!regexKetat.test(val)) {
-                Swal.fire('Format GPS Tidak Sah', 'Sila pastikan koordinat mempunyai Latitud dan Longitud yang dipisahkan dengan koma (,).<br><br>Contoh yang betul: <b>3.1234, 101.5678</b>', 'warning');
-                return false;
-            }
-            
-            return true;
+        if (!inputEl) return false;
+        var val = inputEl.value.trim();
+
+        if (!val) {
+            Swal.fire('Ralat GPS', 'Sila dapatkan koordinat GPS terlebih dahulu.', 'error');
+            return false;
         }
 
+        var regexKetat = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/;
+        if (!regexKetat.test(val)) {
+            Swal.fire(
+                'Format GPS Tidak Sah',
+                'Sila pastikan koordinat mempunyai Latitud dan Longitud yang dipisahkan dengan koma (,).<br><br>Contoh yang betul: <b>3.1234, 101.5678</b>',
+                'warning'
+            );
+            return false;
+        }
+
+        return true;
+    }
+
+    // *** FUNGSI BARU: Semak sama ada koordinat dalam sempadan negeri yang dipilih ***
     function validateCoordInNegeri(inputEl) {
-    const val = inputEl.value.trim();
-    const selectedNegeri = document.getElementById('negeriSelect').value;
+        var val = inputEl.value.trim();
+        var selectedNegeri = document.getElementById('negeriSelect').value;
 
-    // Kalau tiada negeri dipilih, skip semakan sempadan
-    if (!selectedNegeri) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Negeri Belum Dipilih',
-            text: 'Sila pilih Negeri terlebih dahulu sebelum memasukkan koordinat.'
-        });
-        return false;
+        // Kalau tiada negeri dipilih lagi, beri amaran
+        if (!selectedNegeri) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Negeri Belum Dipilih',
+                text: 'Sila pilih Negeri terlebih dahulu sebelum memasukkan koordinat.'
+            });
+            return false;
+        }
+
+        // Kalau tiada data sempadan untuk negeri tersebut, skip semakan (lulus)
+        var bounds = stateBounds[selectedNegeri];
+        if (!bounds) return true;
+
+        // Pecahkan nilai koordinat kepada Latitud dan Longitud
+        var parts = val.split(',');
+        var lat = parseFloat(parts[0].trim());
+        var lng = parseFloat(parts[1].trim());
+
+        // Semak sama ada koordinat jatuh dalam kotak sempadan negeri
+        var isWithinBounds = (
+            lat >= bounds.minLat &&
+            lat <= bounds.maxLat &&
+            lng >= bounds.minLng &&
+            lng <= bounds.maxLng
+        );
+
+        if (!isWithinBounds) {
+            inputEl.classList.add('is-invalid');
+            Swal.fire({
+                icon: 'error',
+                title: '⚠️ Koordinat Di Luar Kawasan!',
+                html: 'Koordinat <b>' + val + '</b> berada <b>LUAR</b> daripada sempadan negeri <b>' + selectedNegeri + '</b>.<br><br>' +
+                      'Sila pastikan koordinat GPS adalah tepat dan negeri yang dipilih adalah betul.',
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'Semak Semula'
+            });
+            return false;
+        }
+
+        // Koordinat sah — buang tanda merah jika ada
+        inputEl.classList.remove('is-invalid');
+        return true;
     }
-
-    // Kalau tiada data sempadan untuk negeri itu, skip
-    const bounds = stateBounds[selectedNegeri];
-    if (!bounds) return true;
-
-    // Pecahkan koordinat kepada Lat dan Long
-    const parts = val.split(',');
-    const lat = parseFloat(parts[0].trim());
-    const lng = parseFloat(parts[1].trim());
-
-    // Semak sama ada koordinat dalam sempadan negeri
-    const isWithinBounds =
-        lat >= bounds.minLat &&
-        lat <= bounds.maxLat &&
-        lng >= bounds.minLng &&
-        lng <= bounds.maxLng;
-
-    if (!isWithinBounds) {
-        Swal.fire({
-            icon: 'error',
-            title: '⚠️ Koordinat Di Luar Kawasan!',
-            html: `Koordinat <b>${val}</b> berada <b>LUAR</b> daripada sempadan negeri <b>${selectedNegeri}</b>.<br><br>
-                   Sila pastikan koordinat GPS adalah tepat dan negeri yang dipilih adalah betul.`,
-            confirmButtonColor: '#dc3545',
-            confirmButtonText: 'Semak Semula'
-        });
-        inputEl.classList.add('is-invalid');
-        return false;
-    }
-
-    // Koordinat OK — buang tanda merah kalau ada
-    inputEl.classList.remove('is-invalid');
-    return true;
-}
 
     function showError(input, msg) {
-        const errDiv = document.getElementById('coordError');
-        if(errDiv) { errDiv.innerText = msg; errDiv.style.display = 'block'; }
+        var errDiv = document.getElementById('coordError');
+        if (errDiv) {
+            errDiv.innerText = msg;
+            errDiv.style.display = 'block';
+        }
         input.classList.add('is-invalid');
     }
 
+    // ============================================================
+    // HANTAR BORANG
+    // ============================================================
     async function handleFormSubmit(e) {
         e.preventDefault();
-        
-        // Kenal pasti butang mana yang ditekan
-        const mode = e.submitter ? e.submitter.value : 'BARU'; 
-        const f = e.target; 
-        
-        // ==========================================
-        // KAWALAN WAJIB ISI (HANYA UNTUK HANTAR BARU)
-        // ==========================================
+
+        var mode = e.submitter ? e.submitter.value : 'BARU';
+        var f = e.target;
+
         if (mode === 'BARU') {
-            // 1. Check form HTML required
-            if (!f.checkValidity()) { 
-                f.reportValidity(); 
-                return; 
+            // 1. Semak field wajib HTML
+            if (!f.checkValidity()) {
+                f.reportValidity();
+                return;
             }
-            // 2. Check format koordinat GPS
-const gpsInput = document.getElementById('gpsInput');
-if (!validateCoord(gpsInput)) {
-    return;
-}
 
-// 3. Check koordinat dalam sempadan negeri yang dipilih
-if (!validateCoordInNegeri(gpsInput)) {
-    return;
-}
-        // ==========================================
+            // 2. Semak FORMAT koordinat GPS
+            var gpsInput = document.getElementById('gpsInput');
+            if (!validateCoord(gpsInput)) {
+                return;
+            }
 
-        const fd = new FormData(f);
-        const luasS={}, pctS={}, sevS={};
-        const names=[]; 
-        let errorPest = false;
-
-        document.querySelectorAll('.perosak-item').forEach(row => { 
-            const n = row.querySelector('.perosak-name').value.toUpperCase().trim();
-            const valStr = row.querySelector('.perosak-luas').value;
-            
-            // 3. Check Perosak (Hanya jika HANTAR BARU)
-            if(mode === 'BARU' && n && valStr === "") errorPest = true; 
-            
-            if(n && valStr !== "") { 
-                names.push(n); luasS[n]=parseFloat(valStr); pctS[n]=row.querySelector('.perosak-percent').value; sevS[n]=row.querySelector('.perosak-severity').value; 
-            } 
-        });
-
-        if(errorPest) { 
-            Swal.fire('Ralat','Sila isi luas serangan bagi perosak yang dipilih.','warning'); 
-            return; 
+            // 3. *** SEMAK KOORDINAT DALAM SEMPADAN NEGERI ***
+            if (!validateCoordInNegeri(gpsInput)) {
+                return;
+            }
         }
 
-        // ... (KOD SETERUSNYA KEKAL SAMA MACAM ASAL: const imgStr = await Promise.all...)
+        var fd = new FormData(f);
+        var luasS = {}, pctS = {}, sevS = {};
+        var names = [];
+        var errorPest = false;
 
-        const imgStr = await Promise.all(filesToUpload.map(file => new Promise((res) => { 
-            const r = new FileReader(); r.onload = () => res({name:file.name, dataUrl:r.result}); r.readAsDataURL(file); 
-        }))).then(JSON.stringify);
+        document.querySelectorAll('.perosak-item').forEach(function(row) {
+            var n = row.querySelector('.perosak-name').value.toUpperCase().trim();
+            var valStr = row.querySelector('.perosak-luas').value;
+            if (mode === 'BARU' && n && valStr === "") errorPest = true;
+            if (n && valStr !== "") {
+                names.push(n);
+                luasS[n] = parseFloat(valStr);
+                pctS[n] = row.querySelector('.perosak-percent').value;
+                sevS[n] = row.querySelector('.perosak-severity').value;
+            }
+        });
 
-        const syors = Array.from(document.querySelectorAll('.syor-checkbox:checked')).map(c => c.value);
-        const extraSyor = document.getElementById('syorTambahan').value;
-        if(extraSyor) syors.push(extraSyor);
+        if (errorPest) {
+            Swal.fire('Ralat', 'Sila isi luas serangan bagi perosak yang dipilih.', 'warning');
+            return;
+        }
 
-        const payload = {
+        var imgStr = await Promise.all(filesToUpload.map(function(file) {
+            return new Promise(function(res) {
+                var r = new FileReader();
+                r.onload = function() { res({ name: file.name, dataUrl: r.result }); };
+                r.readAsDataURL(file);
+            });
+        })).then(JSON.stringify);
+
+        var syors = Array.from(document.querySelectorAll('.syor-checkbox:checked')).map(function(c) { return c.value; });
+        var extraSyor = document.getElementById('syorTambahan').value;
+        if (extraSyor) syors.push(extraSyor);
+
+        var payload = {
             action: 'submitNew',
             statusRekod: mode,
             namaPegawai: fd.get('namaPegawai'),
@@ -733,39 +769,52 @@ if (!validateCoordInNegeri(gpsInput)) {
         document.getElementById('loader').style.visibility = 'visible';
         document.getElementById('submitBtn').disabled = true;
 
-                if (isOffline) {
+        if (isOffline) {
             saveToQueue(payload);
             document.getElementById('loader').style.visibility = 'hidden';
             document.getElementById('submitBtn').disabled = false;
-            
+
             Swal.fire({
-                icon: 'warning', title: 'Disimpan (Offline)', text: 'Data telah disimpan di telefon.', confirmButtonText: 'OK'
-            }).then(() => {
-                localStorage.removeItem('pnrAutoSaveDraf'); // <-- TAMBAH INI
-                f.reset(); document.getElementById('perosakList').innerHTML=""; addPerosakField(); updateQueueBadge();
+                icon: 'warning',
+                title: 'Disimpan (Offline)',
+                text: 'Data telah disimpan di telefon.',
+                confirmButtonText: 'OK'
+            }).then(function() {
+                localStorage.removeItem('pnrAutoSaveDraf');
+                f.reset();
+                document.getElementById('perosakList').innerHTML = "";
+                addPerosakField();
+                updateQueueBadge();
                 document.getElementById('imagePreviewContainer').innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
             });
 
         } else {
             try {
-                const res = await fetch(API_URL, { method: 'POST', headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
-                const result = await res.json();
-                
+                var res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { "Content-Type": "text/plain" },
+                    body: JSON.stringify(payload)
+                });
+                var result = await res.json();
+
                 document.getElementById('loader').style.visibility = 'hidden';
                 document.getElementById('submitBtn').disabled = false;
 
-                if(result.success) {
-                    Swal.fire('Berjaya!', 'Laporan dihantar.', 'success').then(() => {
-                        localStorage.removeItem('pnrAutoSaveDraf'); // <-- TAMBAH INI
-                        f.reset(); document.getElementById('perosakList').innerHTML=""; addPerosakField(); window.scrollTo(0,0);
+                if (result.success) {
+                    Swal.fire('Berjaya!', 'Laporan dihantar.', 'success').then(function() {
+                        localStorage.removeItem('pnrAutoSaveDraf');
+                        f.reset();
+                        document.getElementById('perosakList').innerHTML = "";
+                        addPerosakField();
+                        window.scrollTo(0, 0);
                         document.getElementById('imagePreviewContainer').innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
                         updateQueueBadge();
                     });
-                } else { throw new Error(result.message); }
-            } catch(e) {
-                // ... biarkan kod catch error yang sedia ada ...
-
-                console.warn("Gagal hantar, simpan ke queue.", e);
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch(err) {
+                console.warn("Gagal hantar, simpan ke queue.", err);
                 saveToQueue(payload);
                 document.getElementById('loader').style.visibility = 'hidden';
                 document.getElementById('submitBtn').disabled = false;
@@ -774,43 +823,59 @@ if (!validateCoordInNegeri(gpsInput)) {
         }
     }
 
-    // --- RSO CONVERSION ---
+    // ============================================================
+    // RSO CONVERSION
+    // ============================================================
     async function executeRSOConversion() {
-        const east = document.getElementById('rsoEast').value;
-        const north = document.getElementById('rsoNorth').value;
-        const btn = document.getElementById('btnConvert');
+        var east = document.getElementById('rsoEast').value;
+        var north = document.getElementById('rsoNorth').value;
+        var btn = document.getElementById('btnConvert');
 
-        if(!east || !north) { Swal.fire('Ralat','Sila isi Easting & Northing','warning'); return; }
-        if(isOffline) { Swal.fire('Offline','Penukaran koordinat perlukan internet.','error'); return; }
+        if (!east || !north) {
+            Swal.fire('Ralat', 'Sila isi Easting & Northing', 'warning');
+            return;
+        }
+        if (isOffline) {
+            Swal.fire('Offline', 'Penukaran koordinat perlukan internet.', 'error');
+            return;
+        }
 
-        btn.disabled = true; btn.innerText = "Menukar...";
-        
+        btn.disabled = true;
+        btn.innerText = "Menukar...";
+
         try {
-            const res = await fetch(API_URL, {
+            var res = await fetch(API_URL, {
                 method: 'POST',
                 headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify({ action: 'convertCoord', easting: east, northing: north })
             });
-            const json = await res.json();
-            
-            if(json.status === 'success') {
-                const val = `${json.converted.latitude.toFixed(5)}, ${json.converted.longitude.toFixed(5)}`;
-                document.getElementById('gpsInput').value = val;
-                validateCoord(document.getElementById('gpsInput'));
-                Swal.fire({icon:'success', title:'Berjaya', text:'Koordinat telah ditukar.', timer:1500, showConfirmButton:false});
+            var json = await res.json();
+
+            if (json.status === 'success') {
+                var val = json.converted.latitude.toFixed(5) + ", " + json.converted.longitude.toFixed(5);
+                var gpsBox = document.getElementById('gpsInput');
+                gpsBox.value = val;
+                validateCoord(gpsBox);
+                Swal.fire({ icon: 'success', title: 'Berjaya', text: 'Koordinat telah ditukar.', timer: 1500, showConfirmButton: false });
             } else {
                 Swal.fire('Gagal', json.message, 'error');
             }
-        } catch(e) { Swal.fire('Error', e.toString(), 'error'); }
-        btn.disabled = false; btn.innerText = "🔄 Tukar (Online Only)";
+        } catch(e) {
+            Swal.fire('Error', e.toString(), 'error');
+        }
+
+        btn.disabled = false;
+        btn.innerText = "🔄 Tukar (Online Only)";
     }
 
-    // --- PUSH NOTIFICATION & SYNC ---
+    // ============================================================
+    // PUSH NOTIFICATION & QUEUE SYNC
+    // ============================================================
     function hantarNotification() {
         if (Notification.permission === 'granted') {
             navigator.serviceWorker.ready.then(function(registration) {
                 registration.showNotification('Sistem PNR Digital', {
-                    body: '✅ Tahniah! Semua data offline telah berjaya disinkronasi ke server.',
+                    body: '✅ Tahniah! Semua data offline telah berjaya dihantar.',
                     icon: 'icon-192.png',
                     vibrate: [200, 100, 200],
                     tag: 'sync-complete'
@@ -820,58 +885,64 @@ if (!validateCoordInNegeri(gpsInput)) {
     }
 
     function saveToQueue(data) {
-        let q = JSON.parse(localStorage.getItem('pnr_queue') || "[]");
+        var q = JSON.parse(localStorage.getItem('pnr_queue') || "[]");
         q.push(data);
         localStorage.setItem('pnr_queue', JSON.stringify(q));
         updateQueueBadge();
     }
 
     function updateQueueBadge() {
-        let q = JSON.parse(localStorage.getItem('pnr_queue') || "[]");
-        const container = document.getElementById('queueBadge');
-        const countSpan = document.getElementById('qCount');
-        
-        if(q.length > 0) { 
-            container.style.display = 'block'; 
-            countSpan.innerText = q.length; 
-        } else { 
-            container.style.display = 'none'; 
+        var q = JSON.parse(localStorage.getItem('pnr_queue') || "[]");
+        var container = document.getElementById('queueBadge');
+        var countSpan = document.getElementById('qCount');
+        if (q.length > 0) {
+            container.style.display = 'block';
+            countSpan.innerText = q.length;
+        } else {
+            container.style.display = 'none';
         }
     }
 
     async function syncOfflineData() {
-        let q = JSON.parse(localStorage.getItem('pnr_queue') || "[]");
+        var q = JSON.parse(localStorage.getItem('pnr_queue') || "[]");
         if (q.length === 0) return;
 
         Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, title: 'Menghantar data offline...', icon: 'info' });
 
-        let newQ = [];
-        let successCount = 0;
+        var newQ = [];
+        var successCount = 0;
 
-        for (let item of q) {
+        for (var i = 0; i < q.length; i++) {
             try {
-                const res = await fetch(API_URL, { method: 'POST', headers: {"Content-Type": "text/plain"}, body: JSON.stringify(item) });
-                const json = await res.json();
-                if(!json.success) {
-                     newQ.push(item); 
+                var res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { "Content-Type": "text/plain" },
+                    body: JSON.stringify(q[i])
+                });
+                var json = await res.json();
+                if (!json.success) {
+                    newQ.push(q[i]);
                 } else {
                     successCount++;
                 }
-            } catch (e) { newQ.push(item); }
+            } catch(e) {
+                newQ.push(q[i]);
+            }
         }
 
         localStorage.setItem('pnr_queue', JSON.stringify(newQ));
         updateQueueBadge();
-        
+
         if (newQ.length === 0 && successCount > 0) {
             Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, title: 'Semua data offline berjaya dihantar!', icon: 'success' });
-            hantarNotification(); 
+            hantarNotification();
         } else if (successCount > 0) {
-             Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, title: `${successCount} data berjaya dihantar!`, icon: 'success' });
+            Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, title: successCount + ' data berjaya dihantar!', icon: 'success' });
         } else {
-             Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, title: 'Gagal hantar data. Sila cuba lagi.', icon: 'error' });
+            Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, title: 'Gagal hantar data. Sila cuba lagi.', icon: 'error' });
         }
     }
+
   </script>
 </body>
 </html>
