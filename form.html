@@ -555,16 +555,21 @@ const stateBounds = {
         document.getElementById('captionCount').innerText = el.value.length + "/30"; 
     }
 
-    function getLocation() { 
-        if(navigator.geolocation) navigator.geolocation.getCurrentPosition(p => { 
+   function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(p => {
             const gpsBox = document.getElementById('gpsInput');
-            gpsBox.value = p.coords.latitude.toFixed(5) + ", " + p.coords.longitude.toFixed(5); 
-            validateCoord(gpsBox);
+            gpsBox.value = p.coords.latitude.toFixed(5) + ", " + p.coords.longitude.toFixed(5);
+            
+            // Semak format DAN sempadan negeri sekaligus
+            if (validateCoord(gpsBox)) {
+                validateCoordInNegeri(gpsBox); // Bagi amaran awal jika luar kawasan
+            }
         }, (err) => {
             Swal.fire('Gagal', 'Sila hidupkan GPS. ' + err.message, 'error');
-        }); 
+        });
     }
-
+}
     function validateCoord(inputEl) {
             if(!inputEl) return false;
             const val = inputEl.value.trim();
@@ -586,6 +591,54 @@ const stateBounds = {
             
             return true;
         }
+
+    function validateCoordInNegeri(inputEl) {
+    const val = inputEl.value.trim();
+    const selectedNegeri = document.getElementById('negeriSelect').value;
+
+    // Kalau tiada negeri dipilih, skip semakan sempadan
+    if (!selectedNegeri) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Negeri Belum Dipilih',
+            text: 'Sila pilih Negeri terlebih dahulu sebelum memasukkan koordinat.'
+        });
+        return false;
+    }
+
+    // Kalau tiada data sempadan untuk negeri itu, skip
+    const bounds = stateBounds[selectedNegeri];
+    if (!bounds) return true;
+
+    // Pecahkan koordinat kepada Lat dan Long
+    const parts = val.split(',');
+    const lat = parseFloat(parts[0].trim());
+    const lng = parseFloat(parts[1].trim());
+
+    // Semak sama ada koordinat dalam sempadan negeri
+    const isWithinBounds =
+        lat >= bounds.minLat &&
+        lat <= bounds.maxLat &&
+        lng >= bounds.minLng &&
+        lng <= bounds.maxLng;
+
+    if (!isWithinBounds) {
+        Swal.fire({
+            icon: 'error',
+            title: '⚠️ Koordinat Di Luar Kawasan!',
+            html: `Koordinat <b>${val}</b> berada <b>LUAR</b> daripada sempadan negeri <b>${selectedNegeri}</b>.<br><br>
+                   Sila pastikan koordinat GPS adalah tepat dan negeri yang dipilih adalah betul.`,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Semak Semula'
+        });
+        inputEl.classList.add('is-invalid');
+        return false;
+    }
+
+    // Koordinat OK — buang tanda merah kalau ada
+    inputEl.classList.remove('is-invalid');
+    return true;
+}
 
     function showError(input, msg) {
         const errDiv = document.getElementById('coordError');
@@ -609,11 +662,16 @@ const stateBounds = {
                 f.reportValidity(); 
                 return; 
             }
-            // 2. Check koordinat GPS betul atau tak
-            if (!validateCoord(document.getElementById('gpsInput'))) {
-                return;
-            }
-        }
+            // 2. Check format koordinat GPS
+const gpsInput = document.getElementById('gpsInput');
+if (!validateCoord(gpsInput)) {
+    return;
+}
+
+// 3. Check koordinat dalam sempadan negeri yang dipilih
+if (!validateCoordInNegeri(gpsInput)) {
+    return;
+}
         // ==========================================
 
         const fd = new FormData(f);
