@@ -198,7 +198,7 @@ const TaskManager = {
     retainedImagesGlobal: [],
     currentFile: null,
     
-    // FUNGSI BAHARU: Menangkap GPS telefon semasa berada di borang suntingan/kemaskini
+    // 🌍 FUNGSI AMBIL GPS SEMASA EDIT (Sama logik seperti borang utama)
     getEditLocation: function() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function(p) {
@@ -503,7 +503,7 @@ const TaskManager = {
         const savedTan = getV('NAMA TANAMAN') || getV('TANAMAN');
         const savedImg = getV('IMAGE LINKS (COMMA SEPARATED)') || getV('GAMBAR') || getV('IMAGE') || getV('FOTO') || "";
         
-        // KEMASKINI: Ditukar ruangan koordinat biasa menjadi bentuk input-group berserta butang "Lokasi Saya"
+        // 🛠️ MENGHADIRKAN BUTANG "LOKASI SAYA" DI MENU KEMASKINI TUGASAN
         let html = `
         <div id="fullEditForm">
             <input type="hidden" id="fe_row" value="${rowID}">
@@ -514,7 +514,7 @@ const TaskManager = {
             </div>
             <div class="mb-2"><label class="small fw-bold">Lokasi/Kebun</label><input type="text" id="fe_lokasi" class="form-control form-control-sm" value="${getV('LOKASI')}"></div>
             <div class="mb-2">
-                <label class="small fw-bold">Koordinat GPS</label>
+                <label class="small fw-bold">Koordinat GPS (WGS84)</label>
                 <div class="input-group">
                     <input type="text" id="fe_coord" class="form-control form-control-sm" value="${getV('KOORDINAT')}" placeholder="Contoh: 4.2105, 101.9758">
                     <button type="button" class="btn btn-secondary btn-sm" onclick="TaskManager.getEditLocation()"><i class="bi bi-geo-alt-fill"></i> Lokasi Saya</button>
@@ -589,9 +589,9 @@ const TaskManager = {
         const coordVal = coordInput ? coordInput.value.trim() : "";
         const feNegeri = document.getElementById('fe_negeri').value;
 
-        // 🚧 KEMASKINI PAGAR 1: Semak kesahan format koordinat GPS (Lat, Long)
+        // 🚧 PAGAR VALIDASI GPS 1: Semak kesahan FORMAT koordinat GPS (Lat, Long)
         if (!coordVal) {
-            Swal.fire('Ralat GPS', 'Sila isi koordinat GPS terlebih dahulu.', 'warning');
+            Swal.fire('Ralat GPS', 'Sila dapatkan atau isi koordinat GPS terlebih dahulu.', 'warning');
             if(coordInput) coordInput.classList.add('is-invalid');
             return;
         }
@@ -602,7 +602,7 @@ const TaskManager = {
             return;
         }
 
-        // 🚧 KEMASKINI PAGAR 2: Semak sempadan zon geofencing mengikut negeri pilihan
+        // 🚧 PAGAR VALIDASI GPS 2: Semak sempadan GEOFENCING negeri sepertimana borang utama
         const stateBounds = {
           "JOHOR":             { minLat: 1.2,  maxLat: 2.9,  minLng: 102.4, maxLng: 104.6 },
           "KEDAH":             { minLat: 5.0,  maxLat: 6.6,  minLng: 99.5,  maxLng: 101.2 },
@@ -628,19 +628,14 @@ const TaskManager = {
             var lat = parseFloat(parts[0].trim());
             var lng = parseFloat(parts[1].trim());
 
-            var isWithinBounds = (
-                lat >= bounds.minLat &&
-                lat <= bounds.maxLat &&
-                lng >= bounds.minLng &&
-                lng <= bounds.maxLng
-            );
+            var isWithinBounds = (lat >= bounds.minLat && lat <= bounds.maxLat && lng >= bounds.minLng && lng <= bounds.maxLng);
 
             if (!isWithinBounds) {
                 if(coordInput) coordInput.classList.add('is-invalid');
                 Swal.fire({
                     icon: 'error',
                     title: '⚠️ Koordinat Di Luar Kawasan!',
-                    html: 'Koordinat <b>' + coordVal + '</b> berada <b>LUAR</b> daripada sempadan negeri <b>' + feNegeri + '</b>.<br><br>Sila pastikan kedudukan koordinat tepat dengan kawasan tugasan anda.',
+                    html: 'Koordinat <b>' + coordVal + '</b> berada <b>LUAR</b> daripada sempadan negeri <b>' + feNegeri + '</b>.<br><br>Sila pastikan kedudukan GPS adalah tepat.',
                     confirmButtonColor: '#dc3545',
                     confirmButtonText: 'Semak Semula'
                 });
@@ -658,7 +653,6 @@ const TaskManager = {
         const luasS = {}, sevS = {}, pctS = {};
         let adaRalatValidasi = false;
         let mesejRalat = "";
-        
         const inputLuasTanam = document.getElementById('fe_luasT');
 
         document.querySelectorAll('#fe_pestTable tbody tr').forEach(tr => {
@@ -718,44 +712,33 @@ const TaskManager = {
             Swal.fire({ title: 'Menghantar Data...', showConfirmButton: false, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         }
 
+        // 100% STRUKTUR KEKUNCI ASAL TANPA GANGGUAN PADA PARSING BACKEND KALI INI
         const payload = {
-            action: 'updateEntry', 
-            row: rowID, 
-            statusRekod: 'BARU', 
-            status: 'BARU',      
-            tarikh: document.getElementById('fe_tarikh').value, 
-            pegawai: document.getElementById('fe_pegawai').value,
-            negeri: document.getElementById('fe_negeri').value, 
-            daerah: document.getElementById('fe_daerah').value, 
-            lokasi: document.getElementById('fe_lokasi').value, 
-            coord: coordVal, // Guna rentetan nilai koordinat yang telah ditapis bersih
-            kategori: document.getElementById('fe_kategori').value, 
-            tanaman: document.getElementById('fe_tanaman').value,
-            varieti: document.getElementById('fe_varieti').value, 
-            umurT: document.getElementById('fe_umur').value, 
-            luasT: luasT,
-            luasS: luasS, 
-            keterukan: sevS, 
-            peratus: pctS, 
-            syor: document.getElementById('fe_syor').value, 
-            name: AppState.uProf.name, 
-            caption: captionVal,
-            retainedImages: finalRetainedImages, 
-            newImages: newImagesArray
+            action: 'updateEntry', row: rowID, 
+            tarikh: document.getElementById('fe_tarikh').value, pegawai: document.getElementById('fe_pegawai').value,
+            negeri: document.getElementById('fe_negeri').value, daerah: document.getElementById('fe_daerah').value, 
+            lokasi: document.getElementById('fe_lokasi').value, coord: coordVal, 
+            kategori: document.getElementById('fe_kategori').value, tanaman: document.getElementById('fe_tanaman').value,
+            varieti: document.getElementById('fe_varieti').value, umurT: document.getElementById('fe_umur').value, luasT: luasT,
+            luasS: luasS, keterukan: sevS, peratus: pctS, syor: document.getElementById('fe_syor').value, 
+            name: AppState.uProf.name, caption: captionVal,
+            retainedImages: finalRetainedImages, newImages: newImagesArray
         };
 
         try {
             const r = await API.postData('updateEntry', payload); 
             Swal.close(); 
+            
+            // KEMBALIKAN TINDAKAN ASAL: Membaca mesej maklum balas tulen yang dihantar oleh Google Web App anda
+            alert(r.message); 
+            
             if(r.success) {
-                alert("✅ Berjaya! Rekod dihantar ke ruangan Pengesahan Data."); 
                 bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
                 if(document.getElementById('view-tasks').style.display !== 'none') this.loadMyTasks(); 
                 else if(document.getElementById('view-verify').style.display !== 'none') VerifyManager.loadPend(); 
                 else DashboardManager.initDash();
                 VerifyManager.checkPendingCount();
             } else { 
-                alert("❌ Ralat: " + r.message); 
                 btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false; 
             }
         } catch(err) {
