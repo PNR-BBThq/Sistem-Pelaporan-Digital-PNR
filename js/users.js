@@ -37,13 +37,19 @@ const UserManager = {
             let actionBtn = u.status.toUpperCase() === 'MENUNGGU' ? 
                 `<button class="btn btn-sm btn-success fw-bold me-1" onclick="UserManager.updateUserStatus(${u.row}, 'AKTIF')"><i class="bi bi-check-lg"></i> LULUS</button>` : '';
             
+            // KEMASKINI: Kata laluan disembunyikan secara default dengan topeng pelindung (dots)
             return `
             <tr>
                 <td><div class="fw-bold text-dark text-uppercase">${u.nama}</div><div class="small text-muted">${u.jawatan} - ${u.negeri}</div></td>
                 <td>${this.maskIC(u.ic)}</td>
                 <td>
                     <span class="d-block small text-primary fw-bold"><i class="bi bi-person me-1"></i>${u.uid}</span>
-                    <span class="d-block small text-danger fw-bold"><i class="bi bi-key me-1"></i>${u.pwd}</span>
+                    <div class="d-flex align-items-center gap-1 mt-1">
+                        <span class="small text-muted fw-bold font-monospace" id="pwd_${u.row}" data-pwd="${u.pwd}">••••••••</span>
+                        <button class="btn btn-link p-0 text-secondary border-0 bg-transparent shadow-none" onclick="UserManager.togglePasswordVisibility(${u.row})" title="Lihat/Sembunyi Kata Laluan">
+                            <i class="bi bi-eye" id="eye_${u.row}" style="font-size: 1rem; cursor: pointer;"></i>
+                        </button>
+                    </div>
                 </td>
                 <td><span class="badge bg-light text-dark border">${u.role}</span></td>
                 <td class="text-center">${statusBadge}</td>
@@ -54,6 +60,26 @@ const UserManager = {
                 </td>
             </tr>`;
         }).join('');
+    },
+
+    // FUNGSI BAHARU: Mengawal buka/tutup paparan kata laluan secara interaktif di skrin Admin
+    togglePasswordVisibility: function(rowId) {
+        const span = document.getElementById('pwd_' + rowId);
+        const icon = document.getElementById('eye_' + rowId);
+        if (span && icon) {
+            const actualPwd = span.getAttribute('data-pwd');
+            if (span.innerText === '••••••••') {
+                span.innerText = actualPwd;
+                span.classList.remove('text-muted');
+                span.classList.add('text-danger');
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                span.innerText = '••••••••';
+                span.classList.remove('text-danger');
+                span.classList.add('text-muted');
+                icon.className = 'bi bi-eye';
+            }
+        }
     },
 
     filterUsers: function() {
@@ -136,32 +162,22 @@ const UserManager = {
 // FUNGSI CARIAN PENGGUNA (REAL-TIME & EXACT MATCH)
 // ==============================================================
 document.addEventListener("DOMContentLoaded", function() {
-    
-    // Guna ID tepat dari HTML Tuan
     const searchInput = document.getElementById("searchUser"); 
     const tableBody = document.getElementById("userTableBody");
 
     if (searchInput && tableBody) {
-        // Guna 'input' supaya ia tangkap setiap huruf yang baru masuk dengan serta-merta
         searchInput.addEventListener("input", function() {
-            
-            // Ambil apa yang ditaip, huruf kecilkan, dan buang space di hujung
             let filterValue = this.value.toLowerCase().trim();
-            
-            // Ambil semua baris <tr> di dalam jadual pengguna
             let rows = tableBody.getElementsByTagName("tr");
 
             for (let i = 0; i < rows.length; i++) {
                 let row = rows[i];
-                
-                // Ekstrak teks bersih dari baris tersebut (Nama, KP, Username, dll)
                 let textData = row.textContent || row.innerText;
 
-                // Buat semakan: Ada tak perkataan yang ditaip dalam baris ini?
                 if (textData.toLowerCase().includes(filterValue)) {
-                    row.style.display = ""; // Jika ada, paparkan
+                    row.style.display = ""; 
                 } else {
-                    row.style.display = "none"; // Jika tiada, sembunyikan
+                    row.style.display = "none"; 
                 }
             }
         });
