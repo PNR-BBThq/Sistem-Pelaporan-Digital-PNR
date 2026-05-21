@@ -1,4 +1,9 @@
-// Kod Pendaftaran Service Worker (Wajib ada untuk fungsi PWA/Offline)
+// ==========================================
+// FAIL: js/main.js
+// FUNGSI: Pengawal Utama (Controller) & Event Listeners
+// ==========================================
+
+// 1. Pendaftaran Service Worker (Sistem Offline PWA)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
@@ -11,21 +16,13 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Kekalkan kod asal DOMContentLoaded anda di bawah...
+// 2. Ambil Event Apabila DOM Selesai Dimuatkan
 document.addEventListener("DOMContentLoaded", () => {
-    if (typeof AuthManager !== 'undefined') {
-        AuthManager.checkSession();
-    
-// FAIL: js/main.js
-// FUNGSI: Pengawal Utama (Controller) & Event Listeners
-// ==========================================
-
-document.addEventListener("DOMContentLoaded", () => {
-    // 1. Initialize App & Check Session
+    // Initialize App & Check Session
     if (typeof AuthManager !== 'undefined') {
         AuthManager.checkSession();
         
-        // 2. Setup Event Listeners untuk Auth
+        // Setup Event Listeners untuk Auth
         document.getElementById('btnLogin').addEventListener('click', AuthManager.doLogin);
         document.getElementById('btnLogout').addEventListener('click', AuthManager.doLogout);
         document.getElementById('btnLupaPwd').addEventListener('click', AuthManager.lupaKatalaluan);
@@ -47,14 +44,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // 3. Menu Navigation System
+    // Menu Navigation System
     document.querySelectorAll('[data-view]').forEach(item => {
         item.addEventListener('click', function() {
             ViewManager.switchTab(this.getAttribute('data-view'), this);
         });
     });
 
-    // 4. Dashboard Buttons
+    // Dashboard Buttons
     if (typeof DashboardManager !== 'undefined') {
         const btnRefreshDash = document.getElementById('btnRefreshDash');
         if (btnRefreshDash) btnRefreshDash.addEventListener('click', () => DashboardManager.initDash());
@@ -66,7 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (btnNextPg) btnNextPg.addEventListener('click', () => DashboardManager.movePg(1));
     }
 
-    // 5. Export Buttons
+    // Export Buttons
     if (typeof ExportManager !== 'undefined') {
         const btnDlExcel = document.getElementById('btnDlExcel');
         if (btnDlExcel) btnDlExcel.addEventListener('click', ExportManager.downloadDualExcel);
@@ -81,11 +78,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (btnDlKML) btnDlKML.addEventListener('click', ExportManager.downloadKML);
     }
     
-    // 6. External Links
+    // External Links
     const btnOpenRPW = document.getElementById('btnOpenRPW');
     if (btnOpenRPW) btnOpenRPW.addEventListener('click', () => window.open(CONFIG.RPW_URL, '_blank'));
     
-    // 7. Filtering (Date Inputs & Reset)
+    // Filtering (Date Inputs & Reset)
     if (typeof FilterManager !== 'undefined') {
         document.querySelectorAll('.filter-input').forEach(el => {
             el.addEventListener('change', () => FilterManager.runFilter());
@@ -93,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const btnResetFilter = document.getElementById('btnResetFilter');
         if (btnResetFilter) btnResetFilter.addEventListener('click', FilterManager.resetFilter);
     }
-}); // <--- INI ADALAH PENUTUP YANG HILANG TADI!
+}); 
 
 // ==========================================
 // PENGURUSAN PAPARAN (UI / TABS)
@@ -109,9 +106,9 @@ const ViewManager = {
         }
 
         ['view-main','view-verify','view-tasks','view-form', 'view-users', 'view-sku'].forEach(v => {
-    const view = document.getElementById(v);
-    if(view) view.style.display = 'none';
-});
+            const view = document.getElementById(v);
+            if(view) view.style.display = 'none';
+        });
         
         const targetView = document.getElementById('view-'+t);
         if(targetView) targetView.style.display = 'block';
@@ -137,22 +134,15 @@ const ViewManager = {
 // ==========================================
 function startBadgePolling() {
     const semakBadges = () => {
-        // Pastikan user dah login (ada profile) sebelum buat semakan
         if (typeof AppState !== 'undefined' && AppState.uProf && AppState.uProf.name) {
-            
-            // Semak badge Pengesahan (Admin/Penyelia sahaja)
             if (typeof VerifyManager !== 'undefined' && VerifyManager.checkPendingCount) {
                 VerifyManager.checkPendingCount();
             }
-            
-            // Semak badge Tugasan Saya (Semua staf)
             if (typeof TaskManager !== 'undefined' && TaskManager.checkTaskCount) {
                 TaskManager.checkTaskCount();
             }
         }
     };
-
-    // 1. Semak serta-merta selepas 3 saat sistem dibuka (memberi ruang untuk proses login selesai)
     setTimeout(semakBadges, 3000);
 }
 
