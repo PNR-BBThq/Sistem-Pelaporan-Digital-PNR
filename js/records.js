@@ -179,7 +179,7 @@ const VerifyManager = {
         let count = 0;
 
         for (const r of d.rows) { 
-            await API.postData('submitVerify', {row: r.row, act: 'APPROVE', reason: 'Bulk', name: AppState.uProf.name}); 
+            await API.postData('submitVerify', {row: r.row, act: 'APPROVE', reason: 'Pengesahan Serentak', name: AppState.uProf.name}); 
             count++;
             let pct = Math.round((count / total) * 100);
             if(progBar) progBar.style.width = pct + '%';
@@ -562,20 +562,62 @@ const TaskManager = {
     saveFullEdit: async function() {
         if(!confirm("Hantar kemaskini?")) return;
         const btn = event.target; 
-        btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> Memproses...'; 
-        btn.disabled=true;
-
+        
         const rowID = document.getElementById('fe_row').value;
         const captionVal = document.getElementById('fe_caption').value.trim();
         const luasT = parseFloat(document.getElementById('fe_luasT').value) || 0;
-        const luasS = {}, sevS = {}, pctS = {};
         
+        // 🚧 PAGAR HALANG 1: Sekat jika luas tanaman sifar atau negatif
+        if (luasT <= 0) {
+            Swal.fire('Ralat Validasi', 'Luas bertanam (Ha) mestilah nilai positif yang lebih besar daripada sifar (0)!', 'warning');
+            return;
+        }
+
+        const luasS = {}, sevS = {}, pctS = {};
+        let adaRalatValidasi = false;
+        let mesejRalat = "";
+        
+        // Ambil elemen input untuk pemeriksaan
+        const inputLuasTanam = document.getElementById('fe_luasT');
+
         document.querySelectorAll('#fe_pestTable tbody tr').forEach(tr => {
             const n = tr.querySelector('.p-name').value.toUpperCase().trim();
-            const a = parseFloat(tr.querySelector('.p-area').value) || 0;
+            const areaInput = tr.querySelector('.p-area');
+            const a = areaInput ? parseFloat(areaInput.value) : 0;
             const s = tr.querySelector('.p-sev').value;
-            if(n) { luasS[n]=a; sevS[n]=s; pctS[n] = luasT>0 ? ((a/luasT)*100).toFixed(2):0; }
+            
+            if(n) { 
+                // 🚧 PAGAR HALANG 2: Sekat nilai negatif atau kosong pada luas serangan
+                if (isNaN(a) || a < 0) {
+                    adaRalatValidasi = true;
+                    mesejRalat = `Luas serangan bagi perosak <b>${n}</b> tidak boleh bernilai negatif atau dibiarkan kosong!`;
+                    if(areaInput) areaInput.classList.add('is-invalid');
+                }
+                // 🚧 PAGAR HALANG 3: Sekat jika luas serangan melebihi luas kebun keseluruhan
+                else if (a > luasT) {
+                    adaRalatValidasi = true;
+                    mesejRalat = `Luas serangan bagi perosak <b>${n}</b> (${a} Ha) tidak boleh melebihi luas tanaman keseluruhan (${luasT} Ha)!`;
+                    if(areaInput) areaInput.classList.add('is-invalid');
+                    if(inputLuasTanam) inputLuasTanam.classList.add('is-invalid');
+                } else {
+                    if(areaInput) areaInput.classList.remove('is-invalid');
+                }
+
+                luasS[n] = a; 
+                sevS[n] = s; 
+                pctS[n] = luasT > 0 ? ((a / luasT) * 100).toFixed(2) : 0; 
+            }
         });
+
+        // Jika ada ralat dikesan, hentikan hantaran API serta-merta
+        if (adaRalatValidasi) {
+            Swal.fire('Ralat Struktur Data', mesejRalat, 'error');
+            return;
+        }
+
+        // Jika data bersih, barulah hidupkan loader dan hantar data
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Memproses...'; 
+        btn.disabled = true;
 
         const finalRetainedImages = this.retainedImagesGlobal ? this.retainedImagesGlobal.filter(link => link !== null) : [];
         const fileInput = document.getElementById('fe_img');
@@ -615,23 +657,21 @@ const TaskManager = {
             const r = await API.postData('updateEntry', payload); 
             Swal.close(); 
             if(r.success) {
-                alert("✅ Berjaya!"); 
+                alert("✅ Berjaya Dikemaskini!"); 
                 bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
                 if(document.getElementById('view-tasks').style.display !== 'none') this.loadMyTasks(); 
                 else if(document.getElementById('view-verify').style.display !== 'none') VerifyManager.loadPend(); 
                 else DashboardManager.initDash();
                 VerifyManager.checkPendingCount();
             } else { 
-                alert("❌ Ralat: "+r.message); 
-                btn.innerHTML="SIMPAN PERUBAHAN"; btn.disabled=false; 
+                alert("❌ Ralat: " + r.message); 
+                btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false; 
             }
         } catch(err) {
             Swal.close(); alert("❌ Gagal berhubung dengan pelayan.");
-            btn.innerHTML="SIMPAN PERUBAHAN"; btn.disabled=false;
+            btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
         }
     }
-};
-
 // Pasangkan Butang Verify
 document.addEventListener("DOMContentLoaded", () => {
     const btnApproveAll = document.getElementById('btnApproveAll');
