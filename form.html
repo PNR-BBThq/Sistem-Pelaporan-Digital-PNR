@@ -680,56 +680,70 @@
         input.classList.add('is-invalid');
     }
 
-    // ============================================================
-    // HANTAR BORANG
-    // ============================================================
-    async function handleFormSubmit(e) {
-        e.preventDefault();
+  async function handleFormSubmit(e) {
+    e.preventDefault();
 
-        var mode = e.submitter ? e.submitter.value : 'BARU';
-        var f = e.target;
+    var mode = e.submitter ? e.submitter.value : 'BARU';
+    var f = e.target;
 
-        if (mode === 'BARU') {
-            // 1. Semak field wajib HTML
-            if (!f.checkValidity()) {
-                f.reportValidity();
-                return;
-            }
-
-            // 2. Semak FORMAT koordinat GPS
-            var gpsInput = document.getElementById('gpsInput');
-            if (!validateCoord(gpsInput)) {
-                return;
-            }
-
-            // 3. *** SEMAK KOORDINAT DALAM SEMPADAN NEGERI ***
-            if (!validateCoordInNegeri(gpsInput)) {
-                return;
-            }
+    // 🔒 SEMAKAN KETAT HANYA BERLAKU JIKA USER TEKAN "HANTAR LAPORAN" (BARU)
+    if (mode === 'BARU') {
+        // 1. Semak field wajib HTML (required)
+        if (!f.checkValidity()) {
+            f.reportValidity();
+            return;
         }
 
-        var fd = new FormData(f);
-        var luasS = {}, pctS = {}, sevS = {};
-        var names = [];
-        var errorPest = false;
+        // 2. Semak FORMAT koordinat GPS
+        var gpsInput = document.getElementById('gpsInput');
+        if (!validateCoord(gpsInput)) {
+            return;
+        }
+
+        // 3. Semak koordinat dalam sempadan negeri
+        if (!validateCoordInNegeri(gpsInput)) {
+            return;
+        }
+
+        // 4. Pagar Halang Data Angka Bersih (Kalis Data Sampah/Negatif)
+        var totalLuasKebun = parseFloat(document.getElementById('luasBertanamInput').value) || 0;
+        if (totalLuasKebun <= 0) {
+            Swal.fire('Ralat Validasi', 'Luas bertanam mestilah nilai positif lebih besar dari 0!', 'warning');
+            return;
+        }
+
+        var ralatKesan = false;
+        var teksMesej = "";
 
         document.querySelectorAll('.perosak-item').forEach(function(row) {
             var n = row.querySelector('.perosak-name').value.toUpperCase().trim();
             var valStr = row.querySelector('.perosak-luas').value;
-            if (mode === 'BARU' && n && valStr === "") errorPest = true;
+            
             if (n && valStr !== "") {
-                names.push(n);
-                luasS[n] = parseFloat(valStr);
-                pctS[n] = row.querySelector('.perosak-percent').value;
-                sevS[n] = row.querySelector('.perosak-severity').value;
+                var luasSeranganPerosak = parseFloat(valStr);
+                if (luasSeranganPerosak < 0) {
+                    ralatKesan = true;
+                    teksMesej = `Luas serangan perosak <b>${n}</b> tidak boleh bernilai negatif!`;
+                } else if (luasSeranganPerosak > totalLuasKebun) {
+                    ralatKesan = true;
+                    teksMesej = `Luas serangan perosak <b>${n}</b> (${luasSeranganPerosak} Ha) melebihi luas tanaman keseluruhan (${totalLuasKebun} Ha)!`;
+                }
             }
         });
 
-        if (errorPest) {
-            Swal.fire('Ralat', 'Sila isi luas serangan bagi perosak yang dipilih.', 'warning');
-            return;
+        if (ralatKesan) {
+            Swal.fire('Data Tidak Sah', teksMesej, 'error');
+            return; // Sumpat/Hentikan proses hantar
         }
+    }
 
+    // 🔓 JIKA MODE === 'DRAF', SEMUA KOD DI ATAS AKAN DILOMPATI SECARA OTOMATIK
+    // Sistem akan terus membaca data di bawah untuk simpanan draf offline/online...
+    var fd = new FormData(f);
+    var luasS = {}, pctS = {}, sevS = {};
+    var names = [];
+    var errorPest = false;
+  
       // Memproses dan mengecilkan saiz semua gambar terlebih dahulu sebelum dihantar / disimpan offline
 var imgStr = await Promise.all(filesToUpload.map(async function(file) {
     // Kurangkan resolusi ke maksima 1024px dan kualiti 70%
