@@ -107,12 +107,10 @@ const DashboardManager = {
         `;
 
         if (typeof ChartManager !== 'undefined') ChartManager.updateCharts(pm, km); 
-        MapManager.updateMap(markers => {}); // bypass or fix if pts required: MapManager.updateMap(pts);
-        MapManager.updateMap(pts); 
+        MapManager.updateMap(pts); // Dibetulkan: Hanya hantar tatasusunan 'pts' yang sah ke modul peta
         DashboardManager.updateHotspot(hData); 
         DashboardManager.genSummary(pm, tt, ts); 
         
-        // Aturan keselamatan: Kekalkan sorting sedia ada jika user pernah tekan butang sort sebelum ini
         if (this.currentSortCol) {
             this.reExecuteSort();
         } else {
@@ -192,7 +190,6 @@ const DashboardManager = {
     // FUNGSI UTAMA: PENGURUSAN ISIHAN LAJUR JADUAL (DYNAMIC SORT)
     // ============================================================
     sortData: function(property) {
-        // Jika klik kolum yang sama, tukar arah (Ascending <=> Descending)
         if (this.currentSortCol === property) {
             this.currentSortDir = this.currentSortDir === 'asc' ? 'desc' : 'asc';
         } else {
@@ -211,12 +208,10 @@ const DashboardManager = {
             let valA = a[col];
             let valB = b[col];
 
-            // Isihan untuk jenis angka/nombor (Luas Bancian & Luas Serangan)
             if (col === 'lt' || col === 'ls') {
                 return dir === 'asc' ? (parseFloat(valA) - parseFloat(valB)) : (parseFloat(valB) - parseFloat(valA));
             }
 
-            // Isihan untuk jenis tulisan/string (Negeri, Lokasi, Tanaman, Tarikh)
             valA = valA ? String(valA).toLowerCase() : '';
             valB = valB ? String(valB).toLowerCase() : '';
 
@@ -225,12 +220,11 @@ const DashboardManager = {
             return 0;
         });
 
-        AppState.pg = 1; // Reset semula ke muka surat 1 setiap kali isihan berubah
+        AppState.pg = 1; 
         this.renTab();
         this.updateSortIcons();
     },
 
-    // Kemaskini visual ikon anak panah berdasarkan status susunan aktif
     updateSortIcons: function() {
         const listCols = ['t', 'n', 'l', 'tn', 'lt', 'ls'];
         listCols.forEach(c => {
