@@ -553,7 +553,7 @@ const TaskManager = {
         new bootstrap.Modal(document.getElementById('detailModal')).show();
     },
 
-    saveFullEdit: async function() {
+   saveFullEdit: async function() {
         if(!confirm("Hantar kemaskini?")) return;
         const btn = event.target; 
         
@@ -561,6 +561,7 @@ const TaskManager = {
         const captionVal = document.getElementById('fe_caption').value.trim();
         const luasT = parseFloat(document.getElementById('fe_luasT').value) || 0;
         
+        // 🚧 PAGAR HALANG 1: Sekat jika luas tanaman sifar atau negatif
         if (luasT <= 0) {
             Swal.fire('Ralat Validasi', 'Luas bertanam (Ha) mestilah nilai positif yang lebih besar daripada sifar (0)!', 'warning');
             return;
@@ -629,23 +630,38 @@ const TaskManager = {
             Swal.fire({ title: 'Menghantar Data...', showConfirmButton: false, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         }
 
+        // 🚀 KEMASKINI UTAMA: Menambah suis status bagi mengarahkan backend menukar status data draf kepada BARU
         const payload = {
-            action: 'updateEntry', row: rowID, 
-            tarikh: document.getElementById('fe_tarikh').value, pegawai: document.getElementById('fe_pegawai').value,
-            negeri: document.getElementById('fe_negeri').value, daerah: document.getElementById('fe_daerah').value, 
-            lokasi: document.getElementById('fe_lokasi').value, coord: document.getElementById('fe_coord').value, 
-            kategori: document.getElementById('fe_kategori').value, tanaman: document.getElementById('fe_tanaman').value,
-            varieti: document.getElementById('fe_varieti').value, umurT: document.getElementById('fe_umur').value, luasT: luasT,
-            luasS: luasS, keterukan: sevS, peratus: pctS, syor: document.getElementById('fe_syor').value, 
-            name: AppState.uProf.name, caption: captionVal,
-            retainedImages: finalRetainedImages, newImages: newImagesArray
+            action: 'updateEntry', 
+            row: rowID, 
+            statusRekod: 'BARU', // 🚧 Mengikut format borang utama (form.html)
+            status: 'BARU',      // 🔒 Sebagai sandaran sekiranya skrip GAS backend menggunakan key berbeza
+            tarikh: document.getElementById('fe_tarikh').value, 
+            pegawai: document.getElementById('fe_pegawai').value,
+            negeri: document.getElementById('fe_negeri').value, 
+            daerah: document.getElementById('fe_daerah').value, 
+            lokasi: document.getElementById('fe_lokasi').value, 
+            coord: document.getElementById('fe_coord').value, 
+            kategori: document.getElementById('fe_kategori').value, 
+            tanaman: document.getElementById('fe_tanaman').value,
+            varieti: document.getElementById('fe_varieti').value, 
+            umurT: document.getElementById('fe_umur').value, 
+            luasT: luasT,
+            luasS: luasS, 
+            keterukan: sevS, 
+            peratus: pctS, 
+            syor: document.getElementById('fe_syor').value, 
+            name: AppState.uProf.name, 
+            caption: captionVal,
+            retainedImages: finalRetainedImages, 
+            newImages: newImagesArray
         };
 
         try {
             const r = await API.postData('updateEntry', payload); 
             Swal.close(); 
             if(r.success) {
-                alert("✅ Berjaya Dikemaskini!"); 
+                alert("✅ Berjaya! Rekod dihantar ke ruangan Pengesahan Data."); 
                 bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
                 if(document.getElementById('view-tasks').style.display !== 'none') this.loadMyTasks(); 
                 else if(document.getElementById('view-verify').style.display !== 'none') VerifyManager.loadPend(); 
@@ -660,8 +676,6 @@ const TaskManager = {
             btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
         }
     }
-};
-
 // Pasangkan Butang Verify
 document.addEventListener("DOMContentLoaded", () => {
     const btnApproveAll = document.getElementById('btnApproveAll');
