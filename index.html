@@ -223,7 +223,17 @@
                 <div class="d-flex justify-content-between mb-3"><h6 class="fw-bold"><i class="bi bi-table me-2"></i>Jadual Rekod</h6><small id="pgInfo" class="text-muted"></small></div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle">
-                        <thead class="table-light"><tr><th>Tarikh</th><th>Negeri</th><th>Lokasi</th><th>Tanaman</th><th>Luas Bancian</th><th>Luas Serangan</th><th class="text-center">Tindakan</th></tr></thead>
+     <thead class="table-light">
+         <tr>
+        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('t')">Tarikh <i class="bi bi-arrow-down-up small text-muted" id="sort_t"></i></th>
+        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('n')">Negeri <i class="bi bi-arrow-down-up small text-muted" id="sort_n"></i></th>
+        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('l')">Lokasi <i class="bi bi-arrow-down-up small text-muted" id="sort_l"></i></th>
+        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('tn')">Tanaman <i class="bi bi-arrow-down-up small text-muted" id="sort_tn"></i></th>
+        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('lt')">Luas Bancian <i class="bi bi-arrow-down-up small text-muted" id="sort_lt"></i></th>
+        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('ls')">Luas Serangan <i class="bi bi-arrow-down-up small text-muted" id="sort_ls"></i></th>
+        <th class="text-center">Tindakan</th>
+         </tr>
+    </thead>
                         <tbody id="tBody"></tbody>
                     </table>
                 </div>
