@@ -179,7 +179,7 @@ const VerifyManager = {
         let count = 0;
 
         for (const r of d.rows) { 
-            await API.postData('submitVerify', {row: r.row, act: 'APPROVE', reason: 'Pengesahan Serentak', name: AppState.uProf.name}); 
+            await API.postData('submitVerify', {row: r.row, act: 'APPROVE', reason: 'Bulk', name: AppState.uProf.name}); 
             count++;
             let pct = Math.round((count / total) * 100);
             if(progBar) progBar.style.width = pct + '%';
@@ -236,9 +236,6 @@ const TaskManager = {
         const getV = (key) => { const i = hList.findIndex(h => h.toUpperCase().includes(key.toUpperCase())); return i > -1 ? r.data[i] : ""; };
         
         if (type === 'TASK') {
-            // ==========================================
-            // DESIGN UNTUK TUGASAN SAYA (DRAF / DITOLAK)
-            // ==========================================
             const lokasi = getV('LOKASI') || getV('KEBUN');
             const tanaman = getV('NAMA TANAMAN') || getV('TANAMAN');
             const kategori = getV('KATEGORI') || "-";
@@ -275,9 +272,6 @@ const TaskManager = {
             </div>`;
         } 
         else if (type === 'VERIFY') {
-            // ==========================================
-            // DESIGN ASAL 100% UNTUK PENGESAHAN (VERIFY)
-            // ==========================================
             const tkhHantar = Utils.formatDateDisplay(getV('Timestamp'));
             const tarikhBancian = Utils.formatDateDisplay(getV('Tarikh Bancian') || getV('Tarikh') || getV('Date'));
             const nama = getV('Nama') || getV('Pegawai');
@@ -567,7 +561,6 @@ const TaskManager = {
         const captionVal = document.getElementById('fe_caption').value.trim();
         const luasT = parseFloat(document.getElementById('fe_luasT').value) || 0;
         
-        // 🚧 PAGAR HALANG 1: Sekat jika luas tanaman sifar atau negatif
         if (luasT <= 0) {
             Swal.fire('Ralat Validasi', 'Luas bertanam (Ha) mestilah nilai positif yang lebih besar daripada sifar (0)!', 'warning');
             return;
@@ -577,7 +570,6 @@ const TaskManager = {
         let adaRalatValidasi = false;
         let mesejRalat = "";
         
-        // Ambil elemen input untuk pemeriksaan
         const inputLuasTanam = document.getElementById('fe_luasT');
 
         document.querySelectorAll('#fe_pestTable tbody tr').forEach(tr => {
@@ -587,13 +579,11 @@ const TaskManager = {
             const s = tr.querySelector('.p-sev').value;
             
             if(n) { 
-                // 🚧 PAGAR HALANG 2: Sekat nilai negatif atau kosong pada luas serangan
                 if (isNaN(a) || a < 0) {
                     adaRalatValidasi = true;
                     mesejRalat = `Luas serangan bagi perosak <b>${n}</b> tidak boleh bernilai negatif atau dibiarkan kosong!`;
                     if(areaInput) areaInput.classList.add('is-invalid');
                 }
-                // 🚧 PAGAR HALANG 3: Sekat jika luas serangan melebihi luas kebun keseluruhan
                 else if (a > luasT) {
                     adaRalatValidasi = true;
                     mesejRalat = `Luas serangan bagi perosak <b>${n}</b> (${a} Ha) tidak boleh melebihi luas tanaman keseluruhan (${luasT} Ha)!`;
@@ -609,13 +599,11 @@ const TaskManager = {
             }
         });
 
-        // Jika ada ralat dikesan, hentikan hantaran API serta-merta
         if (adaRalatValidasi) {
             Swal.fire('Ralat Struktur Data', mesejRalat, 'error');
             return;
         }
 
-        // Jika data bersih, barulah hidupkan loader dan hantar data
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Memproses...'; 
         btn.disabled = true;
 
@@ -672,6 +660,8 @@ const TaskManager = {
             btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
         }
     }
+};
+
 // Pasangkan Butang Verify
 document.addEventListener("DOMContentLoaded", () => {
     const btnApproveAll = document.getElementById('btnApproveAll');
