@@ -1,9 +1,12 @@
 // ==========================================
 // FAIL: js/dashboard.js
-// FUNGSI: Mengemaskini UI Dashboard, Pengiraan KPI & Analisis Pintar
+// FUNGSI: Mengemaskini UI Dashboard, Pengiraan KPI & Analisis Pintar (Berserta Multi-Column Sorting)
 // ==========================================
 
 const DashboardManager = {
+    // Sediakan memori penanda isihan jadual
+    currentSortCol: null,
+    currentSortDir: 'asc',
 
     initDash: async function() {
         const isOffline = !navigator.onLine;
@@ -34,7 +37,7 @@ const DashboardManager = {
                     
                     DashboardManager.processDataToUI(AppState.mData);
                     DashboardManager.updateLastUpdateLabel(now, true);
-               if (typeof TaskManager !== 'undefined') {
+                    if (typeof TaskManager !== 'undefined') {
                         TaskManager.checkTaskCount(); 
                     }
                 }
@@ -95,7 +98,6 @@ const DashboardManager = {
             if(d.ls > 0 && d.d !== "-") hData[d.d] = (hData[d.d]||0) + d.ls;
         });
 
-        // Update KPI Cards (Kita generate terus dari sini supaya HTML bersih)
         const peratus = tt > 0 ? ((ts/tt)*100).toFixed(1)+"%" : "0%";
         document.getElementById('kpiCardsContainer').innerHTML = `
             <div class="col-6 col-md-3"><div class="kpi-card"><div class="d-flex justify-content-between mb-2"><span class="kpi-title">Luas Bancian</span><div class="kpi-icon bg-success-subtle text-success"><i class="bi bi-rulers"></i></div></div><div class="kpi-value">${tt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})}</div><small class="text-muted fw-bold">Hektar</small></div></div>
@@ -105,10 +107,17 @@ const DashboardManager = {
         `;
 
         if (typeof ChartManager !== 'undefined') ChartManager.updateCharts(pm, km); 
+        MapManager.updateMap(markers => {}); // bypass or fix if pts required: MapManager.updateMap(pts);
         MapManager.updateMap(pts); 
         DashboardManager.updateHotspot(hData); 
         DashboardManager.genSummary(pm, tt, ts); 
-        DashboardManager.renTab();
+        
+        // Aturan keselamatan: Kekalkan sorting sedia ada jika user pernah tekan butang sort sebelum ini
+        if (this.currentSortCol) {
+            this.reExecuteSort();
+        } else {
+            DashboardManager.renTab();
+        }
     },
 
     updateHotspot: function(hData) { 
@@ -177,6 +186,63 @@ const DashboardManager = {
     movePg: function(v) { 
         AppState.pg = Math.max(1, AppState.pg+v); 
         this.renTab(); 
+    },
+
+    // ============================================================
+    // FUNGSI UTAMA: PENGURUSAN ISIHAN LAJUR JADUAL (DYNAMIC SORT)
+    // ============================================================
+    sortData: function(property) {
+        // Jika klik kolum yang sama, tukar arah (Ascending <=> Descending)
+        if (this.currentSortCol === property) {
+            this.currentSortDir = this.currentSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.currentSortCol = property;
+            this.currentSortDir = 'asc';
+        }
+        
+        this.reExecuteSort();
+    },
+
+    reExecuteSort: function() {
+        const col = this.currentSortCol;
+        const dir = this.currentSortDir;
+
+        AppState.fData.sort((a, b) => {
+            let valA = a[col];
+            let valB = b[col];
+
+            // Isihan untuk jenis angka/nombor (Luas Bancian & Luas Serangan)
+            if (col === 'lt' || col === 'ls') {
+                return dir === 'asc' ? (parseFloat(valA) - parseFloat(valB)) : (parseFloat(valB) - parseFloat(valA));
+            }
+
+            // Isihan untuk jenis tulisan/string (Negeri, Lokasi, Tanaman, Tarikh)
+            valA = valA ? String(valA).toLowerCase() : '';
+            valB = valB ? String(valB).toLowerCase() : '';
+
+            if (valA < valB) return dir === 'asc' ? -1 : 1;
+            if (valA > valB) return dir === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        AppState.pg = 1; // Reset semula ke muka surat 1 setiap kali isihan berubah
+        this.renTab();
+        this.updateSortIcons();
+    },
+
+    // Kemaskini visual ikon anak panah berdasarkan status susunan aktif
+    updateSortIcons: function() {
+        const listCols = ['t', 'n', 'l', 'tn', 'lt', 'ls'];
+        listCols.forEach(c => {
+            const iconEl = document.getElementById('sort_' + c);
+            if (!iconEl) return;
+
+            if (this.currentSortCol === c) {
+                iconEl.className = this.currentSortDir === 'asc' ? 'bi bi-sort-down text-primary fw-bold' : 'bi bi-sort-up text-primary fw-bold';
+            } else {
+                iconEl.className = 'bi bi-arrow-down-up small text-muted';
+            }
+        });
     }
 };
 
