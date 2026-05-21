@@ -1,4 +1,21 @@
-// ==========================================
+// Kod Pendaftaran Service Worker (Wajib ada untuk fungsi PWA/Offline)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+            .then((reg) => {
+                console.log('✅ Service Worker berjaya didaftarkan. Skop:', reg.scope);
+            })
+            .catch((err) => {
+                console.error('❌ Pendaftaran Service Worker gagal:', err);
+            });
+    });
+}
+
+// Kekalkan kod asal DOMContentLoaded anda di bawah...
+document.addEventListener("DOMContentLoaded", () => {
+    if (typeof AuthManager !== 'undefined') {
+        AuthManager.checkSession();
+    
 // FAIL: js/main.js
 // FUNGSI: Pengawal Utama (Controller) & Event Listeners
 // ==========================================
