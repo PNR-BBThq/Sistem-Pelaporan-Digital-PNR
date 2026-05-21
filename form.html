@@ -730,13 +730,15 @@
             return;
         }
 
-        var imgStr = await Promise.all(filesToUpload.map(function(file) {
-            return new Promise(function(res) {
-                var r = new FileReader();
-                r.onload = function() { res({ name: file.name, dataUrl: r.result }); };
-                r.readAsDataURL(file);
-            });
-        })).then(JSON.stringify);
+      // Memproses dan mengecilkan saiz semua gambar terlebih dahulu sebelum dihantar / disimpan offline
+var imgStr = await Promise.all(filesToUpload.map(async function(file) {
+    // Kurangkan resolusi ke maksima 1024px dan kualiti 70%
+    var compressedDataUrl = await compressImageBeforeUpload(file, 1024, 1024, 0.7);
+    return {
+        name: file.name.substring(0, file.name.lastIndexOf('.')) + ".jpg", // Paksa format .jpg untuk penjimatan saiz
+        dataUrl: compressedDataUrl
+    };
+})).then(JSON.stringify);
 
         var syors = Array.from(document.querySelectorAll('.syor-checkbox:checked')).map(function(c) { return c.value; });
         var extraSyor = document.getElementById('syorTambahan').value;
@@ -942,6 +944,48 @@
             Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, title: 'Gagal hantar data. Sila cuba lagi.', icon: 'error' });
         }
     }
+
+    // ============================================================
+// FUNGSI UTALITI: KOMPRESI GAMBAR (MENYELAMATKAN HAD LOCALSTORAGE & API)
+// ============================================================
+function compressImageBeforeUpload(file, maxWidth = 1024, maxHeight = 1024, quality = 0.7) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function (event) {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = function () {
+                let width = img.width;
+                let height = img.height;
+
+                // Kekalkan nisbah aspek gambar (Aspect Ratio)
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width = Math.round((width * maxHeight) / height);
+                        height = maxHeight;
+                    }
+                }
+
+                // Lukis semula gambar dalam saiz kecil menggunakan Canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Tukar kepada Base64 DataURL dengan kualiti yang telah dikurangkan (0.7 = 70%)
+                const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                resolve(compressedBase64);
+            };
+        };
+    });
+}
 
   </script>
 </body>
