@@ -43,7 +43,7 @@ const DataManager = {
         let adminBtns = "";
         if (AppState.uProf.role === "ADMIN") { 
             adminBtns = `<div class="border-top pt-3 mt-3 d-flex justify-content-between gap-2">
-                <button onclick="DataManager.enableEditMode(${d.id})" class="btn btn-outline-primary btn-sm flex-grow-1"><i class="bi bi-pencil-square me-1"></i> KEMASKINI</button>
+                <button onclick="DataManager.enableEditMode(${d.id})" class="btn btn-outline-primary btn-sm flex-grow-1"><i class="bi bi-pencil-square disguise me-1"></i> KEMASKINI</button>
                 <button onclick="DataManager.doDeleteRec(${d.id})" class="btn btn-outline-danger btn-sm flex-grow-1"><i class="bi bi-trash-fill me-1"></i> PADAM</button>
             </div>`; 
         }
@@ -198,7 +198,6 @@ const TaskManager = {
     retainedImagesGlobal: [],
     currentFile: null,
     
-    // 🌍 FUNGSI AMBIL GPS SEMASA EDIT (Sama logik seperti borang utama)
     getEditLocation: function() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function(p) {
@@ -503,7 +502,6 @@ const TaskManager = {
         const savedTan = getV('NAMA TANAMAN') || getV('TANAMAN');
         const savedImg = getV('IMAGE LINKS (COMMA SEPARATED)') || getV('GAMBAR') || getV('IMAGE') || getV('FOTO') || "";
         
-        // 🛠️ MENGHADIRKAN BUTANG "LOKASI SAYA" DI MENU KEMASKINI TUGASAN
         let html = `
         <div id="fullEditForm">
             <input type="hidden" id="fe_row" value="${rowID}">
@@ -580,8 +578,12 @@ const TaskManager = {
 
     saveFullEdit: async function() {
         if(!confirm("Hantar kemaskini?")) return;
-        const btn = event.target; 
         
+        // 🔒 RESTORASI TEKNIKAL UTAMA: Kunci butang serta-merta mengikut garis masa mikro fail asal
+        const btn = event.target; 
+        btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> Memproses...'; 
+        btn.disabled=true;
+
         const rowID = document.getElementById('fe_row').value;
         const captionVal = document.getElementById('fe_caption').value.trim();
         const luasT = parseFloat(document.getElementById('fe_luasT').value) || 0;
@@ -589,20 +591,22 @@ const TaskManager = {
         const coordVal = coordInput ? coordInput.value.trim() : "";
         const feNegeri = document.getElementById('fe_negeri').value;
 
-        // 🚧 PAGAR VALIDASI GPS 1: Semak kesahan FORMAT koordinat GPS (Lat, Long)
+        // 🚧 SEKATAN PAGAR GPS 1: Format Koordinat WGS84
         if (!coordVal) {
             Swal.fire('Ralat GPS', 'Sila dapatkan atau isi koordinat GPS terlebih dahulu.', 'warning');
             if(coordInput) coordInput.classList.add('is-invalid');
+            btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
             return;
         }
         var regexKetat = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/;
         if (!regexKetat.test(coordVal)) {
             Swal.fire('Format GPS Tidak Sah', 'Sila pastikan koordinat mempunyai Latitud dan Longitud yang dipisahkan dengan koma (,).<br><br>Contoh yang betul: <b>3.1234, 101.5678</b>', 'warning');
             if(coordInput) coordInput.classList.add('is-invalid');
+            btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
             return;
         }
 
-        // 🚧 PAGAR VALIDASI GPS 2: Semak sempadan GEOFENCING negeri sepertimana borang utama
+        // 🚧 SEKATAN PAGAR GPS 2: Sempadan Geofencing Sempadan Negeri
         const stateBounds = {
           "JOHOR":             { minLat: 1.2,  maxLat: 2.9,  minLng: 102.4, maxLng: 104.6 },
           "KEDAH":             { minLat: 5.0,  maxLat: 6.6,  minLng: 99.5,  maxLng: 101.2 },
@@ -627,7 +631,6 @@ const TaskManager = {
             var parts = coordVal.split(',');
             var lat = parseFloat(parts[0].trim());
             var lng = parseFloat(parts[1].trim());
-
             var isWithinBounds = (lat >= bounds.minLat && lat <= bounds.maxLat && lng >= bounds.minLng && lng <= bounds.maxLng);
 
             if (!isWithinBounds) {
@@ -635,18 +638,20 @@ const TaskManager = {
                 Swal.fire({
                     icon: 'error',
                     title: '⚠️ Koordinat Di Luar Kawasan!',
-                    html: 'Koordinat <b>' + coordVal + '</b> berada <b>LUAR</b> daripada sempadan negeri <b>' + feNegeri + '</b>.<br><br>Sila pastikan kedudukan GPS adalah tepat.',
+                    html: 'Koordinat <b>' + coordVal + '</b> berada <b>LUAR</b> daripada sempadan negeri <b>' + feNegeri + '</b>.<br><br>Sila pastikan kedudukan koordinat adalah tepat.',
                     confirmButtonColor: '#dc3545',
                     confirmButtonText: 'Semak Semula'
                 });
+                btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
                 return;
             }
         }
         if(coordInput) coordInput.classList.remove('is-invalid');
 
-        // Pagar halang bagi angka keluasan bertanam
+        // 🚧 SEKATAN PAGAR DATA ANGKA: Had nilai gila/negatif
         if (luasT <= 0) {
             Swal.fire('Ralat Validasi', 'Luas bertanam (Ha) mestilah nilai positif yang lebih besar daripada sifar (0)!', 'warning');
+            btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
             return;
         }
 
@@ -684,11 +689,9 @@ const TaskManager = {
 
         if (adaRalatValidasi) {
             Swal.fire('Ralat Struktur Data', mesejRalat, 'error');
+            btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
             return;
         }
-
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Memproses...'; 
-        btn.disabled = true;
 
         const finalRetainedImages = this.retainedImagesGlobal ? this.retainedImagesGlobal.filter(link => link !== null) : [];
         const fileInput = document.getElementById('fe_img');
@@ -712,12 +715,12 @@ const TaskManager = {
             Swal.fire({ title: 'Menghantar Data...', showConfirmButton: false, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         }
 
-        // 100% STRUKTUR KEKUNCI ASAL TANPA GANGGUAN PADA PARSING BACKEND KALI INI
+        // 🔒 KEKALKAN FORMAT PAYLOAD 100% SAMA SEPERTI ASAL REPO ANDA (Bebas suntikan asing)
         const payload = {
             action: 'updateEntry', row: rowID, 
             tarikh: document.getElementById('fe_tarikh').value, pegawai: document.getElementById('fe_pegawai').value,
             negeri: document.getElementById('fe_negeri').value, daerah: document.getElementById('fe_daerah').value, 
-            lokasi: document.getElementById('fe_lokasi').value, coord: coordVal, 
+            lokasi: document.getElementById('fe_lokasi').value, coord: document.getElementById('fe_coord').value, 
             kategori: document.getElementById('fe_kategori').value, tanaman: document.getElementById('fe_tanaman').value,
             varieti: document.getElementById('fe_varieti').value, umurT: document.getElementById('fe_umur').value, luasT: luasT,
             luasS: luasS, keterukan: sevS, peratus: pctS, syor: document.getElementById('fe_syor').value, 
@@ -729,16 +732,16 @@ const TaskManager = {
             const r = await API.postData('updateEntry', payload); 
             Swal.close(); 
             
-            // KEMBALIKAN TINDAKAN ASAL: Membaca mesej maklum balas tulen yang dihantar oleh Google Web App anda
-            alert(r.message); 
-            
+            // 🔒 RESTORASI ALIRAN KONDISI ASAL REPO ANDA (Kalis Broken State)
             if(r.success) {
+                alert("✅ Berjaya!"); 
                 bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
                 if(document.getElementById('view-tasks').style.display !== 'none') this.loadMyTasks(); 
                 else if(document.getElementById('view-verify').style.display !== 'none') VerifyManager.loadPend(); 
                 else DashboardManager.initDash();
                 VerifyManager.checkPendingCount();
             } else { 
+                alert("❌ Ralat: " + r.message); 
                 btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false; 
             }
         } catch(err) {
