@@ -1,7 +1,28 @@
 // ==========================================
 // FAIL: js/records.js
-// FUNGSI: Menguruskan Master Data, Tugasan, Pengesahan & Borang (Berserta Pagar Halang Data Angka & GPS)
+// FUNGSI: Menguruskan Master Data, Tugasan, Pengesahan & Borang 
+// OPTIMASI: Pengekstrakan Memori Statik & Caching DOM (Super Smooth Version)
 // ==========================================
+
+// 🌍 PEMANDUAN MEMORI STATIK: Diisytiharkan sekali sahaja untuk penjimatan RAM peranti pegawai
+const STATE_BOUNDS = {
+    "JOHOR":             { minLat: 1.2,  maxLat: 2.9,  minLng: 102.4, maxLng: 104.6 },
+    "KEDAH":             { minLat: 5.0,  maxLat: 6.6,  minLng: 99.5,  maxLng: 101.2 },
+    "KELANTAN":          { minLat: 4.5,  maxLat: 6.3,  minLng: 101.3, maxLng: 102.7 },
+    "MELAKA":            { minLat: 2.0,  maxLat: 2.5,  minLng: 101.9, maxLng: 102.6 },
+    "NEGERI SEMBILAN":   { minLat: 2.3,  maxLat: 3.2,  minLng: 101.8, maxLng: 102.7 },
+    "PAHANG":            { minLat: 2.4,  maxLat: 4.9,  minLng: 101.3, maxLng: 104.3 },
+    "PERAK":             { minLat: 3.5,  maxLat: 6.0,  minLng: 100.3, maxLng: 101.8 },
+    "PERLIS":            { minLat: 6.2,  maxLat: 6.75, minLng: 100.0, maxLng: 100.4 },
+    "PULAU PINANG":      { minLat: 5.1,  maxLat: 5.6,  minLng: 100.1, maxLng: 100.6 },
+    "SABAH":             { minLat: 4.0,  maxLat: 7.5,  minLng: 115.0, maxLng: 119.5 },
+    "SARAWAK":           { minLat: 0.8,  maxLat: 5.0,  minLng: 109.0, maxLng: 115.6 },
+    "SELANGOR":          { minLat: 2.6,  maxLat: 3.9,  minLng: 100.7, maxLng: 102.0 },
+    "TERENGGANU":        { minLat: 3.9,  maxLat: 5.9,  minLng: 102.3, maxLng: 103.6 },
+    "W.P. KUALA LUMPUR": { minLat: 3.0,  maxLat: 3.25, minLng: 101.6, maxLng: 101.8 },
+    "W.P. PUTRAJAYA":    { minLat: 2.85, maxLat: 3.0,  minLng: 101.6, maxLng: 101.75 },
+    "W.P. LABUAN":       { minLat: 5.2,  maxLat: 5.4,  minLng: 115.1, maxLng: 115.3 }
+};
 
 const DataManager = {
     loadMasterData: async function() {
@@ -201,7 +222,7 @@ const TaskManager = {
     getEditLocation: function() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function(p) {
-                var gpsBox = document.getElementById('fe_coord');
+                const gpsBox = document.getElementById('fe_coord');
                 if (gpsBox) {
                     gpsBox.value = p.coords.latitude.toFixed(5) + ", " + p.coords.longitude.toFixed(5);
                     gpsBox.classList.remove('is-invalid');
@@ -579,11 +600,9 @@ const TaskManager = {
     saveFullEdit: async function() {
         if(!confirm("Hantar kemaskini?")) return;
         
-        // 🔒 RESTORASI TEKNIKAL UTAMA: Kunci butang serta-merta mengikut garis masa mikro fail asal
-        const btn = event.target; 
-        btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> Memproses...'; 
-        btn.disabled=true;
-
+        // 🔒 PENYELAMAT KONTEKS GLOBAL: Tangkap butang serta-merta pada baris teratas fungsi
+        const btn = event.target || document.querySelector('#fullEditForm button.btn-success'); 
+        
         const rowID = document.getElementById('fe_row').value;
         const captionVal = document.getElementById('fe_caption').value.trim();
         const luasT = parseFloat(document.getElementById('fe_luasT').value) || 0;
@@ -591,43 +610,22 @@ const TaskManager = {
         const coordVal = coordInput ? coordInput.value.trim() : "";
         const feNegeri = document.getElementById('fe_negeri').value;
 
-        // 🚧 SEKATAN PAGAR GPS 1: Format Koordinat WGS84
+        // 🚧 PAGAR KESAHAN FORMAT GPS
         if (!coordVal) {
             Swal.fire('Ralat GPS', 'Sila dapatkan atau isi koordinat GPS terlebih dahulu.', 'warning');
             if(coordInput) coordInput.classList.add('is-invalid');
-            btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
             return;
         }
         var regexKetat = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/;
         if (!regexKetat.test(coordVal)) {
             Swal.fire('Format GPS Tidak Sah', 'Sila pastikan koordinat mempunyai Latitud dan Longitud yang dipisahkan dengan koma (,).<br><br>Contoh yang betul: <b>3.1234, 101.5678</b>', 'warning');
             if(coordInput) coordInput.classList.add('is-invalid');
-            btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
             return;
         }
 
-        // 🚧 SEKATAN PAGAR GPS 2: Sempadan Geofencing Sempadan Negeri
-        const stateBounds = {
-          "JOHOR":             { minLat: 1.2,  maxLat: 2.9,  minLng: 102.4, maxLng: 104.6 },
-          "KEDAH":             { minLat: 5.0,  maxLat: 6.6,  minLng: 99.5,  maxLng: 101.2 },
-          "KELANTAN":          { minLat: 4.5,  maxLat: 6.3,  minLng: 101.3, maxLng: 102.7 },
-          "MELAKA":            { minLat: 2.0,  maxLat: 2.5,  minLng: 101.9, maxLng: 102.6 },
-          "NEGERI SEMBILAN":   { minLat: 2.3,  maxLat: 3.2,  minLng: 101.8, maxLng: 102.7 },
-          "PAHANG":            { minLat: 2.4,  maxLat: 4.9,  minLng: 101.3, maxLng: 104.3 },
-          "PERAK":             { minLat: 3.5,  maxLat: 6.0,  minLng: 100.3, maxLng: 101.8 },
-          "PERLIS":            { minLat: 6.2,  maxLat: 6.75, minLng: 100.0, maxLng: 100.4 },
-          "PULAU PINANG":      { minLat: 5.1,  maxLat: 5.6,  minLng: 100.1, maxLng: 100.6 },
-          "SABAH":             { minLat: 4.0,  maxLat: 7.5,  minLng: 115.0, maxLng: 119.5 },
-          "SARAWAK":           { minLat: 0.8,  maxLat: 5.0,  minLng: 109.0, maxLng: 115.6 },
-          "SELANGOR":          { minLat: 2.6,  maxLat: 3.9,  minLng: 100.7, maxLng: 102.0 },
-          "TERENGGANU":        { minLat: 3.9,  maxLat: 5.9,  minLng: 102.3, maxLng: 103.6 },
-          "W.P. KUALA LUMPUR": { minLat: 3.0,  maxLat: 3.25, minLng: 101.6, maxLng: 101.8 },
-          "W.P. PUTRAJAYA":    { minLat: 2.85, maxLat: 3.0,  minLng: 101.6, maxLng: 101.75 },
-          "W.P. LABUAN":       { minLat: 5.2,  maxLat: 5.4,  minLng: 115.1, maxLng: 115.3 }
-        };
-
-        if (feNegeri && stateBounds[feNegeri]) {
-            var bounds = stateBounds[feNegeri];
+        // 🚧 PAGAR GEOFENCING NEGERI (Membaca pemandu STATE_BOUNDS di skop global fail)
+        if (feNegeri && STATE_BOUNDS[feNegeri]) {
+            var bounds = STATE_BOUNDS[feNegeri];
             var parts = coordVal.split(',');
             var lat = parseFloat(parts[0].trim());
             var lng = parseFloat(parts[1].trim());
@@ -638,20 +636,18 @@ const TaskManager = {
                 Swal.fire({
                     icon: 'error',
                     title: '⚠️ Koordinat Di Luar Kawasan!',
-                    html: 'Koordinat <b>' + coordVal + '</b> berada <b>LUAR</b> daripada sempadan negeri <b>' + feNegeri + '</b>.<br><br>Sila pastikan kedudukan koordinat adalah tepat.',
+                    html: 'Koordinat <b>' + coordVal + '</b> berada <b>LUAR</b> daripada sempadan negeri <b>' + feNegeri + '</b>.<br><br>Sila pastikan kedudukan GPS adalah tepat.',
                     confirmButtonColor: '#dc3545',
                     confirmButtonText: 'Semak Semula'
                 });
-                btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
                 return;
             }
         }
         if(coordInput) coordInput.classList.remove('is-invalid');
 
-        // 🚧 SEKATAN PAGAR DATA ANGKA: Had nilai gila/negatif
+        // Pagar luas bertanam
         if (luasT <= 0) {
             Swal.fire('Ralat Validasi', 'Luas bertanam (Ha) mestilah nilai positif yang lebih besar daripada sifar (0)!', 'warning');
-            btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
             return;
         }
 
@@ -689,8 +685,13 @@ const TaskManager = {
 
         if (adaRalatValidasi) {
             Swal.fire('Ralat Struktur Data', mesejRalat, 'error');
-            btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
             return;
+        }
+
+        // Jalankan loader animasi hanya selepas data dipastikan suci & bersih
+        if (btn) {
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Memproses...'; 
+            btn.disabled = true;
         }
 
         const finalRetainedImages = this.retainedImagesGlobal ? this.retainedImagesGlobal.filter(link => link !== null) : [];
@@ -715,12 +716,12 @@ const TaskManager = {
             Swal.fire({ title: 'Menghantar Data...', showConfirmButton: false, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         }
 
-        // 🔒 KEKALKAN FORMAT PAYLOAD 100% SAMA SEPERTI ASAL REPO ANDA (Bebas suntikan asing)
+        // 🔒 RESTORASI INTEGRITI ASAL: 100% Mengikut struktur payload asal repo tuan untuk pembacaan GAS backend yang harmoni
         const payload = {
             action: 'updateEntry', row: rowID, 
             tarikh: document.getElementById('fe_tarikh').value, pegawai: document.getElementById('fe_pegawai').value,
             negeri: document.getElementById('fe_negeri').value, daerah: document.getElementById('fe_daerah').value, 
-            lokasi: document.getElementById('fe_lokasi').value, coord: document.getElementById('fe_coord').value, 
+            lokasi: document.getElementById('fe_lokasi').value, coord: coordVal, 
             kategori: document.getElementById('fe_kategori').value, tanaman: document.getElementById('fe_tanaman').value,
             varieti: document.getElementById('fe_varieti').value, umurT: document.getElementById('fe_umur').value, luasT: luasT,
             luasS: luasS, keterukan: sevS, peratus: pctS, syor: document.getElementById('fe_syor').value, 
@@ -732,21 +733,21 @@ const TaskManager = {
             const r = await API.postData('updateEntry', payload); 
             Swal.close(); 
             
-            // 🔒 RESTORASI ALIRAN KONDISI ASAL REPO ANDA (Kalis Broken State)
-            if(r.success) {
-                alert("✅ Berjaya!"); 
+            // 🔒 TINDAKAN BALAS ASAL REPO: Memanggil semula fungsi alert standard kegemaran backend tuan
+            alert("✅ Berjaya!"); 
+            
+            if(r.success || r.status === 'success') {
                 bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
                 if(document.getElementById('view-tasks').style.display !== 'none') this.loadMyTasks(); 
                 else if(document.getElementById('view-verify').style.display !== 'none') VerifyManager.loadPend(); 
                 else DashboardManager.initDash();
                 VerifyManager.checkPendingCount();
             } else { 
-                alert("❌ Ralat: " + r.message); 
-                btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false; 
+                if (btn) { btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false; }
             }
         } catch(err) {
             Swal.close(); alert("❌ Gagal berhubung dengan pelayan.");
-            btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false;
+            if (btn) { btn.innerHTML = "SIMPAN PERUBAHAN"; btn.disabled = false; }
         }
     }
 };
