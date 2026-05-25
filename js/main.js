@@ -3,16 +3,31 @@
 // FUNGSI: Pengawal Utama (Controller) & Event Listeners
 // ==========================================
 
-// 1. Pendaftaran Service Worker (Sistem Offline PWA)
+// 1. Pendaftaran Service Worker & Pemaksa Hard Refresh Otomatik (Kalis Cache Lama)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
             .then((reg) => {
                 console.log('✅ Service Worker berjaya didaftarkan. Skop:', reg.scope);
+                
+                // Jika sistem mengesan ada versi kod baru sedang menunggu, paksa bertukar terus
+                if (reg.waiting) {
+                    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                }
             })
             .catch((err) => {
                 console.error('❌ Pendaftaran Service Worker gagal:', err);
             });
+    });
+
+    // ⚡ HERO LOGIK: Apabila Service Worker versi baharu mengambil alih kawalan,
+    // pelayar web peranti user akan automatik dimuat semula (Hard Reload) serta-merta!
+    let statusReload = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!statusReload) {
+            statusReload = true;
+            window.location.reload();
+        }
     });
 }
 
