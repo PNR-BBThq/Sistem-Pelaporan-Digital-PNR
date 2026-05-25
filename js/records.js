@@ -1,10 +1,9 @@
 // ==========================================
 // FAIL: js/records.js
 // FUNGSI: Menguruskan Master Data, Tugasan, Pengesahan & Borang 
-// OPTIMASI: Pengekstrakan Memori Statik & Caching DOM (Super Smooth Version)
+// REPARASI: Penyelarasan Nama Kekunci (Keys) Payload Tepat Ikut form.html
 // ==========================================
 
-// 🌍 PEMANDUAN MEMORI STATIK: Diisytiharkan sekali sahaja untuk penjimatan RAM peranti pegawai
 const STATE_BOUNDS = {
     "JOHOR":             { minLat: 1.2,  maxLat: 2.9,  minLng: 102.4, maxLng: 104.6 },
     "KEDAH":             { minLat: 5.0,  maxLat: 6.6,  minLng: 99.5,  maxLng: 101.2 },
@@ -97,7 +96,7 @@ const DataManager = {
             </div>
             <div class="px-3" id="view_pest_${d.id}">
                 <h6 class="fw-bold text-success mb-2 small text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
-                <div class="table-responsive border rounded mb-2"><table class="table table-sm table-striped mb-0" style="font-size:0.8rem"><thead class="table-light"><tr><th>PEROSAK</th><th class="text-center">LUAS SERANGAN(HA)</th><th class="text-center">PERATUS SERANGAN</th><th class="text-center">KETERUKAN SERANGAN</th></tr></thead><tbody>${pestRows}</tbody></table></div>
+                <div class="table-responsive border rounded mb-2"><table class="table table-sm table-striped mb-0" style="font-size:0.8rem"><thead class="table-light"><tr><th>PEROSAK</th><th class="text-center">LUAS SERANGAN(HA)</th><th class="text-center">PERATS SERANGAN</th><th class="text-center">KETERUKAN SERANGAN</th></tr></thead><tbody>${pestRows}</tbody></table></div>
                 <div class="alert alert-warning border-warning mb-0 py-2 px-3 small"><i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong>SYOR:</strong> ${d.s}</div>${imgHTML}
             </div>
             <div class="p-3 mt-auto"><div class="bg-success bg-opacity-10 border border-success rounded p-2 text-center"><small class="text-success fw-bold text-uppercase mb-1 d-block">DISAHKAN OLEH:</small><div class="text-dark small fw-bold">${d.vb}</div></div>${adminBtns}</div>
@@ -600,7 +599,6 @@ const TaskManager = {
     saveFullEdit: async function() {
         if(!confirm("Hantar kemaskini?")) return;
         
-        // 🔒 PENYELAMAT KONTEKS GLOBAL: Tangkap butang serta-merta pada baris teratas fungsi
         const btn = event.target || document.querySelector('#fullEditForm button.btn-success'); 
         
         const rowID = document.getElementById('fe_row').value;
@@ -610,7 +608,6 @@ const TaskManager = {
         const coordVal = coordInput ? coordInput.value.trim() : "";
         const feNegeri = document.getElementById('fe_negeri').value;
 
-        // 🚧 PAGAR KESAHAN FORMAT GPS
         if (!coordVal) {
             Swal.fire('Ralat GPS', 'Sila dapatkan atau isi koordinat GPS terlebih dahulu.', 'warning');
             if(coordInput) coordInput.classList.add('is-invalid');
@@ -623,7 +620,6 @@ const TaskManager = {
             return;
         }
 
-        // 🚧 PAGAR GEOFENCING NEGERI (Membaca pemandu STATE_BOUNDS di skop global fail)
         if (feNegeri && STATE_BOUNDS[feNegeri]) {
             var bounds = STATE_BOUNDS[feNegeri];
             var parts = coordVal.split(',');
@@ -645,13 +641,13 @@ const TaskManager = {
         }
         if(coordInput) coordInput.classList.remove('is-invalid');
 
-        // Pagar luas bertanam
         if (luasT <= 0) {
             Swal.fire('Ralat Validasi', 'Luas bertanam (Ha) mestilah nilai positif yang lebih besar daripada sifar (0)!', 'warning');
             return;
         }
 
         const luasS = {}, sevS = {}, pctS = {};
+        let names = [];
         let adaRalatValidasi = false;
         let mesejRalat = "";
         const inputLuasTanam = document.getElementById('fe_luasT');
@@ -680,6 +676,7 @@ const TaskManager = {
                 luasS[n] = a; 
                 sevS[n] = s; 
                 pctS[n] = luasT > 0 ? ((a / luasT) * 100).toFixed(2) : 0; 
+                names.push(n);
             }
         });
 
@@ -688,7 +685,6 @@ const TaskManager = {
             return;
         }
 
-        // Jalankan loader animasi hanya selepas data dipastikan suci & bersih
         if (btn) {
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Memproses...'; 
             btn.disabled = true;
@@ -716,24 +712,50 @@ const TaskManager = {
             Swal.fire({ title: 'Menghantar Data...', showConfirmButton: false, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         }
 
-        // 🔒 RESTORASI INTEGRITI ASAL: 100% Mengikut struktur payload asal repo tuan untuk pembacaan GAS backend yang harmoni
+        // 🚀 DWIPARTISI PAYLOAD MUTTAMAD: Menyuntik kedua-dua format variasi kekunci (Lama + Baru dari form.html)
+        // Ini memastikan backend Google Apps Script berjaya memeta (map) sel tanpa mengira jenis kod pengekstrakan
         const payload = {
-            action: 'updateEntry', row: rowID, 
-            tarikh: document.getElementById('fe_tarikh').value, pegawai: document.getElementById('fe_pegawai').value,
-            negeri: document.getElementById('fe_negeri').value, daerah: document.getElementById('fe_daerah').value, 
-            lokasi: document.getElementById('fe_lokasi').value, coord: coordVal, 
-            kategori: document.getElementById('fe_kategori').value, tanaman: document.getElementById('fe_tanaman').value,
-            varieti: document.getElementById('fe_varieti').value, umurT: document.getElementById('fe_umur').value, luasT: luasT,
-            luasS: luasS, keterukan: sevS, peratus: pctS, syor: document.getElementById('fe_syor').value, 
-            name: AppState.uProf.name, caption: captionVal,
-            retainedImages: finalRetainedImages, newImages: newImagesArray
+            action: 'updateEntry', 
+            row: rowID, 
+            syor: document.getElementById('fe_syor').value,
+            retainedImages: finalRetainedImages, 
+            newImages: newImagesArray,
+
+            // A. Format Struktur Sempurna Ikut form.html (Penyelamat Data Perosak)
+            tarikhBancian: document.getElementById('fe_tarikh').value,
+            namaPegawai: document.getElementById('fe_pegawai').value,
+            negeri: document.getElementById('fe_negeri').value,
+            daerah: document.getElementById('fe_daerah').value,
+            lokasi: document.getElementById('fe_lokasi').value,
+            koordinat: coordVal,
+            kategori: document.getElementById('fe_kategori').value,
+            namaTanaman: document.getElementById('fe_tanaman').value,
+            varieti: document.getElementById('fe_varieti').value,
+            umurTanaman: document.getElementById('fe_umur').value,
+            luasBertanam: luasT,
+            senaraiPerosak: names.join(', '),
+            luasSerangan: luasS,
+            peratusSerangan: pctS,
+            keterukan: sevS,
+            captionGambar: captionVal,
+
+            // B. Sandaran Struktur Lama (Kalis Broken-State Legacy Script)
+            tarikh: document.getElementById('fe_tarikh').value,
+            pegawai: document.getElementById('fe_pegawai').value,
+            coord: coordVal,
+            tanaman: document.getElementById('fe_tanaman').value,
+            umurT: document.getElementById('fe_umur').value,
+            luasT: luasT,
+            luasS: luasS,
+            peratus: pctS,
+            name: AppState.uProf.name,
+            caption: captionVal
         };
 
         try {
             const r = await API.postData('updateEntry', payload); 
             Swal.close(); 
             
-            // 🔒 TINDAKAN BALAS ASAL REPO: Memanggil semula fungsi alert standard kegemaran backend tuan
             alert("✅ Berjaya!"); 
             
             if(r.success || r.status === 'success') {
