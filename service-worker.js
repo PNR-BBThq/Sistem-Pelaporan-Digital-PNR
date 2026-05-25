@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pnr-v4-safe'; // Versi dinaikkan ke v4
+const CACHE_NAME = 'pnr-v5-muttamada'; // ⚡ BUMP VERSION UNTUK COMPULSORY UPDATE
 const ASSETS = [
   './',
   './index.html',
@@ -32,12 +32,20 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
+  self.skipWaiting(); // ⚡ PAKSA AKTIF: Menyingkirkan draf menunggu lama tanpa perlu tutup tab browser
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('Menyimpan aset ke dalam cache...');
       return cache.addAll(ASSETS);
     })
   );
+});
+
+// Pembantu Dwi-Lapisan Pemutus Sesi Cache Lama
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (e) => {
