@@ -175,7 +175,7 @@
           </div>
           <div class="col-6 mb-3">
             <label class="fw-bold form-label">Luas Tanam (Ha) <span class="text-danger">*</span></label>
-            <input type="number" step="0.001" class="form-control" name="luasBertanam" id="luasBertanamInput" required oninput="recalcAllPercent()">
+            <input type="number" step="0.001" min="0.001" class="form-control" name="luasBertanam" id="luasBertanamInput" required oninput="recalcAllPercent()">
           </div>
       </div>
 
@@ -227,14 +227,8 @@
   </div>
 
   <script>
-    // ============================================================
-    // KONFIGURASI API
-    // ============================================================
     const API_URL = "https://script.google.com/macros/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
 
-    // ============================================================
-    // DATA STATIK NEGERI & DAERAH
-    // ============================================================
     const districtData = {
       "JOHOR": ["BATU PAHAT","JOHOR BAHRU","KLUANG","KOTA TINGGI","KULAI","MERSING","MUAR","PONTIAN","SEGAMAT","TANGKAK"],
       "KEDAH": ["BALING","BANDAR BAHARU","KOTA SETAR","KUALA MUDA","KUBANG PASU","KULIM","LANGKAWI","PADANG TERAP","PENDANG","POKOK SENA","SIK","YAN"],
@@ -254,9 +248,6 @@
       "W.P. PUTRAJAYA": ["PUTRAJAYA"]
     };
 
-    // ============================================================
-    // DATA SEMPADAN NEGERI (UNTUK VALIDASI KOORDINAT)
-    // ============================================================
     const stateBounds = {
       "JOHOR":             { minLat: 1.2,  maxLat: 2.9,  minLng: 102.4, maxLng: 104.6 },
       "KEDAH":             { minLat: 5.0,  maxLat: 6.6,  minLng: 99.5,  maxLng: 101.2 },
@@ -276,16 +267,10 @@
       "W.P. LABUAN":       { minLat: 5.2,  maxLat: 5.4,  minLng: 115.1, maxLng: 115.3 }
     };
 
-    // ============================================================
-    // PEMBOLEH UBAH GLOBAL
-    // ============================================================
     let cachedMasterData = {};
     let filesToUpload = [];
     let isOffline = !navigator.onLine;
 
-    // ============================================================
-    // INITIALIZE
-    // ============================================================
     window.onload = function() {
         checkConnectivity();
         loadDropdowns();
@@ -306,9 +291,6 @@
         setTimeout(semakAutoSave, 1000);
     };
 
-    // ============================================================
-    // AUTO-SAVE & RECOVER
-    // ============================================================
     function autoSaveBorang() {
         const form = document.getElementById('monitorForm');
         if (!form) return;
@@ -364,9 +346,6 @@
         });
     }
 
-    // ============================================================
-    // CONNECTIVITY CHECK
-    // ============================================================
     function checkConnectivity() {
         isOffline = !navigator.onLine;
         var banner = document.getElementById('connectionStatus');
@@ -389,9 +368,6 @@
         }
     }
 
-    // ============================================================
-    // LOAD DROPDOWNS
-    // ============================================================
     function loadDropdowns() {
         var nSelect = document.getElementById('negeriSelect');
         nSelect.innerHTML = '<option value="">- Pilih -</option>';
@@ -458,9 +434,6 @@
         }
     }
 
-    // ============================================================
-    // LOGIK UI BORANG
-    // ============================================================
     function updateDaerah() {
         var n = document.getElementById('negeriSelect').value;
         var d = document.getElementById('daerahSelect');
@@ -515,6 +488,7 @@
         }
     }
 
+    // 🚧 PENAMBAHBAIKAN: Meletakkan atribut asli min="0" bagi menghalang angka negatif di peringkat UI
     function addPerosakField() {
         var div = document.createElement('div');
         div.className = "perosak-item";
@@ -522,7 +496,7 @@
             '<div class="mb-2"><label class="small fw-bold">Nama Perosak</label>' +
             '<input type="text" class="form-control perosak-name" list="existingPestList" placeholder="Pilih atau taip : Sekiranya tiada perosak dikesan, Tidak Perlu isi bahagian ini"></div>' +
             '<div class="row g-2">' +
-            '<div class="col-4"><label class="small">Luas Serangan(ha)</label><input type="number" step="0.001" class="form-control perosak-luas" oninput="calcPercent(this)"></div>' +
+            '<div class="col-4"><label class="small">Luas Serangan(ha)</label><input type="number" step="0.001" min="0" class="form-control perosak-luas" oninput="calcPercent(this)"></div>' +
             '<div class="col-4"><label class="small">% serangan</label><input type="text" class="form-control perosak-percent" readonly></div>' +
             '<div class="col-4"><label class="small">Keterukan</label>' +
             '<select class="form-select perosak-severity">' +
@@ -539,6 +513,14 @@
         var luasKebun = parseFloat(document.getElementById('luasBertanamInput').value) || 0;
         var luasSakit = parseFloat(el.value) || 0;
         var pctField = el.closest('.perosak-item').querySelector('.perosak-percent');
+        
+        if (luasSakit < 0) {
+            Swal.fire({ icon: 'error', title: 'Ralat', text: "Luas serangan tidak boleh bernilai negatif!" });
+            el.value = "";
+            pctField.value = 0;
+            return;
+        }
+        
         if (luasSakit > luasKebun) {
             Swal.fire({ icon: 'error', title: 'Ralat', text: "Luas serangan melebihi luas tanaman!" });
             el.value = "";
@@ -578,17 +560,11 @@
         document.getElementById('captionCount').innerText = el.value.length + "/30";
     }
 
-    // ============================================================
-    // GPS & VALIDASI KOORDINAT
-    // ============================================================
-
-    // Dapatkan lokasi semasa dan terus semak sempadan negeri
     function getLocation() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function(p) {
                 var gpsBox = document.getElementById('gpsInput');
                 gpsBox.value = p.coords.latitude.toFixed(5) + ", " + p.coords.longitude.toFixed(5);
-                // Semak format dulu, kemudian semak sempadan negeri
                 if (validateCoord(gpsBox)) {
                     validateCoordInNegeri(gpsBox);
                 }
@@ -598,7 +574,6 @@
         }
     }
 
-    // Semak FORMAT koordinat sahaja (Lat, Long)
     function validateCoord(inputEl) {
         if (!inputEl) return false;
         var val = inputEl.value.trim();
@@ -617,16 +592,13 @@
             );
             return false;
         }
-
         return true;
     }
 
-    // *** FUNGSI BARU: Semak sama ada koordinat dalam sempadan negeri yang dipilih ***
     function validateCoordInNegeri(inputEl) {
         var val = inputEl.value.trim();
         var selectedNegeri = document.getElementById('negeriSelect').value;
 
-        // Kalau tiada negeri dipilih lagi, beri amaran
         if (!selectedNegeri) {
             Swal.fire({
                 icon: 'warning',
@@ -636,16 +608,13 @@
             return false;
         }
 
-        // Kalau tiada data sempadan untuk negeri tersebut, skip semakan (lulus)
         var bounds = stateBounds[selectedNegeri];
         if (!bounds) return true;
 
-        // Pecahkan nilai koordinat kepada Latitud dan Longitud
         var parts = val.split(',');
         var lat = parseFloat(parts[0].trim());
         var lng = parseFloat(parts[1].trim());
 
-        // Semak sama ada koordinat jatuh dalam kotak sempadan negeri
         var isWithinBounds = (
             lat >= bounds.minLat &&
             lat <= bounds.maxLat &&
@@ -666,7 +635,6 @@
             return false;
         }
 
-        // Koordinat sah — buang tanda merah jika ada
         inputEl.classList.remove('is-invalid');
         return true;
     }
@@ -686,26 +654,16 @@
     var mode = e.submitter ? e.submitter.value : 'BARU';
     var f = e.target;
 
-    // 🔒 SEMAKAN KETAT HANYA BERLAKU JIKA USER TEKAN "HANTAR LAPORAN" (BARU)
     if (mode === 'BARU') {
-        // 1. Semak field wajib HTML (required)
         if (!f.checkValidity()) {
             f.reportValidity();
             return;
         }
 
-        // 2. Semak FORMAT koordinat GPS
         var gpsInput = document.getElementById('gpsInput');
-        if (!validateCoord(gpsInput)) {
-            return;
-        }
+        if (!validateCoord(gpsInput)) return;
+        if (!validateCoordInNegeri(gpsInput)) return;
 
-        // 3. Semak koordinat dalam sempadan negeri
-        if (!validateCoordInNegeri(gpsInput)) {
-            return;
-        }
-
-        // 4. Pagar Halang Data Angka Bersih (Kalis Data Sampah/Negatif)
         var totalLuasKebun = parseFloat(document.getElementById('luasBertanamInput').value) || 0;
         if (totalLuasKebun <= 0) {
             Swal.fire('Ralat Validasi', 'Luas bertanam mestilah nilai positif lebih besar dari 0!', 'warning');
@@ -733,168 +691,170 @@
 
         if (ralatKesan) {
             Swal.fire('Data Tidak Sah', teksMesej, 'error');
-            return; // Sumpat/Hentikan proses hantar
+            return; 
         }
     }
 
-    // 🔓 JIKA MODE === 'DRAF', SEMUA KOD DI ATAS AKAN DILOMPATI SECARA OTOMATIK
-    // Sistem akan terus membaca data di bawah untuk simpanan draf offline/online...
     var fd = new FormData(f);
     var luasS = {}, pctS = {}, sevS = {};
     var names = [];
     var errorPest = false;
   
-      // Memproses dan mengecilkan saiz semua gambar terlebih dahulu sebelum dihantar / disimpan offline
-var imgStr = await Promise.all(filesToUpload.map(async function(file) {
-    // Kurangkan resolusi ke maksima 1024px dan kualiti 70%
-    var compressedDataUrl = await compressImageBeforeUpload(file, 1024, 1024, 0.7);
-    return {
-        name: file.name.substring(0, file.name.lastIndexOf('.')) + ".jpg", // Paksa format .jpg untuk penjimatan saiz
-        dataUrl: compressedDataUrl
-    };
-})).then(JSON.stringify);
+    // 🚀 REPARASI UTAMA: Mengembalikan gelung (loop) pembacaan data dari elemen HTML ke objek payload
+    document.querySelectorAll('.perosak-item').forEach(function(row) {
+        var n = row.querySelector('.perosak-name').value.toUpperCase().trim();
+        var valStr = row.querySelector('.perosak-luas').value;
+        if (n && valStr !== "") {
+            luasS[n] = parseFloat(valStr) || 0;
+            pctS[n] = parseFloat(row.querySelector('.perosak-percent').value) || 0;
+            sevS[n] = row.querySelector('.perosak-severity').value;
+            names.push(n);
+        }
+    });
 
-        var syors = Array.from(document.querySelectorAll('.syor-checkbox:checked')).map(function(c) { return c.value; });
-        var extraSyor = document.getElementById('syorTambahan').value;
-        if (extraSyor) syors.push(extraSyor);
-
-        var payload = {
-            action: 'submitNew',
-            statusRekod: mode,
-            namaPegawai: fd.get('namaPegawai'),
-            email: fd.get('email'),
-            tarikhBancian: fd.get('tarikhBancian'),
-            negeri: fd.get('negeri'),
-            daerah: fd.get('daerah'),
-            lokasi: fd.get('lokasi'),
-            koordinat: fd.get('koordinat'),
-            kategori: fd.get('kategori'),
-            namaTanaman: fd.get('namaTanaman'),
-            varieti: fd.get('varieti'),
-            umurTanaman: fd.get('umurTanaman'),
-            luasBertanam: fd.get('luasBertanam'),
-            senaraiPerosak: names.join(', '),
-            syor: syors.join('. '),
-            luasSerangan: luasS,
-            peratusSerangan: pctS,
-            keterukan: sevS,
-            images: imgStr,
-            captionGambar: fd.get('captionGambar')
+    var imgStr = await Promise.all(filesToUpload.map(async function(file) {
+        var compressedDataUrl = await compressImageBeforeUpload(file, 1024, 1024, 0.7);
+        return {
+            name: file.name.substring(0, file.name.lastIndexOf('.')) + ".jpg", 
+            dataUrl: compressedDataUrl
         };
+    })).then(JSON.stringify);
 
-        document.getElementById('loader').style.visibility = 'visible';
-        document.getElementById('submitBtn').disabled = true;
+    var syors = Array.from(document.querySelectorAll('.syor-checkbox:checked')).map(function(c) { return c.value; });
+    var extraSyor = document.getElementById('syorTambahan').value;
+    if (extraSyor) syors.push(extraSyor);
 
-        if (isOffline) {
-            saveToQueue(payload);
-            document.getElementById('loader').style.visibility = 'hidden';
-            document.getElementById('submitBtn').disabled = false;
+    var payload = {
+        action: 'submitNew',
+        statusRekod: mode,
+        namaPegawai: fd.get('namaPegawai'),
+        email: fd.get('email'),
+        tarikhBancian: fd.get('tarikhBancian'),
+        negeri: fd.get('negeri'),
+        daerah: fd.get('daerah'),
+        lokasi: fd.get('lokasi'),
+        koordinat: fd.get('koordinat'),
+        kategori: fd.get('kategori'),
+        namaTanaman: fd.get('namaTanaman'),
+        varieti: fd.get('varieti'),
+        umurTanaman: fd.get('umurTanaman'),
+        luasBertanam: fd.get('luasBertanam'),
+        senaraiPerosak: names.join(', '),
+        syor: syors.join('. '),
+        luasSerangan: luasS,
+        peratusSerangan: pctS,
+        keterukan: sevS,
+        images: imgStr,
+        captionGambar: fd.get('captionGambar')
+    };
 
-            Swal.fire({
-                icon: 'warning',
-                title: 'Disimpan (Offline)',
-                text: 'Data telah disimpan di telefon.',
-                confirmButtonText: 'OK'
-            }).then(function() {
-                localStorage.removeItem('pnrAutoSaveDraf');
-                f.reset();
-                document.getElementById('perosakList').innerHTML = "";
-                addPerosakField();
-                updateQueueBadge();
-                document.getElementById('imagePreviewContainer').innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
-            });
+    document.getElementById('loader').style.visibility = 'visible';
+    document.getElementById('submitBtn').disabled = true;
 
-        } else {
-            try {
-                var res = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { "Content-Type": "text/plain" },
-                    body: JSON.stringify(payload)
-                });
-                var result = await res.json();
+    if (isOffline) {
+        saveToQueue(payload);
+        document.getElementById('loader').style.visibility = 'hidden';
+        document.getElementById('submitBtn').disabled = false;
 
-                document.getElementById('loader').style.visibility = 'hidden';
-                document.getElementById('submitBtn').disabled = false;
+        Swal.fire({
+            icon: 'warning',
+            title: 'Disimpan (Offline)',
+            text: 'Data telah disimpan di telefon.',
+            confirmButtonText: 'OK'
+        }).then(function() {
+            localStorage.removeItem('pnrAutoSaveDraf');
+            f.reset();
+            document.getElementById('perosakList').innerHTML = "";
+            addPerosakField();
+            updateQueueBadge();
+            document.getElementById('imagePreviewContainer').innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
+        });
 
-                if (result.success) {
-                    Swal.fire('Berjaya!', 'Laporan dihantar.', 'success').then(function() {
-                        localStorage.removeItem('pnrAutoSaveDraf');
-                        f.reset();
-                        document.getElementById('perosakList').innerHTML = "";
-                        addPerosakField();
-                        window.scrollTo(0, 0);
-                        document.getElementById('imagePreviewContainer').innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
-                        updateQueueBadge();
-                    });
-                } else {
-                    throw new Error(result.message);
-                }
-            } catch(err) {
-                console.warn("Gagal hantar, simpan ke queue.", err);
-                saveToQueue(payload);
-                document.getElementById('loader').style.visibility = 'hidden';
-                document.getElementById('submitBtn').disabled = false;
-                Swal.fire('Ralat Sambungan', 'Data disimpan di telefon untuk percubaan semula.', 'info');
-            }
-        }
-    }
-
-    // ============================================================
-    // RSO CONVERSION
-    // ============================================================
-    async function executeRSOConversion() {
-        var east = document.getElementById('rsoEast').value;
-        var north = document.getElementById('rsoNorth').value;
-        var btn = document.getElementById('btnConvert');
-
-        if (!east || !north) {
-            Swal.fire('Ralat', 'Sila isi Easting & Northing', 'warning');
-            return;
-        }
-        if (isOffline) {
-            Swal.fire('Offline', 'Penukaran koordinat perlukan internet.', 'error');
-            return;
-        }
-
-        btn.disabled = true;
-        btn.innerText = "Menukar...";
-
+    } else {
         try {
             var res = await fetch(API_URL, {
                 method: 'POST',
                 headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify({ action: 'convertCoord', easting: east, northing: north })
+                body: JSON.stringify(payload)
             });
-            var json = await res.json();
+            var result = await res.json();
 
-            if (json.status === 'success') {
-                var val = json.converted.latitude.toFixed(5) + ", " + json.converted.longitude.toFixed(5);
-                var gpsBox = document.getElementById('gpsInput');
-                gpsBox.value = val;
-                validateCoord(gpsBox);
-                Swal.fire({ icon: 'success', title: 'Berjaya', text: 'Koordinat telah ditukar.', timer: 1500, showConfirmButton: false });
+            document.getElementById('loader').style.visibility = 'hidden';
+            document.getElementById('submitBtn').disabled = false;
+
+            if (result.success) {
+                Swal.fire('Berjaya!', 'Laporan dihantar.', 'success').then(function() {
+                    localStorage.removeItem('pnrAutoSaveDraf');
+                    f.reset();
+                    document.getElementById('perosakList').innerHTML = "";
+                    addPerosakField();
+                    window.scrollTo(0, 0);
+                    document.getElementById('imagePreviewContainer').innerHTML = '<small class="text-muted w-100 text-center py-2" id="noImgText">Tiada gambar dipilih</small>';
+                    updateQueueBadge();
+                });
             } else {
-                Swal.fire('Gagal', json.message, 'error');
+                throw new Error(result.message);
             }
-        } catch(e) {
-            Swal.fire('Error', e.toString(), 'error');
+        } catch(err) {
+            console.warn("Gagal hantar, simpan ke queue.", err);
+            saveToQueue(payload);
+            document.getElementById('loader').style.visibility = 'hidden';
+            document.getElementById('submitBtn').disabled = false;
+            Swal.fire('Ralat Sambungan', 'Data disimpan di telefon untuk percubaan semula.', 'info');
         }
+    }
+}
 
-        btn.disabled = false;
-        btn.innerText = "🔄 Tukar (Online Only)";
+async function executeRSOConversion() {
+    var east = document.getElementById('rsoEast').value;
+    var north = document.getElementById('rsoNorth').value;
+    var btn = document.getElementById('btnConvert');
+
+    if (!east || !north) {
+        Swal.fire('Ralat', 'Sila isi Easting & Northing', 'warning');
+        return;
+    }
+    if (isOffline) {
+        Swal.fire('Offline', 'Penukaran koordinat perlukan internet.', 'error');
+        return;
     }
 
-    // ============================================================
-    // PUSH NOTIFICATION & QUEUE SYNC
-    // ============================================================
-    function hantarNotification() {
-        if (Notification.permission === 'granted') {
-            navigator.serviceWorker.ready.then(function(registration) {
-                registration.showNotification('Sistem PNR Digital', {
-                    body: '✅ Tahniah! Semua data offline telah berjaya dihantar.',
-                    icon: 'icon-192.png',
-                    vibrate: [200, 100, 200],
-                    tag: 'sync-complete'
+    btn.disabled = true;
+    btn.innerText = "Menukar...";
+
+    try {
+        var res = await fetch(API_URL, {
+            method: 'POST',
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ action: 'convertCoord', easting: east, northing: north })
+        });
+        var json = await res.json();
+
+        if (json.status === 'success') {
+            var val = json.converted.latitude.toFixed(5) + ", " + json.converted.longitude.toFixed(5);
+            var gpsBox = document.getElementById('gpsInput');
+            gpsBox.value = val;
+            validateCoord(gpsBox);
+            Swal.fire({ icon: 'success', title: 'Berjaya', text: 'Koordinat telah ditukar.', timer: 1500, showConfirmButton: false });
+        } else {
+            Swal.fire('Gagal', json.message, 'error');
+        }
+    } catch(e) {
+        Swal.fire('Error', e.toString(), 'error');
+    }
+
+    btn.disabled = false;
+    btn.innerText = "🔄 Tukar (Online Only)";
+}
+
+function hantarNotification() {
+    if (Notification.permission === 'granted') {
+        navigator.serviceWorker.ready.then(function(registration) {
+            registration.showNotification('Sistem PNR Digital', {
+                body: '✅ Tahniah! Semua data offline telah berjaya dihantar.',
+                icon: 'icon-192.png',
+                vibrate: [200, 100, 200],
+                tag: 'sync-complete'
                 });
             });
         }
@@ -959,22 +919,14 @@ var imgStr = await Promise.all(filesToUpload.map(async function(file) {
         }
     }
     
-// ============================================================
-// FUNGSI UTALITI: KOMPRESI GAMBAR (VERSI BEBAS BUG / KALIS HANG)
-// ============================================================
 function compressImageBeforeUpload(file, maxWidth = 1024, maxHeight = 1024, quality = 0.7) {
     return new Promise((resolve) => {
         const reader = new FileReader();
-        
         reader.onload = function (event) {
             const img = new Image();
-            
-            // WAJIB: Isytihar perlakuan ONLOAD & ONERROR sebelum set src untuk mengelakkan "Race Condition"
             img.onload = function () {
                 let width = img.width;
                 let height = img.height;
-
-                // Kekalkan nisbah aspek gambar (Aspect Ratio)
                 if (width > height) {
                     if (width > maxWidth) {
                         height = Math.round((height * maxWidth) / width);
@@ -986,36 +938,25 @@ function compressImageBeforeUpload(file, maxWidth = 1024, maxHeight = 1024, qual
                         height = maxHeight;
                     }
                 }
-
                 const canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-
                 const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-                resolve(compressedBase64); // Selesai kompresi dengan berjaya
+                resolve(compressedBase64);
             };
-            
-            // Fallback 1: Jika gambar rosak atau gagal dimuatkan ke Canvas, pulangkan data asal tanpa sekat sistem
             img.onerror = function() {
-                console.warn("Amaran: Kompresi kanvas gagal, menggunakan imej asal.");
                 resolve(event.target.result); 
             };
-
-            // Set src di bahagian paling akhir selepas semua listener sedia
             img.src = event.target.result;
         };
-        
-        // Fallback 2: Jika FileReader gagal membaca fail, pulangkan string kosong
         reader.onerror = function() {
             resolve(""); 
         };
-        
         reader.readAsDataURL(file);
     });
 }
-
   </script>
 </body>
 </html>
