@@ -1,7 +1,7 @@
 // ==========================================
 // FAIL: js/records.js
 // FUNGSI: Menguruskan Master Data, Tugasan, Pengesahan & Borang 
-// REPARASI: Penyelarasan Nama Kekunci (Keys) Payload Tepat Ikut form.html
+// STATUS: 100% Dioptimasikan & Kalis Ralat JSON Type-Casting
 // ==========================================
 
 const STATE_BOUNDS = {
@@ -43,12 +43,16 @@ const DataManager = {
         const cleanImg = (raw) => { if (!raw) return []; let str = String(raw).trim().replace(/[\[\]"'\\]/g, ''); return str.split(',').map(l => l.trim()).filter(l => l.toLowerCase().startsWith('http')); };
         let pestRows = "";
         
-        if (d.p && Object.keys(d.p).length > 0) { 
-            Object.keys(d.p).forEach(k => { 
-                let luasVal = parseFloat(d.p[k]) || 0;
+        // 🛠️ TAMPAL BOM 1: Kalis Ralat String/Objek bagi Data Perosak
+        let parsedPest = typeof d.p === 'string' ? JSON.parse(d.p) : (d.p || {});
+        let parsedSev = typeof d.pk === 'string' ? JSON.parse(d.pk) : (d.pk || {});
+        
+        if (Object.keys(parsedPest).length > 0) { 
+            Object.keys(parsedPest).forEach(k => { 
+                let luasVal = parseFloat(parsedPest[k]) || 0;
                 let luasTanam = parseFloat(d.lt) || 0;
                 let pctVal = luasTanam > 0 ? ((luasVal / luasTanam) * 100).toFixed(2) : "0.00";
-                let sevVal = (d.pk && d.pk[k]) ? d.pk[k] : (d.k || 0); 
+                let sevVal = parsedSev[k] ? parsedSev[k] : (d.k || 0); 
                 let level = parseInt(sevVal) || 0; 
                 let badgeColor = level < 3 ? 'success' : (level < 4 ? 'warning' : 'danger'); 
                 pestRows += `<tr><td style="font-size:0.85rem" class="text-uppercase">${k}</td><td class="text-center fw-bold">${luasVal.toFixed(2)}</td><td class="text-center small">${pctVal}%</td><td class="text-center"><span class="badge bg-${badgeColor}">T${level}</span></td></tr>`; 
@@ -96,7 +100,7 @@ const DataManager = {
             </div>
             <div class="px-3" id="view_pest_${d.id}">
                 <h6 class="fw-bold text-success mb-2 small text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
-                <div class="table-responsive border rounded mb-2"><table class="table table-sm table-striped mb-0" style="font-size:0.8rem"><thead class="table-light"><tr><th>PEROSAK</th><th class="text-center">LUAS SERANGAN(HA)</th><th class="text-center">PERATS SERANGAN</th><th class="text-center">KETERUKAN SERANGAN</th></tr></thead><tbody>${pestRows}</tbody></table></div>
+                <div class="table-responsive border rounded mb-2"><table class="table table-sm table-striped mb-0" style="font-size:0.8rem"><thead class="table-light"><tr><th>PEROSAK</th><th class="text-center">LUAS SERANGAN(HA)</th><th class="text-center">PERATUS SERANGAN</th><th class="text-center">KETERUKAN SERANGAN</th></tr></thead><tbody>${pestRows}</tbody></table></div>
                 <div class="alert alert-warning border-warning mb-0 py-2 px-3 small"><i class="bi bi-lightbulb-fill text-warning me-1"></i> <strong>SYOR:</strong> ${d.s}</div>${imgHTML}
             </div>
             <div class="p-3 mt-auto"><div class="bg-success bg-opacity-10 border border-success rounded p-2 text-center"><small class="text-success fw-bold text-uppercase mb-1 d-block">DISAHKAN OLEH:</small><div class="text-dark small fw-bold">${d.vb}</div></div>${adminBtns}</div>
@@ -333,9 +337,17 @@ const TaskManager = {
 
             let pestRows = ""; 
             try { 
-                const lsObj = JSON.parse(getV('Luas Serangan') || "{}"); 
-                const pctObj = JSON.parse(getV('Peratus') || "{}"); 
-                const kObj = JSON.parse(getV('Keterukan') || "{}"); 
+                // 🛠️ TAMPAL BOM 2: Kalis Ralat JSON.parse untuk Objek Sedia Ada (Modul Pengesahan)
+                const getObj = (key) => {
+                    const raw = getV(key);
+                    if (!raw) return {};
+                    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+                };
+
+                const lsObj = getObj('Luas Serangan'); 
+                const pctObj = getObj('Peratus'); 
+                const kObj = getObj('Keterukan'); 
+                
                 if(Object.keys(lsObj).length > 0) { 
                     Object.keys(lsObj).forEach(k => { 
                         let level = kObj[k] || 0; 
@@ -460,7 +472,7 @@ const TaskManager = {
                 <input type="text" class="form-control form-control-sm p-name" list="${uniqueId}" value="${name}" placeholder="Pilih/Taip...">
                 <datalist id="${uniqueId}">${pestOptions}</datalist>
             </td>
-            <td><input type="number" class="form-control form-control-sm p-area" value="${area}" step="0.01"></td>
+            <td><input type="number" class="form-control form-control-sm p-area" value="${area}" step="0.01" min="0"></td>
             <td>
                 <select class="form-select form-select-sm p-sev">
                     <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
@@ -675,7 +687,8 @@ const TaskManager = {
 
                 luasS[n] = a; 
                 sevS[n] = s; 
-                pctS[n] = luasT > 0 ? ((a / luasT) * 100).toFixed(2) : 0; 
+                // 🛠️ TAMPAL BOM 3: Paksa output Number dengan parseFloat supaya tidak sumbang dengan output string ".toFixed(2)"
+                pctS[n] = luasT > 0 ? parseFloat(((a / luasT) * 100).toFixed(2)) : 0; 
                 names.push(n);
             }
         });
@@ -712,8 +725,6 @@ const TaskManager = {
             Swal.fire({ title: 'Menghantar Data...', showConfirmButton: false, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         }
 
-        // 🚀 DWIPARTISI PAYLOAD MUTTAMAD: Menyuntik kedua-dua format variasi kekunci (Lama + Baru dari form.html)
-        // Ini memastikan backend Google Apps Script berjaya memeta (map) sel tanpa mengira jenis kod pengekstrakan
         const payload = {
             action: 'updateEntry', 
             row: rowID, 
@@ -721,7 +732,6 @@ const TaskManager = {
             retainedImages: finalRetainedImages, 
             newImages: newImagesArray,
 
-            // A. Format Struktur Sempurna Ikut form.html (Penyelamat Data Perosak)
             tarikhBancian: document.getElementById('fe_tarikh').value,
             namaPegawai: document.getElementById('fe_pegawai').value,
             negeri: document.getElementById('fe_negeri').value,
@@ -739,7 +749,6 @@ const TaskManager = {
             keterukan: sevS,
             captionGambar: captionVal,
 
-            // B. Sandaran Struktur Lama (Kalis Broken-State Legacy Script)
             tarikh: document.getElementById('fe_tarikh').value,
             pegawai: document.getElementById('fe_pegawai').value,
             coord: coordVal,
