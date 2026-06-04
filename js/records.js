@@ -392,7 +392,7 @@ const TaskManager = {
                         </div>
                         <div>
                             <h6 class="fw-bold text-danger mb-2 small border-bottom pb-1 text-uppercase"><i class="bi bi-bug-fill me-1"></i> DATA SERANGAN</h6>
-                            <div class="table-responsive border rounded bg-white"><table class="table table-sm table-striped mb-0" style="font-size:0.75rem"><thead class="table-light"><tr><th class="text-start ps-2 text-uppercase">Perosak Dikesan</th><th class="text-center text-wrap text-uppercase">Luas Serangan(Ha)</th><th class="text-center text-wrap uppercase">Peratus serangan</th><th class="text-center text-wrap uppercase">Keterukan Serangan</th></tr></thead><tbody>${pestRows}</tbody></table></div>
+                            <div class="table-responsive border rounded bg-white"><table class="table table-sm table-striped mb-0" style="font-size:0.75rem"><thead class="table-light"><tr><th class="text-start ps-2 text-uppercase">PEROSAK DIKESAN</th><th class="text-center text-wrap text-uppercase">LUAS SERANGAN (HA)</th><th class="text-center text-wrap text-uppercase">PERATUS SERANGAN</th><th class="text-center text-wrap text-uppercase">KETERUKAN SERANGAN</th></tr></thead><tbody>${pestRows}</tbody></table></div>
                             ${imgHTML}
                         </div>
                     </div>
