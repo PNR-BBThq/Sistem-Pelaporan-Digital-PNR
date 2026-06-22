@@ -288,6 +288,9 @@
     let MASTER_DATA_KESELURUHAN = null; 
     let DATA_DITAPIS_SEMASA = [];
     
+    // 🔥 ENJIN BARU: KAMUS DINAMIK (AUTO-HARVEST DARI GOOGLE SHEET)
+    let KAMUS_LOKAL = {}; 
+
     let tahapGraf = "negeri"; 
     let namaNegeriTerpilih = "";
     let namaDaerahTerpilih = "";
@@ -297,14 +300,6 @@
 
     let HALAMAN_SEMASA = 1;
     const REKOD_PER_HALAMAN = 15;
-
-    const dataDaerahNegeri = {
-      "JOHOR": ["KOTA TINGGI", "TANGKAK", "SEGAMAT", "JOHOR BAHRU", "PONTIAN", "BATU PAHAT"],
-      "MELAKA": ["ALOR GAJAH", "MELAKA TENGAH", "JASIN"],
-      "TERENGGANU": ["BESUT", "SETIU", "KUALA NERUS", "KUALA TERENGGANU", "MARANG", "HULU TERENGGANU", "DUNGUN", "KEMAMAN"],
-      "KELANTAN": ["KOTA BHARU", "PASIR MAS", "TUMPAT", "BACHOK", "TANAH MERAH", "JELI", "KUALA KRAI", "GUA MUSANG"],
-      "PAHANG": ["KUANTAN", "PEKAN", "ROMPIN", "TEMERLOH", "MARAN", "BERA"]
-    };
 
     window.onload = function() {
       binaPetaAsas();
@@ -318,12 +313,44 @@
       markerGroup = L.featureGroup().addTo(map);
     }
 
+    // 🎯 FUNGSI MENGUTIP NAMA NEGERI & DAERAH SECARA AUTOMATIK DARI RAW DATA
+    function binaKamusDinamik(senaraiPins) {
+      KAMUS_LOKAL = {};
+      
+      senaraiPins.forEach(p => {
+        let neg = p.negeri.toUpperCase().trim();
+        let dae = p.daerah.toUpperCase().trim();
+        
+        if (neg && neg !== "LAIN-LAIN" && neg !== "") {
+          if (!KAMUS_LOKAL[neg]) KAMUS_LOKAL[neg] = new Set();
+          if (dae && dae !== "LAIN-LAIN" && dae !== "") {
+            KAMUS_LOKAL[neg].add(dae);
+          }
+        }
+      });
+
+      // 1. Suntik senarai Negeri ke dalam Dropdown secara Abjad (A - Z)
+      const selNeg = document.getElementById("filterNegeri");
+      if (!selNeg) return;
+      
+      selNeg.innerHTML = '<option value="ALL">Semua Negeri</option>';
+      Object.keys(KAMUS_LOKAL).sort().forEach(n => {
+        selNeg.innerHTML += `<option value="${n}">${n}</option>`;
+      });
+    }
+
+    // 🎯 KAWALAN DROP-DOWN DAERAH SECARA DINAMIK
     function TapisDataDaerah() {
-      const negeri = document.getElementById("filterNegeri").value;
-      const selectDaerah = document.getElementById("filterDaerah");
-      selectDaerah.innerHTML = '<option value="ALL">Semua Daerah</option>';
-      if (dataDaerahNegeri[negeri]) {
-        dataDaerahNegeri[negeri].forEach(d => { selectDaerah.innerHTML += `<option value="${d.toUpperCase()}">${d}</option>`; });
+      const negTerpilih = document.getElementById("filterNegeri").value;
+      const selDae = document.getElementById("filterDaerah");
+      if (!selDae) return;
+
+      selDae.innerHTML = '<option value="ALL">Semua Daerah</option>';
+      
+      if (KAMUS_LOKAL[negTerpilih]) {
+        Array.from(KAMUS_LOKAL[negTerpilih]).sort().forEach(d => {
+          selDae.innerHTML += `<option value="${d}">${d}</option>`;
+        });
       }
     }
 
@@ -349,6 +376,9 @@
 
         MASTER_DATA_KESELURUHAN = res;
 
+        // 🔥 JALANKAN PENGUTIP KAMUS SEBAIK SAHAJA DATA TIBA
+        if (res.mapPins) binaKamusDinamik(res.mapPins);
+
         if(res.doaLogo) document.getElementById("doaLogo").src = res.doaLogo;
         else document.getElementById("doaLogo").src = "https://www.doa.gov.my/wp-content/themes/jpm/images/logo.png";
         
@@ -360,9 +390,10 @@
 
         if (res.summary.invalid_coords_count > 0) {
           document.getElementById("bannerAmaranGIS").classList.remove("hidden");
-          document.getElementById("teksAmaranGIS").innerText = `AMARAN GIS: Terdapat ${res.summary.invalid_coords_count} unit diabaikan dalam paparan peta kerana koordinat GPS tidak sah.`;
+          document.getElementById("teksAmaranGIS").innerText = `AMARAN GIS: Terdapat ${res.summary.invalid_coords_count} titik diabaikan dalam paparan peta kerana koordinat GPS tidak sah.`;
         }
 
+        // Kunci penapis jika user adalah staf negeri spesifik
         if(USER_STATE && USER_STATE !== "ALL" && USER_STATE !== "SEMUA") {
           const el = document.getElementById("filterNegeri");
           if(el) { el.value = USER_STATE.toUpperCase(); el.disabled = true; TapisDataDaerah(); }
@@ -387,7 +418,6 @@
       const fDae = document.getElementById("filterDaerah").value;
       const fRtd = document.getElementById("filterRTD").value;
 
-      // 100% REKOD DIGUNAKAN DI SINI
       DATA_DITAPIS_SEMASA = MASTER_DATA_KESELURUHAN.mapPins.filter(p => {
         let passN = (fNeg === "ALL" || p.negeri.toUpperCase() === fNeg);
         let passD = (fDae === "ALL" || p.daerah.toUpperCase() === fDae);
@@ -408,7 +438,6 @@
         else if (p.rtd_status.includes("RTD>1")) rtd2++;
       });
 
-      // 🚨 KIRAAN DIJAMIN TEPAT SAMA RAW DATA
       document.getElementById("kpiTangkapanSemasa").innerText = tCatch.toLocaleString();
       document.getElementById("kpiPokokSerang").innerText = tSerang.toLocaleString();
       document.getElementById("kpiPokokTebang").innerText = tTebang.toLocaleString();
@@ -419,7 +448,6 @@
       document.getElementById("badgeRTD2").innerText = rtd2;
       
       binaPetaPinDiTapis();
-      
       HALAMAN_SEMASA = 1; 
       binaJadualDataMengikutHalaman(); 
       
@@ -429,7 +457,6 @@
       binaGrafTrendline();
     }
 
-    // ⚡ FILTER PETA KHAS (HANYA Peta YANG MEMILIH PIN TAK BERTINDIH)
     function tapisPetaBerasarkanRTD(status) {
       filterPetaRTD = status;
       ["ALL", "RTD=0", "RTD<1", "RTD>1"].forEach(id => {
@@ -453,7 +480,6 @@
       let pinTerkira = 0;
 
       senaraiPeta.forEach(p => {
-        // 🚨 DI SINI PETA PONTENGKAN KOORDINAT ROSAK:
         if (!p.is_valid_gis) return; 
         
         let pinKey = p.koordinat + "_" + p.lokasi;
@@ -547,7 +573,6 @@
         if(item.rtd_status.includes("RTD<1")) bColor = "bg-amber-100 text-amber-800 border-amber-300";
         if(item.rtd_status.includes("RTD>1")) bColor = "bg-rose-100 text-rose-800 border-rose-300";
 
-        // 🚨 BONUS: IKON AMARAN ⚠️ PADA JADUAL JIKA GPS ROSAK
         let penandaGPS = !item.is_valid_gis ? `<span title="Ralat GIS: Koordinat GPS Tidak Sah" class="ml-1 text-rose-600 font-extrabold cursor-help">⚠️</span>` : '';
 
         htmlString += `
