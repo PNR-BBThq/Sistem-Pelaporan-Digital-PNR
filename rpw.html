@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Pengurusan Perosak RPW 2026</title>
+  
+  <!-- Tailwind CSS & Google Fonts untuk Rekabentuk Moden & Humanly -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS & JS untuk Peta Interaktif -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- Chart.js untuk Graf Drilldown -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; }
+    .map-popup .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .sparkline-container { width: 100%; height: 50px; }
+  </style>
+</head>
+<body class="p-4 md:p-8">
+
+  <script>
+    // 🚨 GANTIKAN URL DI BAWAH DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+    const API_URL = "https://script.google.com/macros/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec"; 
+    
+    // Mengambil data token keselamatan dan nama dari sesi log masuk asal sistem anda
+    const USER_TOKEN = localStorage.getItem("pnr_token") || ""; 
+    const USER_NAME = localStorage.getItem("pnr_username") || "Pengguna";
+    const USER_STATE = localStorage.getItem("pnr_state") || "ALL";
+  </script>
+
+  <div class="max-w-7xl mx-auto space-y-6">
+    
+    <!-- HEADER & PANEL MUAT TURUN DATA SPATIAL -->
+    <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Dashboard Pemantauan Kumbang Jalur Merah (RPW)</h1>
+        <p class="text-sm text-slate-500">Analisis Data Perangkap & Ambang Amaran RTD Tahun 2026</p>
+      </div>
+      
+      <!-- Panel Muat Turun Data Spatial (QGIS / Google Earth) -->
+      <div class="flex flex-wrap gap-2 w-full md:w-auto">
+        <button onclick="muatTurunData('geojson')" class="flex-1 md:flex-initial bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition duration-150 flex items-center justify-center gap-2 cursor-pointer">
+          <span>📥</span> Muat Turun GeoJSON (QGIS)
+        </button>
+        <button onclick="muatTurunData('kml')" class="flex-1 md:flex-initial bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition duration-150 flex items-center justify-center gap-2 cursor-pointer">
+          <span>🌍</span> Muat Turun KML (Earth)
+        </button>
+      </div>
+    </div>
+
+    <!-- PANEL FILTER/TAPISAN DATA -->
+    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Negeri</label>
+        <select id="filterNegeri" onchange="TapisDataDaerah()" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-2.5 focus:outline-none focus:border-emerald-500">
+          <option value="ALL">Semua Negeri</option>
+          <option value="JOHOR">Johor</option>
+          <option value="MELAKA">Melaka</option>
+          <option value="TERENGGANU">Terengganu</option>
+          <option value="KELANTAN">Kelantan</option>
+          <option value="PAHANG">Pahang</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Daerah</label>
+        <select id="filterDaerah" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-2.5 focus:outline-none focus:border-emerald-500">
+          <option value="ALL">Semua Daerah</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Status RTD Semasa</label>
+        <select id="filterRTD" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-2.5 focus:outline-none focus:border-emerald-500">
+          <option value="ALL">Semua Status</option>
+          <option value="RTD=0">RTD = 0 (Bebas)</option>
+          <option value="RTD<1">RTD &lt; 1 (Amaran)</option>
+          <option value="RTD>1">RTD &gt; 1 (Bahaya)</option>
+        </select>
+      </div>
+      <div>
+        <button onclick="muatNaikAnalisis()" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium p-2.5 rounded-xl transition duration-150 cursor-pointer">
+          Tapis Rekod
+        </button>
+      </div>
+    </div>
+
+    <!-- KAD KPI RINGKASAN UTAMA -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+        <span class="text-2xl font-bold text-slate-900 block" id="kpiTangkapan">0</span>
+        <span class="text-xs font-medium text-slate-400 block mt-1">Total Catch RF Semasa</span>
+      </div>
+      <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+        <span class="text-2xl font-bold text-rose-600 block" id="kpiPokokSerang">0</span>
+        <span class="text-xs font-medium text-slate-400 block mt-1">Pokok Diserang</span>
+      </div>
+      <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+        <span class="text-2xl font-bold text-amber-600 block" id="kpiPokokTebang">0</span>
+        <span class="text-xs font-medium text-slate-400 block mt-1">Pokok Ditebang</span>
+      </div>
+      <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+        <span class="text-2xl font-bold text-emerald-600 block" id="kpiPerangkap">0</span>
+        <span class="text-xs font-medium text-slate-400 block mt-1">Trap Aktif Semasa</span>
+      </div>
+    </div>
+
+    <!-- SEKSYEN PETA HOTSPOT & DRILLDOWN GRAPH -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Peta Lokasi Perangkap RPW -->
+      <div class="lg:col-span-2 bg-white p-4 rounded-3xl border border-slate-100 shadow-xs flex flex-col h-[500px]">
+        <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">📍 Pemetaan Lokasi Perangkap Berdasarkan LAT,LONG</h3>
+        <div id="mapRPW" class="w-full flex-1 rounded-2xl z-10"></div>
+      </div>
+
+      <!-- Graf Drilldown Interaktif -->
+      <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs flex flex-col h-[500px]">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-sm font-bold text-slate-800" id="namaGraf">Tangkapan Mengikut Negeri</h3>
+          <button id="btnBackGraf" onclick="kembaliGrafAtas()" class="hidden text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md hover:bg-slate-200 cursor-pointer">Back</button>
+        </div>
+        <div class="relative flex-1 w-full flex items-center justify-center">
+          <canvas id="drilldownChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRAF TOP 10 DEFAULTER TRAPS (RTD > 1) -->
+    <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs">
+      <h3 class="text-sm font-bold text-slate-800 mb-4">📊 10 Trap Paling Banyak Kali Dapat Status RTD > 1 (RPW RF)</h3>
+      <div class="relative h-64 w-full">
+        <canvas id="defaulterChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let map, markerGroup;
+    let chartUtama, chartDefaulter;
+    let dataMentahSemasa = [];
+    let tahapGraf = "negeri"; 
+    let namaNegeriTerpilih = "";
+    let namaDaerahTerpilih = "";
+
+    const dataDaerahNegeri = {
+      "JOHOR": ["KOTA TINGGI", "TANGKAK", "SEGAMAT", "JOHOR BAHRU", "PONTIAN", "BATU PAHAT"],
+      "MELAKA": ["ALOR GAJAH", "MELAKA TENGAH", "JASIN"],
+      "TERENGGANU": ["BESUT", "SETIU", "KUALA NERUS", "KUALA TERENGGANU", "MARANG", "HULU TERENGGANU", "DUNGUN", "KEMAMAN"],
+      "KELANTAN": ["KOTA BHARU", "PASIR MAS", "TUMPAT", "BACHOK", "TANAH MERAH", "JELI", "KUALA KRAI", "GUA MUSANG"],
+      "PAHANG": ["KUANTAN", "PEKAN", "ROMPIN", "TEMERLOH", "MARAN", "BERA"]
+    };
+
+    window.onload = function() {
+      binaPetaAsas();
+      
+      // Jika pengguna adalah user biasa (bukan Admin/Penyelia), sekat negeri automatik ikut profile mereka
+      if(USER_STATE && USER_STATE !== "ALL" && USER_STATE !== "SEMUA") {
+        document.getElementById("filterNegeri").value = USER_STATE;
+        document.getElementById("filterNegeri").disabled = true;
+        TapisDataDaerah();
+      }
+      
+      muatNaikAnalisis();
+    };
+
+    function binaPetaAsas() {
+      map = L.map('mapRPW').setView([4.2105, 101.9758], 6); 
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+      markerGroup = L.layerGroup().addTo(map);
+    }
+
+    function TapisDataDaerah() {
+      const negeri = document.getElementById("filterNegeri").value;
+      const selectDaerah = document.getElementById("filterDaerah");
+      selectDaerah.innerHTML = '<option value="ALL">Semua Daerah</option>';
+      
+      if (dataDaerahNegeri[negeri]) {
+        dataDaerahNegeri[negeri].forEach(d => {
+          selectDaerah.innerHTML += `<option value="${d.toUpperCase()}">${d}</option>`;
+        });
+      }
+    }
+
+    function muatNaikAnalisis() {
+      const neg = document.getElementById("filterNegeri").value;
+      const dae = document.getElementById("filterDaerah").value;
+      const rtd = document.getElementById("filterRTD").value;
+
+      fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "getRPWAnalytics",
+          token: USER_TOKEN,
+          u: USER_NAME,
+          negeri: neg,
+          daerah: dae,
+          statusRTD: rtd
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if(res.success === false) {
+          alert(res.message);
+          return;
+        }
+        
+        document.getElementById("kpiTangkapan").innerText = res.summary.total_catch_rf;
+        document.getElementById("kpiPokokSerang").innerText = res.summary.total_pokok_diserang;
+        document.getElementById("kpiPokokTebang").innerText = res.summary.total_pokok_ditebang;
+        document.getElementById("kpiPerangkap").innerText = res.summary.bilangan_perangkap_semasa;
+
+        plotPinPeta(res.mapPins);
+
+        dataMentahSemasa = res.mapPins;
+        tahapGraf = "negeri";
+        document.getElementById("btnBackGraf").classList.add("hidden");
+        binaGrafDrilldown();
+        binaGrafDefaulter(res.topDefaulters);
+      });
+    }
+
+    function plotPinPeta(pins) {
+      markerGroup.clearLayers();
+      let bounds = [];
+
+      pins.forEach(p => {
+        if (!p.koordinat || !p.koordinat.includes(",")) return;
+        let latLng = p.koordinat.split(",").map(Number);
+        if (isNaN(latLng[0]) || isNaN(latLng[1])) return;
+
+        let warna = "#10b981"; // RTD=0 (Hijau)
+        if (p.rtd_status.includes("RTD<1")) warna = "#f59e0b"; // RTD<1 (Kuning)
+        if (p.rtd_status.includes("RTD>1")) warna = "#ef4444"; // RTD>1 (Merah)
+
+        let marker = L.circleMarker(latLng, {
+          radius: 8,
+          fillColor: warna,
+          color: "#fff",
+          weight: 2,
+          fillOpacity: 0.9
+        });
+
+        marker.on('click', function() {
+          marker.bindPopup(`<div class="map-popup p-1"><strong>Menarik data sejarah...</strong></div>`).openPopup();
+          
+          fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({
+              action: "getRPWHistory",
+              token: USER_TOKEN,
+              u: USER_NAME,
+              lokasi: p.lokasi
+            })
+          })
+          .then(r => r.json())
+          .then(res => {
+            let streakTeks = res.streakMonths > 0 ? 
+              `<div class="mt-2 text-xs bg-rose-50 text-rose-700 p-2 rounded-lg font-medium border border-rose-100">⚠️ Status RTD>1 berlarutan selama ${res.streakMonths} bulan berturut-turut!</div>` : 
+              `<div class="mt-2 text-xs bg-emerald-50 text-emerald-700 p-2 rounded-lg font-medium border border-emerald-100">✅ Rekod terkawal.</div>`;
+
+            let popupHtml = `
+              <div class="map-popup space-y-2">
+                <h4 class="font-bold text-slate-900 text-sm">${res.lokasi}</h4>
+                <p class="text-xs text-slate-500">${p.daerah}, ${p.negeri}</p>
+                <div class="text-xs">Tangkapan Semasa: <b>${p.total_rf} ekor</b></div>
+                ${streakTeks}
+              </div>
+            `;
+            marker.bindPopup(popupHtml).openPopup();
+          });
+        });
+
+        markerGroup.addLayer(marker);
+        bounds.push(latLng);
+      });
+
+      if (bounds.length > 0) map.fitBounds(bounds);
+    }
+
+    function binaGrafDrilldown() {
+      let labelData = [];
+      let nilaiData = [];
+      let mapData = {};
+
+      if (tahapGraf === "negeri") {
+        document.getElementById("namaGraf").innerText = "Tangkapan Mengikut Negeri";
+        dataMentahSemasa.forEach(p => {
+          mapData[p.negeri] = (mapData[p.negeri] || 0) + (parseInt(p.total_rf) || 0);
+        });
+      } 
+      else if (tahapGraf === "daerah") {
+        document.getElementById("namaGraf").innerText = `Daerah di ${namaNegeriTerpilih}`;
+        dataMentahSemasa.forEach(p => {
+          if (p.negeri === namaNegeriTerpilih) {
+            mapData[p.daerah] = (mapData[p.daerah] || 0) + (parseInt(p.total_rf) || 0);
+          }
+        });
+      } 
+      else if (tahapGraf === "perangkap") {
+        document.getElementById("namaGraf").innerText = `Perangkap di ${namaDaerahTerpilih}`;
+        dataMentahSemasa.forEach(p => {
+          if (p.daerah === namaDaerahTerpilih && p.negeri === namaNegeriTerpilih) {
+            mapData[p.lokasi] = (parseInt(p.total_rf) || 0);
+          }
+        });
+      }
+
+      labelData = Object.keys(mapData);
+      nilaiData = Object.values(mapData);
+
+      if (chartUtama) chartUtama.destroy();
+
+      const ctx = document.getElementById('drilldownChart').getContext('2d');
+      chartUtama = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labelData,
+          datasets: [{
+            label: 'Tangkapan RF',
+            data: nilaiData,
+            backgroundColor: '#1e293b',
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          onClick: (e, elements) => {
+            if (elements.length > 0) {
+              const index = elements[0].index;
+              const labelKlik = labelData[index];
+              handleGrafClick(labelKlik);
+            }
+          }
+        }
+      });
+    }
+
+    function handleGrafClick(label) {
+      if (tahapGraf === "negeri") {
+        namaNegeriTerpilih = label;
+        tahapGraf = "daerah";
+        document.getElementById("btnBackGraf").classList.remove("hidden");
+        binaGrafDrilldown();
+      } else if (tahapGraf === "daerah") {
+        namaDaerahTerpilih = label;
+        tahapGraf = "perangkap";
+        binaGrafDrilldown();
+      }
+    }
+
+    function kembaliGrafAtas() {
+      if (tahapGraf === "perangkap") {
+        tahapGraf = "daerah";
+      } else if (tahapGraf === "daerah") {
+        tahapGraf = "negeri";
+        document.getElementById("btnBackGraf").classList.add("hidden");
+      }
+      binaGrafDrilldown();
+    }
+
+    function binaGrafDefaulter(data) {
+      const labels = data.map(d => d.lokasi);
+      const values = data.map(d => d.kekerapan);
+
+      if (chartDefaulter) chartDefaulter.destroy();
+
+      const ctx = document.getElementById('defaulterChart').getContext('2d');
+      chartDefaulter = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: '#be123c',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+      });
+    }
+
+    function muatTurunData(jenis) {
+      const neg = document.getElementById("filterNegeri").value;
+      const dae = document.getElementById("filterDaerah").value;
+      const rtd = document.getElementById("filterRTD").value;
+      
+      let actionParam = jenis === 'geojson' ? 'downloadRPWGeoJSON' : 'downloadRPWKML';
+      let downloadUrl = `${API_URL}?action=${actionParam}&terkiniOnly=true&negeri=${neg}&daerah=${dae}&rtd=${rtd}`;
+      
+      window.open(downloadUrl, '_blank');
+    }
+  </script>
+</body>
+</html>
