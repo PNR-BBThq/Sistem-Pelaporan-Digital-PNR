@@ -37,6 +37,7 @@
     }
   </script>
 
+  <!-- ⏳ SKELETON LOADER -->
   <div id="skeletonLoader" class="w-full mx-auto space-y-6 animate-pulse">
     <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-4">
       <div class="w-16 h-16 bg-slate-200 rounded-2xl"></div>
@@ -47,12 +48,14 @@
     </div>
     <div class="h-[500px] bg-white rounded-3xl border border-slate-100 flex items-center justify-center text-slate-400 font-medium">
       <svg class="animate-spin -ml-1 mr-3 h-6 w-6 text-emerald-700 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle></svg>
-      Menarik rekod raw data dengan teliti...
+      Memuatkan 100% data mentah...
     </div>
   </div>
 
+  <!-- 🟢 PAPAN PEMUKA KESELURUHAN (FULL SCREEN WIDTH) -->
   <div id="dashboardContent" class="w-full mx-auto space-y-6 hidden transition-all duration-500">
     
+    <!-- HEADER -->
     <div class="bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border border-emerald-800/40">
       <div class="flex items-center gap-4">
         <div class="p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15"><img id="doaLogo" src="" alt="Logo" class="w-14 h-14 object-contain"></div>
@@ -74,11 +77,13 @@
       </div>
     </div>
 
+    <!-- ⚠️ BANNER AMARAN KOORDINAT LUAR MALAYSIA -->
     <div id="bannerAmaranGIS" class="hidden bg-amber-500 text-slate-950 px-5 py-3.5 rounded-2xl font-extrabold text-xs flex items-center justify-between shadow-lg animate-bounce">
       <span class="flex items-center gap-2">⚠️ <b id="teksAmaranGIS"></b></span>
       <button onclick="this.parentElement.style.display='none'" class="text-slate-900 hover:text-black cursor-pointer">✕ Tutup</button>
     </div>
 
+    <!-- PANEL TAPISAN -->
     <div class="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-200/80 grid grid-cols-1 sm:grid-cols-4 gap-3.5 items-end">
       <div>
         <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pilih Negeri</label>
@@ -113,6 +118,7 @@
       </div>
     </div>
 
+    <!-- 🚨 7 KAD KPI -->
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5">
       <div class="bg-emerald-950 text-emerald-100 p-4.5 rounded-3xl border border-emerald-800 shadow-sm flex flex-col justify-between">
         <span class="text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider">KUMULATIF RPW RF</span>
@@ -154,8 +160,10 @@
       </div>
     </div>
 
+    <!-- PETA (60%) & GRAF DRILLDOWN MULTIPURPOSE (40%) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
+      <!-- Peta -->
       <div class="lg:col-span-7 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[540px] relative overflow-hidden">
         
         <div class="flex justify-between items-center mb-2 z-20">
@@ -183,6 +191,7 @@
         <div id="mapRPW" class="w-full flex-1 rounded-2xl z-10 border border-slate-200 overflow-hidden shadow-inner mt-1"></div>
       </div>
 
+      <!-- Graf Multipurpose -->
       <div class="lg:col-span-5 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[540px]">
         <div class="flex justify-between items-center mb-2">
           <div>
@@ -215,12 +224,14 @@
       </div>
     </div>
 
+    <!-- GRAF 15 LOKASI PENGULANGAN RTD > 1 -->
     <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
       <h3 class="text-sm font-extrabold text-slate-900 mb-1 flex items-center gap-2"><span>📊</span> Carta 15 Lokasi Perangkap Pengulangan RTD > 1</h3>
       <p class="text-xs text-slate-400 mb-4">Kawasan berisiko tinggi yang merekodkan ambang populasi kritikal secara berulang sepanjang tahun</p>
       <div class="relative h-64 w-full"><canvas id="defaulterChart"></canvas></div>
     </div>
 
+    <!-- GRAF TRENDLINE BULANAN -->
     <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
       <div class="flex justify-between items-center mb-4">
         <div>
@@ -231,6 +242,7 @@
       <div class="relative h-72 w-full"><canvas id="trendLineChart"></canvas></div>
     </div>
 
+    <!-- JADUAL DATA REKOD -->
     <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4 mb-12">
       <div class="flex justify-between items-center border-b border-slate-100 pb-3">
         <div>
@@ -254,7 +266,8 @@
             </tr>
           </thead>
           <tbody id="tbodyRPW" class="divide-y divide-slate-100 text-slate-700 font-bold uppercase text-[11px]">
-            </tbody>
+            <!-- Disuntik secara lokal -->
+          </tbody>
         </table>
       </div>
       
@@ -347,7 +360,7 @@
 
         if (res.summary.invalid_coords_count > 0) {
           document.getElementById("bannerAmaranGIS").classList.remove("hidden");
-          document.getElementById("teksAmaranGIS").innerText = `AMARAN GIS: Terdapat ${res.summary.invalid_coords_count} titik diabaikan kerana koordinat tidak sah atau berada luar Malaysia.`;
+          document.getElementById("teksAmaranGIS").innerText = `AMARAN GIS: Terdapat ${res.summary.invalid_coords_count} unit diabaikan dalam paparan peta kerana koordinat GPS tidak sah.`;
         }
 
         if(USER_STATE && USER_STATE !== "ALL" && USER_STATE !== "SEMUA") {
@@ -374,6 +387,7 @@
       const fDae = document.getElementById("filterDaerah").value;
       const fRtd = document.getElementById("filterRTD").value;
 
+      // 100% REKOD DIGUNAKAN DI SINI
       DATA_DITAPIS_SEMASA = MASTER_DATA_KESELURUHAN.mapPins.filter(p => {
         let passN = (fNeg === "ALL" || p.negeri.toUpperCase() === fNeg);
         let passD = (fDae === "ALL" || p.daerah.toUpperCase() === fDae);
@@ -394,7 +408,7 @@
         else if (p.rtd_status.includes("RTD>1")) rtd2++;
       });
 
-      // 🚨 KIRAAN TEPAT DI SINI
+      // 🚨 KIRAAN DIJAMIN TEPAT SAMA RAW DATA
       document.getElementById("kpiTangkapanSemasa").innerText = tCatch.toLocaleString();
       document.getElementById("kpiPokokSerang").innerText = tSerang.toLocaleString();
       document.getElementById("kpiPokokTebang").innerText = tTebang.toLocaleString();
@@ -415,7 +429,7 @@
       binaGrafTrendline();
     }
 
-    // ⚡ FILTER PETA KHAS (PIN TAK BERTINDIH)
+    // ⚡ FILTER PETA KHAS (HANYA Peta YANG MEMILIH PIN TAK BERTINDIH)
     function tapisPetaBerasarkanRTD(status) {
       filterPetaRTD = status;
       ["ALL", "RTD=0", "RTD<1", "RTD>1"].forEach(id => {
@@ -435,11 +449,12 @@
       }
       
       markerGroup.clearLayers();
-      let seenMapPins = new Set(); // 🛡️ LOGIK PENGHALANG PIN BERTINDIH (HANYA UNTUK PETA)
+      let seenMapPins = new Set(); 
       let pinTerkira = 0;
 
       senaraiPeta.forEach(p => {
-        if (!p.koordinat || !p.koordinat.includes(",")) return;
+        // 🚨 DI SINI PETA PONTENGKAN KOORDINAT ROSAK:
+        if (!p.is_valid_gis) return; 
         
         let pinKey = p.koordinat + "_" + p.lokasi;
         if (seenMapPins.has(pinKey)) return; 
@@ -532,13 +547,16 @@
         if(item.rtd_status.includes("RTD<1")) bColor = "bg-amber-100 text-amber-800 border-amber-300";
         if(item.rtd_status.includes("RTD>1")) bColor = "bg-rose-100 text-rose-800 border-rose-300";
 
+        // 🚨 BONUS: IKON AMARAN ⚠️ PADA JADUAL JIKA GPS ROSAK
+        let penandaGPS = !item.is_valid_gis ? `<span title="Ralat GIS: Koordinat GPS Tidak Sah" class="ml-1 text-rose-600 font-extrabold cursor-help">⚠️</span>` : '';
+
         htmlString += `
           <tr class="hover:bg-slate-50 transition border-b border-slate-100 text-xs">
             <td class="p-3 text-center font-bold text-slate-400">${nomborSebenar}</td>
             <td class="p-3 font-medium text-slate-600">${item.tarikh}</td>
             <td class="p-3 font-bold text-slate-800">${item.negeri}</td>
             <td class="p-3 font-medium text-slate-700">${item.daerah}</td>
-            <td class="p-3 font-bold text-slate-900">${item.lokasi}</td>
+            <td class="p-3 font-bold text-slate-900">${item.lokasi}${penandaGPS}</td>
             <td class="p-3 text-slate-500">${item.tanaman}</td>
             <td class="p-3 text-center font-black text-emerald-700">${item.total_rf}</td>
             <td class="p-3 text-center font-black text-indigo-700">${item.total_rv}</td>
