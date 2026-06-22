@@ -1,4 +1,4 @@
-const CACHE_NAME = "pnr-cache-v3"; // ⚡ BUMP VERSION UNTUK COMPULSORY UPDATE
+const CACHE_NAME = "pnr-cache-v3.1"; // ⚡ BUMP VERSION UNTUK COMPULSORY UPDATE
 const ASSETS = [
   './',
   './index.html',
