@@ -11,7 +11,9 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <script src="./js/config.js"></script>
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec"; 
+  </script>
 
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; color: #0f172a; }
@@ -47,7 +49,7 @@
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-4"><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div></div>
     <div class="h-[500px] bg-white rounded-3xl border border-slate-100 flex items-center justify-center text-slate-400 font-medium">
       <svg class="animate-spin -ml-1 mr-3 h-6 w-6 text-emerald-700 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-      Sedang menarik ribuan rekod tangkapan RPW...
+      Sedang memproses data perangkap...
     </div>
   </div>
 
@@ -176,7 +178,7 @@
       <div class="relative h-64 w-full"><canvas id="defaulterChart"></canvas></div>
     </div>
 
-    <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+    <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4 mb-10">
       <div class="flex justify-between items-center border-b border-slate-100 pb-3">
         <div>
           <h3 class="text-sm font-extrabold text-slate-800">📋 Senarai Lengkap Rekod Perangkap Yang Ditapis</h3>
@@ -208,7 +210,7 @@
   <script>
     let map, markerGroup;
     let chartUtama, chartDefaulter;
-    let MASTER_DATA_KESELURUHAN = null; // Memori Induk Pelayar Web
+    let MASTER_DATA_KESELURUHAN = null; 
     let DATA_DITAPIS_SEMASA = [];
     
     let tahapGraf = "negeri"; 
@@ -229,7 +231,8 @@
     };
 
     function binaPetaAsas() {
-      map = L.map('mapRPW', { zoomControl: false }).setView([4.2105, 101.9758], 6); 
+      // 🚨 MENCEGAH PETA TERCEKIK DENGAN 'preferCanvas: true'
+      map = L.map('mapRPW', { zoomControl: false, preferCanvas: true }).setView([4.2105, 101.9758], 6); 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap' }).addTo(map);
       markerGroup = L.featureGroup().addTo(map);
@@ -252,10 +255,8 @@
       laksanakanFilterLokal();
     }
 
-    // ⚡ TARIK DATA SEKALI SAHAJA (BERBEZA DARI SEBELUM INI)
     function muatNaikDataIndukSekali() {
-      // PERHATIKAN: Kita memanggil CONFIG.API_URL dari fail config.js dan menggunakan headers: text/plain
-      fetch(`${CONFIG.API_URL}?action=getRPWAnalytics`, {
+      fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain" }, 
         body: JSON.stringify({ action: "getRPWAnalytics", token: USER_TOKEN, u: USER_NAME, negeri: "ALL", daerah: "ALL", statusRTD: "ALL" })
@@ -266,23 +267,19 @@
 
         MASTER_DATA_KESELURUHAN = res;
 
-        // Isi elemen statik
         if(res.doaLogo) document.getElementById("doaLogo").src = res.doaLogo;
         else document.getElementById("doaLogo").src = "https://www.doa.gov.my/wp-content/themes/jpm/images/logo.png";
         
         document.getElementById("kpiAllTime").innerText = (res.summary.all_time_catch_rf || 0).toLocaleString();
         binaGrafDefaulter(res.topDefaulters);
 
-        // Kunci penapis jika staf bertugas di negeri spesifik
         if(USER_STATE && USER_STATE !== "ALL" && USER_STATE !== "SEMUA") {
           const el = document.getElementById("filterNegeri");
           if(el) { el.value = USER_STATE.toUpperCase(); el.disabled = true; TapisDataDaerah(); }
         }
 
-        // Lakukan penapisan lokal buat kali pertama
         laksanakanFilterLokal();
 
-        // Matikan animasi loading
         setTimeout(() => {
           document.getElementById("skeletonLoader").classList.add("hidden");
           document.getElementById("dashboardContent").classList.remove("hidden");
@@ -293,7 +290,6 @@
       .catch(e => { alert("Gagal menyambung ke pangkalan data utama Google Apps Script."); console.error(e); });
     }
 
-    // ⚡ PROSES TAPISAN CLIENT-SIDE (0.001 SAAT - TANPA LOADING DARI SERVER)
     function laksanakanFilterLokal() {
       if (!MASTER_DATA_KESELURUHAN) return;
 
@@ -322,7 +318,8 @@
       document.getElementById("infoPeta").innerText = `${DATA_DITAPIS_SEMASA.length} Titik Perangkap`;
 
       plotPinPeta(DATA_DITAPIS_SEMASA);
-      binaJadualData(DATA_DITAPIS_SEMASA);
+      binaJadualData(DATA_DITAPIS_SEMASA); // Dipanggil ke sini
+      
       tahapGraf = "negeri";
       document.getElementById("btnBackGraf").classList.add("hidden");
       binaGrafDrilldown();
@@ -345,7 +342,7 @@
         marker.on('click', function() {
           marker.bindPopup(`<div class="map-popup p-1 font-bold text-emerald-800">Menyemak fail sejarah...</div>`).openPopup();
           
-          fetch(`${CONFIG.API_URL}?action=getRPWHistory`, { 
+          fetch(`${API_URL}?action=getRPWHistory`, { 
             method: "POST", 
             headers: { "Content-Type": "text/plain" },
             body: JSON.stringify({ action: "getRPWHistory", token: USER_TOKEN, u: USER_NAME, lokasi: p.lokasi }) 
@@ -373,21 +370,22 @@
       if (pins.length > 0) map.fitBounds(markerGroup.getBounds().pad(0.08));
     }
 
+    // 🚨 PENAWAR PAGE UNRESPONSIVE: BATCH DOM UPDATE
     function binaJadualData(senarai) {
       const tbody = document.getElementById("tbodyRPW");
-      tbody.innerHTML = "";
-
       if(senarai.length === 0) {
         tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400 font-medium">Tiada unit perangkap dijumpai bagi kriteria penapisan ini.</td></tr>`;
         return;
       }
 
+      let htmlString = ""; // Kita himpun dalam satu fail sementara
+      
       senarai.forEach((item, i) => {
         let bColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
         if(item.rtd_status.includes("RTD<1")) bColor = "bg-amber-100 text-amber-800 border-amber-300";
         if(item.rtd_status.includes("RTD>1")) bColor = "bg-rose-100 text-rose-800 border-rose-300";
 
-        tbody.innerHTML += `
+        htmlString += `
           <tr class="hover:bg-slate-50 transition border-b border-slate-100 text-xs">
             <td class="p-3 text-center font-bold text-slate-400">${i+1}</td>
             <td class="p-3 font-medium text-slate-600">${item.tarikh}</td>
@@ -400,6 +398,9 @@
           </tr>
         `;
       });
+      
+      // Kemudian barulah kita sumbat sekali gus ke dalam jadual (Menyelamatkan 99% RAM CPU)
+      tbody.innerHTML = htmlString;
     }
 
     function binaGrafDrilldown() {
@@ -459,7 +460,7 @@
       const neg = document.getElementById("filterNegeri").value;
       const dae = document.getElementById("filterDaerah").value;
       const rtd = document.getElementById("filterRTD").value;
-      window.open(`${CONFIG.API_URL}?action=${jenis === 'geojson' ? 'downloadRPWGeoJSON' : 'downloadRPWKML'}&terkiniOnly=true&negeri=${neg}&daerah=${dae}&rtd=${rtd}`, '_blank');
+      window.open(`${API_URL}?action=${jenis === 'geojson' ? 'downloadRPWGeoJSON' : 'downloadRPWKML'}&terkiniOnly=true&negeri=${neg}&daerah=${dae}&rtd=${rtd}`, '_blank');
     }
   </script>
 </body>
