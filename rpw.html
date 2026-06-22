@@ -10,10 +10,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec"; 
-  </script>
+  <script src="./js/config.js"></script>
 
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; color: #0f172a; }
@@ -24,7 +21,6 @@
 
   <script>
     let USER_TOKEN = "", USER_NAME = "Pengguna", USER_STATE = "ALL";
-
     const savedSession = localStorage.getItem("pnr_session");
     if (savedSession) {
       try {
@@ -34,7 +30,6 @@
         USER_STATE = (sData.uProf && sData.uProf.state) ? sData.uProf.state : "ALL";
       } catch(e) {}
     }
-
     if (!USER_TOKEN) {
       alert("⛔ Akses ditolak. Sila log masuk melalui pangkalan utama PNR.");
       window.location.href = "index.html"; 
@@ -49,7 +44,7 @@
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-4"><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div></div>
     <div class="h-[500px] bg-white rounded-3xl border border-slate-100 flex items-center justify-center text-slate-400 font-medium">
       <svg class="animate-spin -ml-1 mr-3 h-6 w-6 text-emerald-700 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-      Sedang memproses data perangkap...
+      Sedang menarik dan menyusun rekod tangkapan RPW...
     </div>
   </div>
 
@@ -66,7 +61,6 @@
           <p class="text-xs sm:text-sm text-slate-300">Data Tangkapan Perangkap & Pemantauan Ambang RTD Tahun 2026</p>
         </div>
       </div>
-      
       <div class="flex items-center gap-2.5 w-full md:w-auto">
         <button onclick="muatTurunData('geojson')" class="flex-1 md:flex-initial bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-semibold px-4 py-3 rounded-full transition flex items-center justify-center gap-2 cursor-pointer">
           <span>📥</span> Eksport GeoJSON
@@ -140,20 +134,17 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      
       <div class="lg:col-span-7 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[520px] relative">
         <div class="flex justify-between items-center mb-3">
           <h3 class="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">📍 Peta Titik Perangkap RPW</h3>
           <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200" id="infoPeta">Memuatkan Peta...</span>
         </div>
-        
         <div class="absolute top-16 right-8 z-[400] bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-lg border border-slate-200 space-y-1.5 pointer-events-auto">
           <div class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase border-b border-slate-100 pb-1">PETUNJUK WARNA PIN</div>
           <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> RTD = 0 (Bebas)</div>
           <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> RTD < 1 (Amaran Rendah)</div>
           <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> RTD > 1 (Bahaya / Tindakan)</div>
         </div>
-
         <div id="mapRPW" class="w-full flex-1 rounded-2xl z-10 border border-slate-200 overflow-hidden shadow-inner"></div>
       </div>
 
@@ -182,12 +173,12 @@
       <div class="flex justify-between items-center border-b border-slate-100 pb-3">
         <div>
           <h3 class="text-sm font-extrabold text-slate-800">📋 Senarai Lengkap Rekod Perangkap Yang Ditapis</h3>
-          <p class="text-xs text-slate-400">Paparan terperinci bagi setiap unit perangkap di lapangan</p>
+          <p class="text-xs text-slate-400">Paparan terperinci (15 rekod setiap halaman)</p>
         </div>
       </div>
-      <div class="overflow-x-auto max-h-[450px] overflow-y-auto border border-slate-100 rounded-2xl">
+      <div class="overflow-x-auto border border-slate-100 rounded-2xl">
         <table class="w-full text-left border-collapse">
-          <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-extrabold tracking-wider sticky top-0 z-20 shadow-xs">
+          <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-extrabold tracking-wider">
             <tr>
               <th class="p-3 text-center w-12">#</th>
               <th class="p-3">Tarikh Kutip</th>
@@ -203,6 +194,13 @@
             </tbody>
         </table>
       </div>
+      <div class="flex justify-between items-center pt-2">
+        <span class="text-[11px] text-slate-500 font-bold" id="infoMukaSurat">Memaparkan 0 rekod</span>
+        <div class="flex gap-2">
+          <button id="btnPrevPage" onclick="tukarMukaSurat(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-extrabold py-2 px-4 rounded-xl transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">⬅️ Sebelum</button>
+          <button id="btnNextPage" onclick="tukarMukaSurat(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-extrabold py-2 px-4 rounded-xl transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Seterusnya ➡️</button>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -216,6 +214,10 @@
     let tahapGraf = "negeri"; 
     let namaNegeriTerpilih = "";
     let namaDaerahTerpilih = "";
+
+    // Pembolehubah Pagination
+    let HALAMAN_SEMASA = 1;
+    const REKOD_PER_HALAMAN = 15;
 
     const dataDaerahNegeri = {
       "JOHOR": ["KOTA TINGGI", "TANGKAK", "SEGAMAT", "JOHOR BAHRU", "PONTIAN", "BATU PAHAT"],
@@ -231,7 +233,6 @@
     };
 
     function binaPetaAsas() {
-      // 🚨 MENCEGAH PETA TERCEKIK DENGAN 'preferCanvas: true'
       map = L.map('mapRPW', { zoomControl: false, preferCanvas: true }).setView([4.2105, 101.9758], 6); 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap' }).addTo(map);
@@ -256,7 +257,8 @@
     }
 
     function muatNaikDataIndukSekali() {
-      fetch(API_URL, {
+      let fetchUrl = typeof CONFIG !== 'undefined' ? CONFIG.API_URL : API_URL;
+      fetch(`${fetchUrl}?action=getRPWAnalytics`, {
         method: "POST",
         headers: { "Content-Type": "text/plain" }, 
         body: JSON.stringify({ action: "getRPWAnalytics", token: USER_TOKEN, u: USER_NAME, negeri: "ALL", daerah: "ALL", statusRTD: "ALL" })
@@ -318,7 +320,10 @@
       document.getElementById("infoPeta").innerText = `${DATA_DITAPIS_SEMASA.length} Titik Perangkap`;
 
       plotPinPeta(DATA_DITAPIS_SEMASA);
-      binaJadualData(DATA_DITAPIS_SEMASA); // Dipanggil ke sini
+      
+      // 🚨 MULA PAPARKAN JADUAL BERMULA DARI HALAMAN 1
+      HALAMAN_SEMASA = 1; 
+      binaJadualDataMengikutHalaman(); 
       
       tahapGraf = "negeri";
       document.getElementById("btnBackGraf").classList.add("hidden");
@@ -342,7 +347,8 @@
         marker.on('click', function() {
           marker.bindPopup(`<div class="map-popup p-1 font-bold text-emerald-800">Menyemak fail sejarah...</div>`).openPopup();
           
-          fetch(`${API_URL}?action=getRPWHistory`, { 
+          let fetchUrl = typeof CONFIG !== 'undefined' ? CONFIG.API_URL : API_URL;
+          fetch(`${fetchUrl}?action=getRPWHistory`, { 
             method: "POST", 
             headers: { "Content-Type": "text/plain" },
             body: JSON.stringify({ action: "getRPWHistory", token: USER_TOKEN, u: USER_NAME, lokasi: p.lokasi }) 
@@ -370,24 +376,38 @@
       if (pins.length > 0) map.fitBounds(markerGroup.getBounds().pad(0.08));
     }
 
-    // 🚨 PENAWAR PAGE UNRESPONSIVE: BATCH DOM UPDATE
-    function binaJadualData(senarai) {
+    // 🚨 LOGIK PAGINATION YANG MEMASANG 15 BARIS SAHAJA SETIAP MUKA SURAT
+    function binaJadualDataMengikutHalaman() {
       const tbody = document.getElementById("tbodyRPW");
+      const senarai = DATA_DITAPIS_SEMASA;
+      
       if(senarai.length === 0) {
         tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400 font-medium">Tiada unit perangkap dijumpai bagi kriteria penapisan ini.</td></tr>`;
+        document.getElementById("infoMukaSurat").innerText = "Memaparkan 0 rekod";
+        document.getElementById("btnPrevPage").disabled = true;
+        document.getElementById("btnNextPage").disabled = true;
         return;
       }
 
-      let htmlString = ""; // Kita himpun dalam satu fail sementara
+      const jumlahHalaman = Math.ceil(senarai.length / REKOD_PER_HALAMAN);
+      if (HALAMAN_SEMASA > jumlahHalaman) HALAMAN_SEMASA = jumlahHalaman;
+      if (HALAMAN_SEMASA < 1) HALAMAN_SEMASA = 1;
+
+      const mulaIndex = (HALAMAN_SEMASA - 1) * REKOD_PER_HALAMAN;
+      const akhirIndex = Math.min(mulaIndex + REKOD_PER_HALAMAN, senarai.length);
+      const senaraiPotong = senarai.slice(mulaIndex, akhirIndex);
+
+      let htmlString = ""; 
       
-      senarai.forEach((item, i) => {
+      senaraiPotong.forEach((item, i) => {
+        let nomborSebenar = mulaIndex + i + 1;
         let bColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
         if(item.rtd_status.includes("RTD<1")) bColor = "bg-amber-100 text-amber-800 border-amber-300";
         if(item.rtd_status.includes("RTD>1")) bColor = "bg-rose-100 text-rose-800 border-rose-300";
 
         htmlString += `
           <tr class="hover:bg-slate-50 transition border-b border-slate-100 text-xs">
-            <td class="p-3 text-center font-bold text-slate-400">${i+1}</td>
+            <td class="p-3 text-center font-bold text-slate-400">${nomborSebenar}</td>
             <td class="p-3 font-medium text-slate-600">${item.tarikh}</td>
             <td class="p-3 font-bold text-slate-800">${item.negeri}</td>
             <td class="p-3 font-medium text-slate-700">${item.daerah}</td>
@@ -399,8 +419,18 @@
         `;
       });
       
-      // Kemudian barulah kita sumbat sekali gus ke dalam jadual (Menyelamatkan 99% RAM CPU)
       tbody.innerHTML = htmlString;
+      
+      // Kemaskini teks info dan status butang
+      document.getElementById("infoMukaSurat").innerText = `Memaparkan rekod ${mulaIndex + 1} hingga ${akhirIndex} daripada ${senarai.length.toLocaleString()} jumlah keseluruhan (Halaman ${HALAMAN_SEMASA}/${jumlahHalaman})`;
+      
+      document.getElementById("btnPrevPage").disabled = (HALAMAN_SEMASA === 1);
+      document.getElementById("btnNextPage").disabled = (HALAMAN_SEMASA === jumlahHalaman);
+    }
+
+    function tukarMukaSurat(arah) {
+      HALAMAN_SEMASA += arah;
+      binaJadualDataMengikutHalaman();
     }
 
     function binaGrafDrilldown() {
@@ -460,7 +490,8 @@
       const neg = document.getElementById("filterNegeri").value;
       const dae = document.getElementById("filterDaerah").value;
       const rtd = document.getElementById("filterRTD").value;
-      window.open(`${API_URL}?action=${jenis === 'geojson' ? 'downloadRPWGeoJSON' : 'downloadRPWKML'}&terkiniOnly=true&negeri=${neg}&daerah=${dae}&rtd=${rtd}`, '_blank');
+      let fetchUrl = typeof CONFIG !== 'undefined' ? CONFIG.API_URL : API_URL;
+      window.open(`${fetchUrl}?action=${jenis === 'geojson' ? 'downloadRPWGeoJSON' : 'downloadRPWKML'}&terkiniOnly=true&negeri=${neg}&daerah=${dae}&rtd=${rtd}`, '_blank');
     }
   </script>
 </body>
