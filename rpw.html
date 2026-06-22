@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pengurusan Data Tangkapan Perangkap RPW</title>
+  <title>Analisis Data RPW</title>
   
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -47,7 +47,7 @@
     </div>
     <div class="h-[500px] bg-white rounded-3xl border border-slate-100 flex items-center justify-center text-slate-400 font-medium">
       <svg class="animate-spin -ml-1 mr-3 h-6 w-6 text-emerald-700 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-      Sedang menarik data...
+      Memproses trend analitik & sempadan GIS Malaysia...
     </div>
   </div>
 
@@ -60,8 +60,8 @@
           <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold tracking-wide">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> RUMUSAN BIOSEKURITI
           </div>
-          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Pusat Kawalan Perosak RPW</h1>
-          <p class="text-xs sm:text-sm text-slate-300">Pangkalan Pemantauan Tangkapan Kumbang & Ambang Amaran RTD Tahun 2026</p>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Pengurusan Data Tangkapan RPW Menggunakan Perangkap Feromon</h1>
+          <p class="text-xs sm:text-sm text-slate-300">Analisis Tangkapan Red Palm Weevil RPW di Malaysia</p>
         </div>
       </div>
       <div class="flex items-center gap-2.5 w-full md:w-auto">
@@ -115,24 +115,24 @@
 
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5">
       <div class="bg-emerald-950 text-emerald-100 p-4.5 rounded-3xl border border-emerald-800 shadow-sm flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider">KUMULATIF RF</span>
+        <span class="text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider">KUMULATIF RPW RF</span>
         <span class="text-3xl font-black block mt-2 text-white" id="kpiAllTimeRF">0</span>
-        <span class="text-[10px] text-emerald-400/80 block mt-1">Spg. Tahun 2026</span>
+        <span class="text-[10px] text-emerald-400/80 block mt-1">Sepanjang Tahun</span>
       </div>
       <div class="bg-indigo-950 text-indigo-100 p-4.5 rounded-3xl border border-indigo-800 shadow-sm flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">KUMULATIF RV</span>
+        <span class="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">KUMULATIF RPW RV</span>
         <span class="text-3xl font-black block mt-2 text-white" id="kpiAllTimeRV">0</span>
-        <span class="text-[10px] text-indigo-400/80 block mt-1">Spg. Tahun 2026</span>
+        <span class="text-[10px] text-indigo-400/80 block mt-1">Sepanjang Tahun</span>
       </div>
       <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">TANGKAPAN</span>
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">BULAN SEMASA</span>
         <span class="text-3xl font-black text-slate-900 block mt-2" id="kpiTangkapanSemasa">0</span>
-        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Jumlah Semasa</span>
+        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Tangkapan Terkini</span>
       </div>
       <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
         <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">OPERASI TRAP</span>
         <span class="text-3xl font-black text-slate-900 block mt-2" id="kpiTrapAktif">0</span>
-        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Aktif Semasa</span>
+        <span class="text-[10px] font-semibold text-slate-500 block mt-1"><span id="kpiUlanganPemantauan" class="font-bold text-emerald-700">0</span> Jumlah Pemantauan</span>
       </div>
       <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
         <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">TABURAN RTD</span>
@@ -143,33 +143,44 @@
         </div>
       </div>
       <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">STATUS SERANG</span>
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">STATUS SERANGAN</span>
         <span class="text-3xl font-black text-rose-600 block mt-2" id="kpiPokokSerang">0</span>
         <span class="text-[10px] font-semibold text-slate-500 block mt-1">Pokok Diserang</span>
       </div>
       <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SANITASI KEBUN</span>
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">POKOK DITEBANG</span>
         <span class="text-3xl font-black text-amber-600 block mt-2" id="kpiPokokTebang">0</span>
-        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Pokok Musnah</span>
+        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Sanitasi Kebun</span>
       </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
       <div class="lg:col-span-7 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[540px] relative overflow-hidden">
-        <div class="flex justify-between items-center mb-3 z-20">
-          <h3 class="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">📍 Peta Titik Perangkap (Auto-Zoom Sempadan Malaysia)</h3>
+        
+        <div class="flex justify-between items-center mb-2 z-20">
+          <h3 class="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">📍 Peta Lokasi Perangkap Feromon</h3>
           <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200" id="infoPeta">Memuatkan Peta...</span>
         </div>
+
+        <div class="flex items-center justify-start bg-slate-100 p-1.5 rounded-2xl mb-2 z-20 w-fit">
+          <span class="text-[10px] font-bold text-slate-400 px-2 uppercase">Tapisan Peta:</span>
+          <div class="flex gap-1">
+            <button onclick="tapisPetaBerasarkanRTD('ALL')" id="mapPill_ALL" class="text-[10px] font-bold px-2 py-1 rounded-lg bg-white text-slate-900 shadow-xs transition cursor-pointer">Semua</button>
+            <button onclick="tapisPetaBerasarkanRTD('RTD=0')" id="mapPill_RTD=0" class="text-[10px] font-bold px-2 py-1 rounded-lg text-slate-600 hover:bg-white/50 transition cursor-pointer">Bebas</button>
+            <button onclick="tapisPetaBerasarkanRTD('RTD<1')" id="mapPill_RTD<1" class="text-[10px] font-bold px-2 py-1 rounded-lg text-slate-600 hover:bg-white/50 transition cursor-pointer"><1</button>
+            <button onclick="tapisPetaBerasarkanRTD('RTD>1')" id="mapPill_RTD>1" class="text-[10px] font-bold px-2 py-1 rounded-lg text-slate-600 hover:bg-white/50 transition cursor-pointer">>1</button>
+          </div>
+        </div>
         
-        <div class="absolute top-16 right-8 z-[400] bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-lg border border-slate-150 space-y-1.5 pointer-events-auto">
+        <div class="absolute top-24 right-8 z-[400] bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-lg border border-slate-150 space-y-1.5 pointer-events-auto">
           <div class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase border-b border-slate-100 pb-1">PETUNJUK WARNA PIN</div>
           <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> RTD = 0 (Bebas)</div>
           <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> RTD < 1 (Amaran Rendah)</div>
           <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> RTD > 1 (Bahaya / Tindakan)</div>
         </div>
 
-        <div id="mapRPW" class="w-full flex-1 rounded-2xl z-10 border border-slate-200 overflow-hidden shadow-inner"></div>
+        <div id="mapRPW" class="w-full flex-1 rounded-2xl z-10 border border-slate-200 overflow-hidden shadow-inner mt-1"></div>
       </div>
 
       <div class="lg:col-span-5 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[540px]">
@@ -208,6 +219,16 @@
       <h3 class="text-sm font-extrabold text-slate-900 mb-1 flex items-center gap-2"><span>📊</span> Carta 15 Lokasi Perangkap Pengulangan RTD > 1</h3>
       <p class="text-xs text-slate-400 mb-4">Kawasan berisiko tinggi yang merekodkan ambang populasi kritikal secara berulang sepanjang tahun</p>
       <div class="relative h-64 w-full"><canvas id="defaulterChart"></canvas></div>
+    </div>
+
+    <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2"><span>📈</span> Trend Tangkapan Bulanan (RF & RV)</h3>
+          <p class="text-xs text-slate-400 mt-1">Pergerakan populasi kumbang sepanjang tahun berdasarkan rekod kutipan data dari Januari hingga Disember</p>
+        </div>
+      </div>
+      <div class="relative h-72 w-full"><canvas id="trendLineChart"></canvas></div>
     </div>
 
     <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4 mb-12">
@@ -250,7 +271,7 @@
 
   <script>
     let map, markerGroup;
-    let chartUtama, chartDefaulter;
+    let chartUtama, chartDefaulter, chartTrendline;
     let MASTER_DATA_KESELURUHAN = null; 
     let DATA_DITAPIS_SEMASA = [];
     
@@ -259,6 +280,7 @@
     let namaDaerahTerpilih = "";
     let modeTangkapan = "rf"; 
     let filterGrafRTD = "ALL"; 
+    let filterPetaRTD = "ALL"; // Pill Filter baru untuk peta
 
     let HALAMAN_SEMASA = 1;
     const REKOD_PER_HALAMAN = 15;
@@ -297,6 +319,8 @@
       TapisDataDaerah();
       document.getElementById("filterDaerah").value = "ALL";
       document.getElementById("filterRTD").value = "ALL";
+      tapisGrafBerasarkanRTD('ALL');
+      tapisPetaBerasarkanRTD('ALL');
       laksanakanFilterLokal();
     }
 
@@ -317,11 +341,13 @@
         
         document.getElementById("kpiAllTimeRF").innerText = (res.summary.all_time_rf || 0).toLocaleString();
         document.getElementById("kpiAllTimeRV").innerText = (res.summary.all_time_rv || 0).toLocaleString();
+        document.getElementById("kpiUlanganPemantauan").innerText = (res.summary.total_ulangan_pemantauan || 0).toLocaleString();
+
         binaGrafDefaulter(res.topDefaulters);
 
         if (res.summary.invalid_coords_count > 0) {
           document.getElementById("bannerAmaranGIS").classList.remove("hidden");
-          document.getElementById("teksAmaranGIS").innerText = `AMARAN GIS: Terdapat ${res.summary.invalid_coords_count} rekod ditolak kerana koordinat tidak sah atau berada di luar sempadan Malaysia.`;
+          document.getElementById("teksAmaranGIS").innerText = `AMARAN GIS: Terdapat ${res.summary.invalid_coords_count} titik diabaikan kerana koordinat tidak sah atau berada luar Malaysia.`;
         }
 
         if(USER_STATE && USER_STATE !== "ALL" && USER_STATE !== "SEMUA") {
@@ -338,7 +364,7 @@
           if(markerGroup.getLayers().length > 0) map.fitBounds(markerGroup.getBounds().pad(0.08));
         }, 300);
       })
-      .catch(e => { alert("Gagal menyambung ke pangkalan data utama Google Apps Script."); console.error(e); });
+      .catch(e => { alert("Gagal menyambung ke pangkalan data."); console.error(e); });
     }
 
     function laksanakanFilterLokal() {
@@ -368,7 +394,6 @@
         else if (p.rtd_status.includes("RTD>1")) rtd2++;
       });
 
-      // 🚨 ID KOTAK TANGKAPAN SEMASA YANG TELAH DIPERBAIKI!
       document.getElementById("kpiTangkapanSemasa").innerText = tCatch.toLocaleString();
       document.getElementById("kpiPokokSerang").innerText = tSerang.toLocaleString();
       document.getElementById("kpiPokokTebang").innerText = tTebang.toLocaleString();
@@ -377,21 +402,41 @@
       document.getElementById("badgeRTD0").innerText = rtd0;
       document.getElementById("badgeRTD1").innerText = rtd1;
       document.getElementById("badgeRTD2").innerText = rtd2;
-      document.getElementById("infoPeta").innerText = `${DATA_DITAPIS_SEMASA.length} Titik Perangkap`;
-
-      plotPinPeta(DATA_DITAPIS_SEMASA);
+      
+      binaPetaPinDiTapis();
+      
       HALAMAN_SEMASA = 1; 
       binaJadualDataMengikutHalaman(); 
       
       tahapGraf = "negeri";
       document.getElementById("btnBackGraf").classList.add("hidden");
       binaGrafDrilldown();
+      binaGrafTrendline();
     }
 
-    function plotPinPeta(pins) {
+    // ⚡ FILTER PILL KHAS UNTUK PETA
+    function tapisPetaBerasarkanRTD(status) {
+      filterPetaRTD = status;
+      ["ALL", "RTD=0", "RTD<1", "RTD>1"].forEach(id => {
+        let btn = document.getElementById(`mapPill_${id}`);
+        if(btn) {
+          if(id === status) btn.className = "text-[10px] font-bold px-2 py-1 rounded-lg bg-white text-slate-900 shadow-xs transition cursor-pointer";
+          else btn.className = "text-[10px] font-bold px-2 py-1 rounded-lg text-slate-600 hover:bg-white/50 transition cursor-pointer";
+        }
+      });
+      binaPetaPinDiTapis();
+    }
+
+    function binaPetaPinDiTapis() {
+      let senaraiPeta = DATA_DITAPIS_SEMASA;
+      if (filterPetaRTD !== "ALL") {
+        senaraiPeta = senaraiPeta.filter(p => p.rtd_status.toUpperCase() === filterPetaRTD);
+      }
+      
+      document.getElementById("infoPeta").innerText = `${senaraiPeta.length} Titik Perangkap`;
       markerGroup.clearLayers();
 
-      pins.forEach(p => {
+      senaraiPeta.forEach(p => {
         if (!p.koordinat || !p.koordinat.includes(",")) return;
         let latLng = p.koordinat.split(",").map(Number);
         if (isNaN(latLng[0]) || isNaN(latLng[1])) return;
@@ -442,14 +487,12 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 9 } } }, y: { ticks: { font: { size: 9 }, stepSize: 1 } } } }
               });
             }, 250);
-
           });
         });
-
         markerGroup.addLayer(marker);
       });
 
-      if (pins.length > 0) map.fitBounds(markerGroup.getBounds().pad(0.08));
+      if (senaraiPeta.length > 0) map.fitBounds(markerGroup.getBounds().pad(0.08));
     }
 
     function binaJadualDataMengikutHalaman() {
@@ -577,6 +620,53 @@
       if (tahapGraf === "perangkap") tahapGraf = "daerah";
       else if (tahapGraf === "daerah") { tahapGraf = "negeri"; document.getElementById("btnBackGraf").classList.add("hidden"); }
       binaGrafDrilldown();
+    }
+
+    // ⚡ BINA GRAF TRENDLINE BULANAN
+    function binaGrafTrendline() {
+      if (!MASTER_DATA_KESELURUHAN) return;
+      const fNeg = document.getElementById("filterNegeri").value;
+      const fDae = document.getElementById("filterDaerah").value;
+
+      let filteredHist = MASTER_DATA_KESELURUHAN.historyData.filter(p => {
+        let passN = (fNeg === "ALL" || p.n === fNeg);
+        let passD = (fDae === "ALL" || p.d === fDae);
+        return passN && passD;
+      });
+
+      let bulanMapRF = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0 };
+      let bulanMapRV = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0 };
+
+      filteredHist.forEach(h => {
+        if (h.m >= 1 && h.m <= 12) {
+           bulanMapRF[h.m] += h.rf;
+           bulanMapRV[h.m] += h.rv;
+        }
+      });
+
+      const namaBulan = ["Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis"];
+      const dataRF = Object.values(bulanMapRF);
+      const dataRV = Object.values(bulanMapRV);
+
+      if (chartTrendline) chartTrendline.destroy();
+      chartTrendline = new Chart(document.getElementById('trendLineChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: namaBulan,
+          datasets: [
+            { label: 'Tangkapan RF', data: dataRF, borderColor: '#059669', backgroundColor: '#34d399', tension: 0.3, pointRadius: 4, borderWidth: 3 },
+            { label: 'Tangkapan RV', data: dataRV, borderColor: '#4f46e5', backgroundColor: '#818cf8', tension: 0.3, pointRadius: 4, borderWidth: 3 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: true, position: 'top', labels: { font: { family: 'Plus Jakarta Sans', weight: 'bold' } } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { weight: 'bold', family: 'Plus Jakarta Sans' } } },
+            y: { grid: { borderDash: [4, 4], color: '#f1f5f9' }, beginAtZero: true }
+          }
+        }
+      });
     }
 
     function binaGrafDefaulter(data) {
