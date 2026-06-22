@@ -89,11 +89,6 @@
         <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pilih Negeri</label>
         <select id="filterNegeri" onchange="TapisDataDaerah(); laksanakanFilterLokal();" class="w-full bg-slate-50 border border-slate-200 font-semibold text-slate-700 text-xs rounded-2xl p-3 focus:outline-none focus:border-emerald-600 cursor-pointer">
           <option value="ALL">Semua Negeri</option>
-          <option value="JOHOR">Johor</option>
-          <option value="MELAKA">Melaka</option>
-          <option value="TERENGGANU">Terengganu</option>
-          <option value="KELANTAN">Kelantan</option>
-          <option value="PAHANG">Pahang</option>
         </select>
       </div>
       <div>
@@ -118,45 +113,49 @@
       </div>
     </div>
 
-    <!-- 🚨 7 KAD KPI -->
+    <!-- 🚨 7 KAD KPI (REKA BENTUK SOFT PASTEL + TAJUK ATAS SAHAJA) -->
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5">
-      <div class="bg-emerald-950 text-emerald-100 p-4.5 rounded-3xl border border-emerald-800 shadow-sm flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider">KUMULATIF RPW RF</span>
-        <span class="text-3xl font-black block mt-2 text-white" id="kpiAllTimeRF">0</span>
-        <span class="text-[10px] text-emerald-400/80 block mt-1">Sepanjang Tahun</span>
+      <!-- Kad 1: Kumulatif RF (Soft Pale Emerald) -->
+      <div class="bg-emerald-50/90 border border-emerald-200/80 p-4 rounded-3xl shadow-2xs flex flex-col justify-between">
+        <span class="text-[10px] font-black text-emerald-800 uppercase tracking-wider">KUMULATIF RPW RF</span>
+        <span class="text-3xl font-black text-emerald-950 block mt-1" id="kpiAllTimeRF">0</span>
+        <span class="text-[10px] text-emerald-600 font-bold block mt-0.5">Sepanjang Tahun</span>
       </div>
-      <div class="bg-indigo-950 text-indigo-100 p-4.5 rounded-3xl border border-indigo-800 shadow-sm flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">KUMULATIF RPW RV</span>
-        <span class="text-3xl font-black block mt-2 text-white" id="kpiAllTimeRV">0</span>
-        <span class="text-[10px] text-indigo-400/80 block mt-1">Sepanjang Tahun</span>
+      <!-- Kad 2: Kumulatif RV (Soft Pale Indigo) -->
+      <div class="bg-indigo-50/90 border border-indigo-200/80 p-4 rounded-3xl shadow-2xs flex flex-col justify-between">
+        <span class="text-[10px] font-black text-indigo-800 uppercase tracking-wider">KUMULATIF RPW RV</span>
+        <span class="text-3xl font-black text-indigo-950 block mt-1" id="kpiAllTimeRV">0</span>
+        <span class="text-[10px] text-indigo-600 font-bold block mt-0.5">Sepanjang Tahun</span>
       </div>
-      <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">BULAN SEMASA</span>
-        <span class="text-3xl font-black text-slate-900 block mt-2" id="kpiTangkapanSemasa">0</span>
-        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Tangkapan Terkini</span>
+      <!-- Kad 3: Tangkapan Semasa (Tajuk Atas Sahaja, Bawah Kosong) -->
+      <div class="bg-white border border-slate-200/80 p-4 rounded-3xl shadow-2xs flex flex-col justify-center">
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">TANGKAPAN SEMASA</span>
+        <span class="text-3xl font-black text-slate-900 block mt-1" id="kpiTangkapanSemasa">0</span>
       </div>
-      <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+      <!-- Kad 4: Operasi Trap (Dikekalkan nota pemantauannya) -->
+      <div class="bg-white border border-slate-200/80 p-4 rounded-3xl shadow-2xs flex flex-col justify-between">
         <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">OPERASI TRAP</span>
-        <span class="text-3xl font-black text-slate-900 block mt-2" id="kpiTrapAktif">0</span>
-        <span class="text-[10px] font-semibold text-slate-500 block mt-1"><span id="kpiUlanganPemantauan" class="font-bold text-emerald-700">0</span> Jumlah Pemantauan</span>
+        <span class="text-3xl font-black text-slate-900 block mt-1" id="kpiTrapAktif">0</span>
+        <span class="text-[10px] font-semibold text-slate-400 block mt-1"><span id="kpiUlanganPemantauan" class="font-bold text-emerald-700">0</span> Jumlah Pemantauan</span>
       </div>
-      <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">TABURAN RTD</span>
-        <div class="space-y-1 my-auto">
-          <div class="flex justify-between items-center text-[11px] font-bold"><span class="text-emerald-600">🟢 Bebas (0)</span><span id="badgeRTD0">0</span></div>
-          <div class="flex justify-between items-center text-[11px] font-bold"><span class="text-amber-600">🟡 Amaran (<1)</span><span id="badgeRTD1">0</span></div>
-          <div class="flex justify-between items-center text-[11px] font-bold"><span class="text-rose-600">🔴 Bahaya (>1)</span><span id="badgeRTD2">0</span></div>
+      <!-- Kad 5: Taburan RTD (Dikekalkan 3 baris lencananya) -->
+      <div class="bg-white border border-slate-200/80 p-4 rounded-3xl shadow-2xs flex flex-col justify-between">
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">TABURAN RTD</span>
+        <div class="space-y-0.5 my-auto text-[11px] font-bold">
+          <div class="flex justify-between"><span class="text-emerald-600">🟢 Bebas (0)</span><span id="badgeRTD0">0</span></div>
+          <div class="flex justify-between"><span class="text-amber-600">🟡 Amaran (<1)</span><span id="badgeRTD1">0</span></div>
+          <div class="flex justify-between"><span class="text-rose-600">🔴 Bahaya (>1)</span><span id="badgeRTD2">0</span></div>
         </div>
       </div>
-      <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">STATUS SERANGAN</span>
-        <span class="text-3xl font-black text-rose-600 block mt-2" id="kpiPokokSerang">0</span>
-        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Pokok Diserang</span>
+      <!-- Kad 6: Bil Pokok Diserang (Tajuk Atas Sahaja) -->
+      <div class="bg-white border border-slate-200/80 p-4 rounded-3xl shadow-2xs flex flex-col justify-center">
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">BIL POKOK DISERANG</span>
+        <span class="text-3xl font-black text-rose-600 block mt-1" id="kpiPokokSerang">0</span>
       </div>
-      <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">POKOK DITEBANG</span>
-        <span class="text-3xl font-black text-amber-600 block mt-2" id="kpiPokokTebang">0</span>
-        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Sanitasi Kebun</span>
+      <!-- Kad 7: Bil Pokok Ditebang (Tajuk Atas Sahaja) -->
+      <div class="bg-white border border-slate-200/80 p-4 rounded-3xl shadow-2xs flex flex-col justify-center">
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">BIL POKOK DITEBANG</span>
+        <span class="text-3xl font-black text-amber-600 block mt-1" id="kpiPokokTebang">0</span>
       </div>
     </div>
 
@@ -171,21 +170,23 @@
           <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200" id="infoPeta">Memuatkan Peta...</span>
         </div>
 
-        <div class="flex items-center justify-start bg-slate-100 p-1.5 rounded-2xl mb-2 z-20 w-fit">
-          <span class="text-[10px] font-bold text-slate-400 px-2 uppercase">Tapisan Peta:</span>
-          <div class="flex gap-1">
-            <button onclick="tapisPetaBerasarkanRTD('ALL')" id="mapPill_ALL" class="text-[10px] font-bold px-2 py-1 rounded-lg bg-white text-slate-900 shadow-xs transition cursor-pointer">Semua</button>
-            <button onclick="tapisPetaBerasarkanRTD('RTD=0')" id="mapPill_RTD=0" class="text-[10px] font-bold px-2 py-1 rounded-lg text-slate-600 hover:bg-white/50 transition cursor-pointer">Bebas</button>
-            <button onclick="tapisPetaBerasarkanRTD('RTD<1')" id="mapPill_RTD<1" class="text-[10px] font-bold px-2 py-1 rounded-lg text-slate-600 hover:bg-white/50 transition cursor-pointer"><1</button>
-            <button onclick="tapisPetaBerasarkanRTD('RTD>1')" id="mapPill_RTD>1" class="text-[10px] font-bold px-2 py-1 rounded-lg text-slate-600 hover:bg-white/50 transition cursor-pointer">>1</button>
+        <!-- 🚨 MAP CONTROL BAR (PIL TAPISAN & PETUNJUK DISATUKAN SEBARIS) -->
+        <div class="flex flex-wrap items-center justify-between bg-slate-100 p-2 rounded-2xl mb-2 gap-2 z-20 border border-slate-200/60">
+          <!-- Kiri: Butang Pil -->
+          <div class="flex items-center gap-1">
+            <span class="text-[10px] font-bold text-slate-400 px-1.5 uppercase">Tapisan Peta:</span>
+            <button onclick="tapisPetaBerasarkanRTD('ALL')" id="mapPill_ALL" class="text-[10px] font-bold px-2.5 py-1 rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer">Semua</button>
+            <button onclick="tapisPetaBerasarkanRTD('RTD=0')" id="mapPill_RTD=0" class="text-[10px] font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/70 transition cursor-pointer">Bebas</button>
+            <button onclick="tapisPetaBerasarkanRTD('RTD<1')" id="mapPill_RTD<1" class="text-[10px] font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/70 transition cursor-pointer"><1</button>
+            <button onclick="tapisPetaBerasarkanRTD('RTD>1')" id="mapPill_RTD>1" class="text-[10px] font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/70 transition cursor-pointer">>1</button>
           </div>
-        </div>
-        
-        <div class="absolute top-24 right-8 z-[400] bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-lg border border-slate-150 space-y-1.5 pointer-events-auto">
-          <div class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase border-b border-slate-100 pb-1">PETUNJUK WARNA PIN</div>
-          <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> RTD = 0 (Bebas)</div>
-          <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> RTD < 1 (Amaran Rendah)</div>
-          <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> RTD > 1 (Bahaya / Tindakan)</div>
+          <!-- Kanan: Petunjuk Legend Mendatar -->
+          <div class="flex items-center gap-2.5 text-[11px] font-bold text-slate-700 bg-white/80 px-3 py-1 rounded-xl border border-slate-200/60 shadow-2xs">
+            <span class="text-[9px] text-slate-400 font-extrabold uppercase">Petunjuk:</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> RTD=0</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> RTD&lt;1</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> RTD&gt;1</span>
+          </div>
         </div>
 
         <div id="mapRPW" class="w-full flex-1 rounded-2xl z-10 border border-slate-200 overflow-hidden shadow-inner mt-1"></div>
@@ -287,8 +288,6 @@
     let chartUtama, chartDefaulter, chartTrendline;
     let MASTER_DATA_KESELURUHAN = null; 
     let DATA_DITAPIS_SEMASA = [];
-    
-    // 🔥 ENJIN BARU: KAMUS DINAMIK (AUTO-HARVEST DARI GOOGLE SHEET)
     let KAMUS_LOKAL = {}; 
 
     let tahapGraf = "negeri"; 
@@ -313,44 +312,29 @@
       markerGroup = L.featureGroup().addTo(map);
     }
 
-    // 🎯 FUNGSI MENGUTIP NAMA NEGERI & DAERAH SECARA AUTOMATIK DARI RAW DATA
     function binaKamusDinamik(senaraiPins) {
       KAMUS_LOKAL = {};
-      
       senaraiPins.forEach(p => {
         let neg = p.negeri.toUpperCase().trim();
         let dae = p.daerah.toUpperCase().trim();
-        
         if (neg && neg !== "LAIN-LAIN" && neg !== "") {
           if (!KAMUS_LOKAL[neg]) KAMUS_LOKAL[neg] = new Set();
-          if (dae && dae !== "LAIN-LAIN" && dae !== "") {
-            KAMUS_LOKAL[neg].add(dae);
-          }
+          if (dae && dae !== "LAIN-LAIN" && dae !== "") KAMUS_LOKAL[neg].add(dae);
         }
       });
-
-      // 1. Suntik senarai Negeri ke dalam Dropdown secara Abjad (A - Z)
       const selNeg = document.getElementById("filterNegeri");
       if (!selNeg) return;
-      
       selNeg.innerHTML = '<option value="ALL">Semua Negeri</option>';
-      Object.keys(KAMUS_LOKAL).sort().forEach(n => {
-        selNeg.innerHTML += `<option value="${n}">${n}</option>`;
-      });
+      Object.keys(KAMUS_LOKAL).sort().forEach(n => { selNeg.innerHTML += `<option value="${n}">${n}</option>`; });
     }
 
-    // 🎯 KAWALAN DROP-DOWN DAERAH SECARA DINAMIK
     function TapisDataDaerah() {
       const negTerpilih = document.getElementById("filterNegeri").value;
       const selDae = document.getElementById("filterDaerah");
       if (!selDae) return;
-
       selDae.innerHTML = '<option value="ALL">Semua Daerah</option>';
-      
       if (KAMUS_LOKAL[negTerpilih]) {
-        Array.from(KAMUS_LOKAL[negTerpilih]).sort().forEach(d => {
-          selDae.innerHTML += `<option value="${d}">${d}</option>`;
-        });
+        Array.from(KAMUS_LOKAL[negTerpilih]).sort().forEach(d => { selDae.innerHTML += `<option value="${d}">${d}</option>`; });
       }
     }
 
@@ -375,8 +359,6 @@
         if(!res.success) { alert(res.message); return; }
 
         MASTER_DATA_KESELURUHAN = res;
-
-        // 🔥 JALANKAN PENGUTIP KAMUS SEBAIK SAHAJA DATA TIBA
         if (res.mapPins) binaKamusDinamik(res.mapPins);
 
         if(res.doaLogo) document.getElementById("doaLogo").src = res.doaLogo;
@@ -390,10 +372,9 @@
 
         if (res.summary.invalid_coords_count > 0) {
           document.getElementById("bannerAmaranGIS").classList.remove("hidden");
-          document.getElementById("teksAmaranGIS").innerText = `AMARAN GIS: Terdapat ${res.summary.invalid_coords_count} titik diabaikan dalam paparan peta kerana koordinat GPS tidak sah.`;
+          document.getElementById("teksAmaranGIS").innerText = `AMARAN GIS: Terdapat ${res.summary.invalid_coords_count} unit diabaikan dalam paparan peta kerana koordinat GPS rosak.`;
         }
 
-        // Kunci penapis jika user adalah staf negeri spesifik
         if(USER_STATE && USER_STATE !== "ALL" && USER_STATE !== "SEMUA") {
           const el = document.getElementById("filterNegeri");
           if(el) { el.value = USER_STATE.toUpperCase(); el.disabled = true; TapisDataDaerah(); }
@@ -462,8 +443,8 @@
       ["ALL", "RTD=0", "RTD<1", "RTD>1"].forEach(id => {
         let btn = document.getElementById(`mapPill_${id}`);
         if(btn) {
-          if(id === status) btn.className = "text-[10px] font-bold px-2 py-1 rounded-lg bg-white text-slate-900 shadow-xs transition cursor-pointer";
-          else btn.className = "text-[10px] font-bold px-2 py-1 rounded-lg text-slate-600 hover:bg-white/50 transition cursor-pointer";
+          if(id === status) btn.className = "text-[10px] font-bold px-2.5 py-1 rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer";
+          else btn.className = "text-[10px] font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/70 transition cursor-pointer";
         }
       });
       binaPetaPinDiTapis();
