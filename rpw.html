@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pengurusan Data Tangkapan RPW</title>
+  <title>Pengurusan Data Tangkapan Perangkap RPW</title>
   
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,7 +15,6 @@
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; color: #0f172a; }
     .map-popup .leaflet-popup-content-wrapper { border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
-    /* Paksa semua teks dalam jadual jadi HURUF BESAR */
     #tbodyRPW td { text-transform: uppercase; font-size: 11px; }
   </style>
 </head>
@@ -38,23 +37,22 @@
     }
   </script>
 
-  <!-- ⏳ SKELETON LOADER -->
   <div id="skeletonLoader" class="w-full mx-auto space-y-6 animate-pulse">
     <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-4">
       <div class="w-16 h-16 bg-slate-200 rounded-2xl"></div>
       <div class="space-y-2 flex-1"><div class="h-6 bg-slate-200 rounded-lg w-1/3"></div><div class="h-4 bg-slate-100 rounded-lg w-1/4"></div></div>
     </div>
-    <div class="grid grid-cols-2 lg:grid-cols-6 gap-4"><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div></div>
+    <div class="grid grid-cols-2 lg:grid-cols-7 gap-4">
+      <div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div>
+    </div>
     <div class="h-[500px] bg-white rounded-3xl border border-slate-100 flex items-center justify-center text-slate-400 font-medium">
       <svg class="animate-spin -ml-1 mr-3 h-6 w-6 text-emerald-700 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-      Menarik data dan mengira sempadan GIS Malaysia...
+      Sedang menarik data...
     </div>
   </div>
 
-  <!-- 🟢 PAPAN PEMUKA KESELURUHAN (FULL SCREEN WIDTH) -->
   <div id="dashboardContent" class="w-full mx-auto space-y-6 hidden transition-all duration-500">
     
-    <!-- HEADER -->
     <div class="bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border border-emerald-800/40">
       <div class="flex items-center gap-4">
         <div class="p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15"><img id="doaLogo" src="" alt="Logo" class="w-14 h-14 object-contain"></div>
@@ -76,13 +74,11 @@
       </div>
     </div>
 
-    <!-- ⚠️ BANNER AMARAN KOORDINAT LUAR MALAYSIA (Muncul jika ada ralat GIS) -->
     <div id="bannerAmaranGIS" class="hidden bg-amber-500 text-slate-950 px-5 py-3.5 rounded-2xl font-extrabold text-xs flex items-center justify-between shadow-lg animate-bounce">
       <span class="flex items-center gap-2">⚠️ <b id="teksAmaranGIS"></b></span>
       <button onclick="this.parentElement.style.display='none'" class="text-slate-900 hover:text-black cursor-pointer">✕ Tutup</button>
     </div>
 
-    <!-- PANEL TAPISAN -->
     <div class="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-200/80 grid grid-cols-1 sm:grid-cols-4 gap-3.5 items-end">
       <div>
         <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pilih Negeri</label>
@@ -117,61 +113,56 @@
       </div>
     </div>
 
-    <!-- 6 KAD KPI (KUMULATIF RF & RV DIASINGKAN) -->
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
-      <!-- Kad 1: Kumulatif RF -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5">
       <div class="bg-emerald-950 text-emerald-100 p-4.5 rounded-3xl border border-emerald-800 shadow-sm flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider">KUMULATIF RPW RF</span>
+        <span class="text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider">KUMULATIF RF</span>
         <span class="text-3xl font-black block mt-2 text-white" id="kpiAllTimeRF">0</span>
-        <span class="text-[10px] text-emerald-400/80 block mt-1">Sepanjang Tahun 2026</span>
+        <span class="text-[10px] text-emerald-400/80 block mt-1">Spg. Tahun 2026</span>
       </div>
-      <!-- Kad 2: Kumulatif RV -->
       <div class="bg-indigo-950 text-indigo-100 p-4.5 rounded-3xl border border-indigo-800 shadow-sm flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">KUMULATIF RPW RV</span>
+        <span class="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">KUMULATIF RV</span>
         <span class="text-3xl font-black block mt-2 text-white" id="kpiAllTimeRV">0</span>
-        <span class="text-[10px] text-indigo-400/80 block mt-1">Sepanjang Tahun 2026</span>
+        <span class="text-[10px] text-indigo-400/80 block mt-1">Spg. Tahun 2026</span>
       </div>
-      <!-- Kad 3: Trap Aktif Semasa -->
       <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">BULAN SEMASA</span>
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">TANGKAPAN</span>
+        <span class="text-3xl font-black text-slate-900 block mt-2" id="kpiTangkapanSemasa">0</span>
+        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Jumlah Semasa</span>
+      </div>
+      <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">OPERASI TRAP</span>
         <span class="text-3xl font-black text-slate-900 block mt-2" id="kpiTrapAktif">0</span>
-        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Perangkap Operasional</span>
+        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Aktif Semasa</span>
       </div>
-      <!-- Kad 4: Pecahan RTD Semasa (Sleek Mini Badge Card) -->
       <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">TABURAN RTD SEMASA</span>
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">TABURAN RTD</span>
         <div class="space-y-1 my-auto">
           <div class="flex justify-between items-center text-[11px] font-bold"><span class="text-emerald-600">🟢 Bebas (0)</span><span id="badgeRTD0">0</span></div>
-          <div class="flex justify-between items-center text-[11px] font-bold"><span class="text-amber-600">🟡 Amaran (&lt;1)</span><span id="badgeRTD1">0</span></div>
-          <div class="flex justify-between items-center text-[11px] font-bold"><span class="text-rose-600">🔴 Bahaya (&gt;1)</span><span id="badgeRTD2">0</span></div>
+          <div class="flex justify-between items-center text-[11px] font-bold"><span class="text-amber-600">🟡 Amaran (<1)</span><span id="badgeRTD1">0</span></div>
+          <div class="flex justify-between items-center text-[11px] font-bold"><span class="text-rose-600">🔴 Bahaya (>1)</span><span id="badgeRTD2">0</span></div>
         </div>
       </div>
-      <!-- Kad 5: Status Serangan (Renamed) -->
       <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">STATUS SERANGAN</span>
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">STATUS SERANG</span>
         <span class="text-3xl font-black text-rose-600 block mt-2" id="kpiPokokSerang">0</span>
-        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Pokok Palma Diserang</span>
+        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Pokok Diserang</span>
       </div>
-      <!-- Kad 6: Pokok Ditebang -->
       <div class="bg-white p-4.5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
         <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">SANITASI KEBUN</span>
         <span class="text-3xl font-black text-amber-600 block mt-2" id="kpiPokokTebang">0</span>
-        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Pokok Ditebang / Musnah</span>
+        <span class="text-[10px] font-semibold text-slate-500 block mt-1">Pokok Musnah</span>
       </div>
     </div>
 
-    <!-- PETA (60%) & GRAF DRILLDOWN MULTIPURPOSE (40%) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
-      <!-- Peta -->
       <div class="lg:col-span-7 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[540px] relative overflow-hidden">
         <div class="flex justify-between items-center mb-3 z-20">
           <h3 class="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">📍 Peta Titik Perangkap (Auto-Zoom Sempadan Malaysia)</h3>
           <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200" id="infoPeta">Memuatkan Peta...</span>
         </div>
         
-        <!-- Live Legend -->
-        <div class="absolute top-16 right-8 z-[400] bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-lg border border-slate-200 space-y-1.5 pointer-events-auto">
+        <div class="absolute top-16 right-8 z-[400] bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-lg border border-slate-150 space-y-1.5 pointer-events-auto">
           <div class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase border-b border-slate-100 pb-1">PETUNJUK WARNA PIN</div>
           <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> RTD = 0 (Bebas)</div>
           <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> RTD < 1 (Amaran Rendah)</div>
@@ -181,28 +172,24 @@
         <div id="mapRPW" class="w-full flex-1 rounded-2xl z-10 border border-slate-200 overflow-hidden shadow-inner"></div>
       </div>
 
-      <!-- Graf Multipurpose (RF / RV Toggle + RTD Pill Filter) -->
       <div class="lg:col-span-5 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[540px]">
-        
         <div class="flex justify-between items-center mb-2">
           <div>
             <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">HIERARKI TANGKAPAN</span>
             <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider mt-0.5" id="tajukGrafPecahan">Pecahan Tangkapan RPW RF</h3>
           </div>
-          <!-- Suis Toggle Multipurpose RF / RV -->
           <button onclick="toggleModeTangkapan()" id="btnTogglePest" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold border border-indigo-200 text-xs px-3 py-1.5 rounded-xl transition cursor-pointer shadow-xs">
             🔄 Tunjuk RV
           </button>
         </div>
 
-        <!-- Bar Kapsul Filter RTD Atas Graf -->
         <div class="flex items-center justify-between bg-slate-100 p-1.5 rounded-2xl mb-3 my-1">
           <span class="text-[10px] font-bold text-slate-400 px-2 uppercase">Tapisan Graf:</span>
           <div class="flex gap-1">
             <button onclick="tapisGrafBerasarkanRTD('ALL')" id="pill_ALL" class="text-xs font-bold px-3 py-1 rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer">Semua</button>
             <button onclick="tapisGrafBerasarkanRTD('RTD=0')" id="pill_RTD=0" class="text-xs font-bold px-3 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer">Bebas</button>
-            <button onclick="tapisGrafBerasarkanRTD('RTD<1')" id="pill_RTD<1" class="text-xs font-bold px-3 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer">&lt;1</button>
-            <button onclick="tapisGrafBerasarkanRTD('RTD>1')" id="pill_RTD>1" class="text-xs font-bold px-3 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer">&gt;1</button>
+            <button onclick="tapisGrafBerasarkanRTD('RTD<1')" id="pill_RTD<1" class="text-xs font-bold px-3 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer"><1</button>
+            <button onclick="tapisGrafBerasarkanRTD('RTD>1')" id="pill_RTD>1" class="text-xs font-bold px-3 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer">>1</button>
           </div>
         </div>
 
@@ -217,14 +204,12 @@
       </div>
     </div>
 
-    <!-- GRAF 15 LOKASI PENGULANGAN RTD > 1 -->
     <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
-      <h3 class="text-sm font-extrabold text-slate-900 mb-1 flex items-center gap-2"><span>📊</span> Carta 15 Lokasi Perangkap Pengulangan RTD &gt; 1</h3>
+      <h3 class="text-sm font-extrabold text-slate-900 mb-1 flex items-center gap-2"><span>📊</span> Carta 15 Lokasi Perangkap Pengulangan RTD > 1</h3>
       <p class="text-xs text-slate-400 mb-4">Kawasan berisiko tinggi yang merekodkan ambang populasi kritikal secara berulang sepanjang tahun</p>
       <div class="relative h-64 w-full"><canvas id="defaulterChart"></canvas></div>
     </div>
 
-    <!-- JADUAL DATA REKOD (PAGINATION + HURUF BESAR AUTOMATIK) -->
     <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4 mb-12">
       <div class="flex justify-between items-center border-b border-slate-100 pb-3">
         <div>
@@ -248,11 +233,10 @@
             </tr>
           </thead>
           <tbody id="tbodyRPW" class="divide-y divide-slate-100 text-slate-700 font-bold uppercase text-[11px]">
-            <!-- Disuntik secara lokal -->
-          </tbody>
+            </tbody>
         </table>
       </div>
-      <!-- KAWALAN PAGINATION -->
+      
       <div class="flex justify-between items-center pt-2">
         <span class="text-[11px] text-slate-500 font-bold" id="infoMukaSurat">Memaparkan 0 rekod</span>
         <div class="flex gap-2">
@@ -270,14 +254,12 @@
     let MASTER_DATA_KESELURUHAN = null; 
     let DATA_DITAPIS_SEMASA = [];
     
-    // Pembolehubah Pengawalan Interaktif
     let tahapGraf = "negeri"; 
     let namaNegeriTerpilih = "";
     let namaDaerahTerpilih = "";
-    let modeTangkapan = "rf"; // Toggle 'rf' vs 'rv'
-    let filterGrafRTD = "ALL"; // Pill filter: 'ALL', 'RTD=0', 'RTD<1', 'RTD>1'
+    let modeTangkapan = "rf"; 
+    let filterGrafRTD = "ALL"; 
 
-    // Pembolehubah Pagination
     let HALAMAN_SEMASA = 1;
     const REKOD_PER_HALAMAN = 15;
 
@@ -333,12 +315,10 @@
         if(res.doaLogo) document.getElementById("doaLogo").src = res.doaLogo;
         else document.getElementById("doaLogo").src = "https://www.doa.gov.my/wp-content/themes/jpm/images/logo.png";
         
-        // Isikan Kumulatif RF dan RV
         document.getElementById("kpiAllTimeRF").innerText = (res.summary.all_time_rf || 0).toLocaleString();
         document.getElementById("kpiAllTimeRV").innerText = (res.summary.all_time_rv || 0).toLocaleString();
         binaGrafDefaulter(res.topDefaulters);
 
-        // Paparkan amaran jika ada koordinat luar Malaysia
         if (res.summary.invalid_coords_count > 0) {
           document.getElementById("bannerAmaranGIS").classList.remove("hidden");
           document.getElementById("teksAmaranGIS").innerText = `AMARAN GIS: Terdapat ${res.summary.invalid_coords_count} rekod ditolak kerana koordinat tidak sah atau berada di luar sempadan Malaysia.`;
@@ -358,7 +338,7 @@
           if(markerGroup.getLayers().length > 0) map.fitBounds(markerGroup.getBounds().pad(0.08));
         }, 300);
       })
-      .catch(e => { alert("Gagal menyambung ke pangkalan data."); console.error(e); });
+      .catch(e => { alert("Gagal menyambung ke pangkalan data utama Google Apps Script."); console.error(e); });
     }
 
     function laksanakanFilterLokal() {
@@ -388,12 +368,12 @@
         else if (p.rtd_status.includes("RTD>1")) rtd2++;
       });
 
+      // 🚨 ID KOTAK TANGKAPAN SEMASA YANG TELAH DIPERBAIKI!
       document.getElementById("kpiTangkapanSemasa").innerText = tCatch.toLocaleString();
       document.getElementById("kpiPokokSerang").innerText = tSerang.toLocaleString();
       document.getElementById("kpiPokokTebang").innerText = tTebang.toLocaleString();
       document.getElementById("kpiTrapAktif").innerText = DATA_DITAPIS_SEMASA.length.toLocaleString();
       
-      // Isikan Mini Badges RTD
       document.getElementById("badgeRTD0").innerText = rtd0;
       document.getElementById("badgeRTD1").innerText = rtd1;
       document.getElementById("badgeRTD2").innerText = rtd2;
@@ -433,10 +413,9 @@
           .then(r => r.json())
           .then(res => {
             let streakTeks = res.streakMonths > 0 ? 
-              `<div class="mt-2 text-xs bg-rose-50 text-rose-700 p-2 rounded-xl font-bold border border-rose-200">⚠️ Amaran: RTD>1 bertahan selama ${res.streakMonths} bulan!</div>` : 
-              `<div class="mt-2 text-xs bg-emerald-50 text-emerald-700 p-2 rounded-xl font-bold border border-emerald-200">✅ Rekod terkawal.</div>`;
+              `<div class="mt-2 text-xs bg-rose-50 text-rose-700 p-2.5 rounded-xl font-extrabold border border-rose-200">⚠️ Amaran: RTD>1 bertahan selama ${res.streakMonths} bulan!</div>` : 
+              `<div class="mt-2 text-xs bg-emerald-50 text-emerald-700 p-2.5 rounded-xl font-bold border border-emerald-200">✅ Rekod terkawal.</div>`;
 
-            // 🎯 SUNTIKAN MINI LINE CHART DALAM POPUP PETA
             let popupHtml = `
               <div class="map-popup space-y-2 p-1 w-64">
                 <h4 class="font-black text-slate-900 text-sm uppercase">${res.lokasi}</h4>
@@ -451,7 +430,6 @@
             `;
             marker.bindPopup(popupHtml).openPopup();
 
-            // Render Chart.js selepas popup selesai animasi buka (250ms)
             setTimeout(() => {
               const el = document.getElementById(`canvasPopup_${res.id}`);
               if(!el) return;
@@ -528,7 +506,6 @@
       binaJadualDataMengikutHalaman();
     }
 
-    // ⚡ TOGGLE MULTIPURPOSE RF / RV
     function toggleModeTangkapan() {
       if (modeTangkapan === "rf") {
         modeTangkapan = "rv";
@@ -542,10 +519,8 @@
       binaGrafDrilldown();
     }
 
-    // ⚡ PILL FILTER RTD ATAS GRAF
     function tapisGrafBerasarkanRTD(status) {
       filterGrafRTD = status;
-      // Kawal efek butang aktif
       ["ALL", "RTD=0", "RTD<1", "RTD>1"].forEach(id => {
         let btn = document.getElementById(`pill_${id}`);
         if(btn) {
@@ -559,7 +534,6 @@
     function binaGrafDrilldown() {
       let labelData = [], nilaiData = [], mapData = {};
 
-      // 1. Tapis senarai data graf mengikut Pill RTD Terpilih
       let senaraiGraf = DATA_DITAPIS_SEMASA;
       if (filterGrafRTD !== "ALL") {
         senaraiGraf = senaraiGraf.filter(p => p.rtd_status.toUpperCase() === filterGrafRTD);
@@ -581,7 +555,7 @@
 
       if (chartUtama) chartUtama.destroy();
 
-      let barWarna = modeTangkapan === 'rf' ? '#047857' : '#3730a3'; // Hijau RF / Biru RV
+      let barWarna = modeTangkapan === 'rf' ? '#047857' : '#3730a3'; 
 
       chartUtama = new Chart(document.getElementById('drilldownChart').getContext('2d'), {
         type: 'bar',
