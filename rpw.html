@@ -11,6 +11,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <script src="./js/config.js"></script>
+
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; color: #0f172a; }
     .map-popup .leaflet-popup-content-wrapper { border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); }
@@ -19,7 +21,6 @@
 <body class="p-3 sm:p-6 lg:p-8">
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec"; 
     let USER_TOKEN = "", USER_NAME = "Pengguna", USER_STATE = "ALL";
 
     const savedSession = localStorage.getItem("pnr_session");
@@ -38,7 +39,6 @@
     }
   </script>
 
-  <!-- ⏳ SKELETON LOADER (ANIMASI MEMUAT DATA) -->
   <div id="skeletonLoader" class="max-w-7xl mx-auto space-y-6 animate-pulse">
     <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-4">
       <div class="w-16 h-16 bg-slate-200 rounded-2xl"></div>
@@ -51,10 +51,8 @@
     </div>
   </div>
 
-  <!-- 🟢 PAPAN PEMUKA KESELURUHAN -->
   <div id="dashboardContent" class="max-w-7xl mx-auto space-y-6 hidden transition-all duration-500">
     
-    <!-- HEADER -->
     <div class="bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border border-emerald-800/40">
       <div class="flex items-center gap-4">
         <div class="p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15"><img id="doaLogo" src="" alt="Logo" class="w-14 h-14 object-contain"></div>
@@ -67,7 +65,6 @@
         </div>
       </div>
       
-      <!-- Butang Eksport -->
       <div class="flex items-center gap-2.5 w-full md:w-auto">
         <button onclick="muatTurunData('geojson')" class="flex-1 md:flex-initial bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-semibold px-4 py-3 rounded-full transition flex items-center justify-center gap-2 cursor-pointer">
           <span>📥</span> Eksport GeoJSON
@@ -78,7 +75,6 @@
       </div>
     </div>
 
-    <!-- PANEL TAPISAN (TAPIS LOKAL LAJU) -->
     <div class="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-200/80 grid grid-cols-1 sm:grid-cols-4 gap-3.5 items-end">
       <div>
         <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pilih Negeri</label>
@@ -102,8 +98,8 @@
         <select id="filterRTD" onchange="laksanakanFilterLokal()" class="w-full bg-slate-50 border border-slate-200 font-semibold text-slate-700 text-xs rounded-2xl p-3 focus:outline-none focus:border-emerald-600 cursor-pointer">
           <option value="ALL">Semua Tahap RTD</option>
           <option value="RTD=0">RTD = 0 (Kawasan Bebas)</option>
-          <option value="RTD<1">RTD &lt; 1 (Amaran Rendah)</option>
-          <option value="RTD>1">RTD &gt; 1 (Zon Bahaya)</option>
+          <option value="RTD<1">RTD < 1 (Amaran Rendah)</option>
+          <option value="RTD>1">RTD > 1 (Zon Bahaya)</option>
         </select>
       </div>
       <div>
@@ -113,7 +109,6 @@
       </div>
     </div>
 
-    <!-- 5 KAD KPI -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-3.5">
       <div class="bg-slate-900 text-white p-5 rounded-3xl shadow-md border border-slate-800 flex flex-col justify-between">
         <span class="text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider">KUMULATIF 2026</span>
@@ -142,28 +137,24 @@
       </div>
     </div>
 
-    <!-- PETA & GRAF PECAHAN -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
-      <!-- Peta (60% Lebar) -->
       <div class="lg:col-span-7 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[520px] relative">
         <div class="flex justify-between items-center mb-3">
           <h3 class="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">📍 Peta Titik Perangkap RPW</h3>
           <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200" id="infoPeta">Memuatkan Peta...</span>
         </div>
         
-        <!-- Live Legend -->
         <div class="absolute top-16 right-8 z-[400] bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-lg border border-slate-200 space-y-1.5 pointer-events-auto">
           <div class="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase border-b border-slate-100 pb-1">PETUNJUK WARNA PIN</div>
           <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> RTD = 0 (Bebas)</div>
-          <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> RTD &lt; 1 (Amaran Rendah)</div>
-          <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> RTD &gt; 1 (Bahaya / Tindakan)</div>
+          <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> RTD < 1 (Amaran Rendah)</div>
+          <div class="flex items-center gap-2 text-xs font-bold text-slate-700"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> RTD > 1 (Bahaya / Tindakan)</div>
         </div>
 
         <div id="mapRPW" class="w-full flex-1 rounded-2xl z-10 border border-slate-200 overflow-hidden shadow-inner"></div>
       </div>
 
-      <!-- Graf Pecahan Drilldown -->
       <div class="lg:col-span-5 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[520px]">
         <div class="flex justify-between items-center mb-3">
           <div>
@@ -179,14 +170,12 @@
       </div>
     </div>
 
-    <!-- GRAF TOP 10 DEFAULTERS -->
     <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
-      <h3 class="text-sm font-extrabold text-slate-800 mb-1 flex items-center gap-2"><span>📊</span> 1 Kawasan Kerap Mencatat Tangkapan Tinggi (Hotspot Tegar)</h3>
-      <p class="text-xs text-slate-400 mb-4">Lokasi yang pernah merekodkan bacaan RTD &gt; 1 berulang kali sepanjang tahun</p>
+      <h3 class="text-sm font-extrabold text-slate-800 mb-1 flex items-center gap-2"><span>📊</span> 10 Kawasan Kerap Mencatat Tangkapan Tinggi (Hotspot Tegar)</h3>
+      <p class="text-xs text-slate-400 mb-4">Lokasi yang pernah merekodkan bacaan RTD > 1 berulang kali sepanjang tahun</p>
       <div class="relative h-64 w-full"><canvas id="defaulterChart"></canvas></div>
     </div>
 
-    <!-- JADUAL DATA REKOD DI BAWAH SEKALI -->
     <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
       <div class="flex justify-between items-center border-b border-slate-100 pb-3">
         <div>
@@ -209,8 +198,7 @@
             </tr>
           </thead>
           <tbody id="tbodyRPW" class="divide-y divide-slate-100 text-slate-700 font-medium">
-            <!-- Disuntik secara lokal -->
-          </tbody>
+            </tbody>
         </table>
       </div>
     </div>
@@ -264,10 +252,12 @@
       laksanakanFilterLokal();
     }
 
-    // ⚡ TARIK DATA DARI SERVER SEKALI SAHAJA MASA PAGE LOAD
+    // ⚡ TARIK DATA SEKALI SAHAJA (BERBEZA DARI SEBELUM INI)
     function muatNaikDataIndukSekali() {
-      fetch(API_URL, {
+      // PERHATIKAN: Kita memanggil CONFIG.API_URL dari fail config.js dan menggunakan headers: text/plain
+      fetch(`${CONFIG.API_URL}?action=getRPWAnalytics`, {
         method: "POST",
+        headers: { "Content-Type": "text/plain" }, 
         body: JSON.stringify({ action: "getRPWAnalytics", token: USER_TOKEN, u: USER_NAME, negeri: "ALL", daerah: "ALL", statusRTD: "ALL" })
       })
       .then(r => r.json())
@@ -296,16 +286,14 @@
         setTimeout(() => {
           document.getElementById("skeletonLoader").classList.add("hidden");
           document.getElementById("dashboardContent").classList.remove("hidden");
-          
-          // ⚠️ UBAT PETA BEKU LEAFLET:
           map.invalidateSize();
           if(markerGroup.getLayers().length > 0) map.fitBounds(markerGroup.getBounds().pad(0.08));
         }, 300);
       })
-      .catch(e => { alert("Gagal menyambung ke pangkalan data."); console.error(e); });
+      .catch(e => { alert("Gagal menyambung ke pangkalan data utama Google Apps Script."); console.error(e); });
     }
 
-    // ⚡ PROSES TAPISAN CLIENT-SIDE (0.001 SAAT - TANPA LOADING)
+    // ⚡ PROSES TAPISAN CLIENT-SIDE (0.001 SAAT - TANPA LOADING DARI SERVER)
     function laksanakanFilterLokal() {
       if (!MASTER_DATA_KESELURUHAN) return;
 
@@ -320,7 +308,6 @@
         return passN && passD && passR;
       });
 
-      // 1. Hitung Semula Kad KPI Semasa secara lokal
       let tCatch = 0, tSerang = 0, tTebang = 0;
       DATA_DITAPIS_SEMASA.forEach(p => {
         tCatch += (parseInt(p.total_rf) || 0);
@@ -334,13 +321,8 @@
       document.getElementById("kpiPerangkapAktif").innerText = DATA_DITAPIS_SEMASA.length.toLocaleString();
       document.getElementById("infoPeta").innerText = `${DATA_DITAPIS_SEMASA.length} Titik Perangkap`;
 
-      // 2. Kemaskini Peta & Auto Zoom
       plotPinPeta(DATA_DITAPIS_SEMASA);
-
-      // 3. Kemaskini Jadual Data di Bawah Sekali
       binaJadualData(DATA_DITAPIS_SEMASA);
-
-      // 4. Kemaskini Graf Drilldown
       tahapGraf = "negeri";
       document.getElementById("btnBackGraf").classList.add("hidden");
       binaGrafDrilldown();
@@ -362,7 +344,12 @@
 
         marker.on('click', function() {
           marker.bindPopup(`<div class="map-popup p-1 font-bold text-emerald-800">Menyemak fail sejarah...</div>`).openPopup();
-          fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "getRPWHistory", token: USER_TOKEN, u: USER_NAME, lokasi: p.lokasi }) })
+          
+          fetch(`${CONFIG.API_URL}?action=getRPWHistory`, { 
+            method: "POST", 
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ action: "getRPWHistory", token: USER_TOKEN, u: USER_NAME, lokasi: p.lokasi }) 
+          })
           .then(r => r.json())
           .then(res => {
             let streakTeks = res.streakMonths > 0 ? 
@@ -472,7 +459,7 @@
       const neg = document.getElementById("filterNegeri").value;
       const dae = document.getElementById("filterDaerah").value;
       const rtd = document.getElementById("filterRTD").value;
-      window.open(`${API_URL}?action=${jenis === 'geojson' ? 'downloadRPWGeoJSON' : 'downloadRPWKML'}&terkiniOnly=true&negeri=${neg}&daerah=${dae}&rtd=${rtd}`, '_blank');
+      window.open(`${CONFIG.API_URL}?action=${jenis === 'geojson' ? 'downloadRPWGeoJSON' : 'downloadRPWKML'}&terkiniOnly=true&negeri=${neg}&daerah=${dae}&rtd=${rtd}`, '_blank');
     }
   </script>
 </body>
