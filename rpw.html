@@ -27,119 +27,34 @@
   <script>
     // 🚨 GANTIKAN URL DI BAWAH DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
     const API_URL = "https://script.google.com/macros/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec"; 
-    
-    // Mengambil data token keselamatan dan nama dari sesi log masuk asal sistem anda
-    const USER_TOKEN = localStorage.getItem("pnr_token") || ""; 
-    const USER_NAME = localStorage.getItem("pnr_username") || "Pengguna";
-    const USER_STATE = localStorage.getItem("pnr_state") || "ALL";
+       
+    // MENGAMBIL TOKEN DARI MEMORI SISTEM ASAL (PNR_SESSION)
+    let USER_TOKEN = "";
+    let USER_NAME = "Pengguna";
+    let USER_STATE = "ALL";
+
+    const savedSession = localStorage.getItem("pnr_session");
+    if (savedSession) {
+      try {
+        const sData = JSON.parse(savedSession);
+        USER_TOKEN = sData.userToken || "";
+        USER_NAME = sData.currentUserID || "Pengguna";
+        USER_STATE = (sData.uProf && sData.uProf.state) ? sData.uProf.state : "ALL";
+      } catch(e) {
+        console.error("Gagal membaca sesi", e);
+      }
+    }
+
+    // Jika masuk tanpa login, tendang balik ke halaman utama
+    if (!USER_TOKEN) {
+      alert("⛔ Sesi tamat atau anda belum log masuk. Sila log masuk melalui halaman utama.");
+      window.location.href = "index.html"; 
+    }
   </script>
 
-  <div class="max-w-7xl mx-auto space-y-6">
+
+
     
-    <!-- HEADER & PANEL MUAT TURUN DATA SPATIAL -->
-    <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Dashboard Pemantauan Kumbang Jalur Merah (RPW)</h1>
-        <p class="text-sm text-slate-500">Analisis Data Perangkap & Ambang Amaran RTD Tahun 2026</p>
-      </div>
-      
-      <!-- Panel Muat Turun Data Spatial (QGIS / Google Earth) -->
-      <div class="flex flex-wrap gap-2 w-full md:w-auto">
-        <button onclick="muatTurunData('geojson')" class="flex-1 md:flex-initial bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition duration-150 flex items-center justify-center gap-2 cursor-pointer">
-          <span>📥</span> Muat Turun GeoJSON (QGIS)
-        </button>
-        <button onclick="muatTurunData('kml')" class="flex-1 md:flex-initial bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition duration-150 flex items-center justify-center gap-2 cursor-pointer">
-          <span>🌍</span> Muat Turun KML (Earth)
-        </button>
-      </div>
-    </div>
-
-    <!-- PANEL FILTER/TAPISAN DATA -->
-    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
-      <div>
-        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Negeri</label>
-        <select id="filterNegeri" onchange="TapisDataDaerah()" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-2.5 focus:outline-none focus:border-emerald-500">
-          <option value="ALL">Semua Negeri</option>
-          <option value="JOHOR">Johor</option>
-          <option value="MELAKA">Melaka</option>
-          <option value="TERENGGANU">Terengganu</option>
-          <option value="KELANTAN">Kelantan</option>
-          <option value="PAHANG">Pahang</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Daerah</label>
-        <select id="filterDaerah" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-2.5 focus:outline-none focus:border-emerald-500">
-          <option value="ALL">Semua Daerah</option>
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Status RTD Semasa</label>
-        <select id="filterRTD" class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl p-2.5 focus:outline-none focus:border-emerald-500">
-          <option value="ALL">Semua Status</option>
-          <option value="RTD=0">RTD = 0 (Bebas)</option>
-          <option value="RTD<1">RTD &lt; 1 (Amaran)</option>
-          <option value="RTD>1">RTD &gt; 1 (Bahaya)</option>
-        </select>
-      </div>
-      <div>
-        <button onclick="muatNaikAnalisis()" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium p-2.5 rounded-xl transition duration-150 cursor-pointer">
-          Tapis Rekod
-        </button>
-      </div>
-    </div>
-
-    <!-- KAD KPI RINGKASAN UTAMA -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
-        <span class="text-2xl font-bold text-slate-900 block" id="kpiTangkapan">0</span>
-        <span class="text-xs font-medium text-slate-400 block mt-1">Total Catch RF Semasa</span>
-      </div>
-      <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
-        <span class="text-2xl font-bold text-rose-600 block" id="kpiPokokSerang">0</span>
-        <span class="text-xs font-medium text-slate-400 block mt-1">Pokok Diserang</span>
-      </div>
-      <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
-        <span class="text-2xl font-bold text-amber-600 block" id="kpiPokokTebang">0</span>
-        <span class="text-xs font-medium text-slate-400 block mt-1">Pokok Ditebang</span>
-      </div>
-      <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
-        <span class="text-2xl font-bold text-emerald-600 block" id="kpiPerangkap">0</span>
-        <span class="text-xs font-medium text-slate-400 block mt-1">Trap Aktif Semasa</span>
-      </div>
-    </div>
-
-    <!-- SEKSYEN PETA HOTSPOT & DRILLDOWN GRAPH -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Peta Lokasi Perangkap RPW -->
-      <div class="lg:col-span-2 bg-white p-4 rounded-3xl border border-slate-100 shadow-xs flex flex-col h-[500px]">
-        <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">📍 Pemetaan Lokasi Perangkap Berdasarkan LAT,LONG</h3>
-        <div id="mapRPW" class="w-full flex-1 rounded-2xl z-10"></div>
-      </div>
-
-      <!-- Graf Drilldown Interaktif -->
-      <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs flex flex-col h-[500px]">
-        <div class="flex justify-between items-center mb-3">
-          <h3 class="text-sm font-bold text-slate-800" id="namaGraf">Tangkapan Mengikut Negeri</h3>
-          <button id="btnBackGraf" onclick="kembaliGrafAtas()" class="hidden text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md hover:bg-slate-200 cursor-pointer">Back</button>
-        </div>
-        <div class="relative flex-1 w-full flex items-center justify-center">
-          <canvas id="drilldownChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- GRAF TOP 10 DEFAULTER TRAPS (RTD > 1) -->
-    <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs">
-      <h3 class="text-sm font-bold text-slate-800 mb-4">📊 10 Trap Paling Banyak Kali Dapat Status RTD > 1 (RPW RF)</h3>
-      <div class="relative h-64 w-full">
-        <canvas id="defaulterChart"></canvas>
-      </div>
-    </div>
-
-  </div>
-
-  <script>
     let map, markerGroup;
     let chartUtama, chartDefaulter;
     let dataMentahSemasa = [];
