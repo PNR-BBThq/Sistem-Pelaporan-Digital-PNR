@@ -74,24 +74,22 @@
         </div>
     </div>
 
-   <div class="sidebar" id="sidebar">
-    <div class="brand"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
-        
-    <div class="sidebar-content">
-        <div class="nav-item active" data-view="main">
-            <span><i class="bi bi-grid-1x2-fill me-2"></i> Dashboard</span>
-        </div>
-
-        <a href="rpw.html" class="nav-item" style="text-decoration: none; display: block; color: inherit;">
-            <span><i class="bi bi-bar-chart-fill me-2 text-emerald-500"></i> Dashboard Perosak RPW</span>
-        </a>
+    <div class="sidebar" id="sidebar">
+        <div class="brand"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
             
-        <div class="nav-item" id="navTasks" style="display:none" data-view="tasks">
-            <span><i class="bi bi-list-task me-2"></i> Tugasan Saya</span>
-            <span class="badge-pending" id="badgeTask" style="background:#dc2626;">0</span>
-        </div>
-    </div>
-</div>
+        <div class="sidebar-content">
+            <div class="nav-item active" data-view="main">
+                <span><i class="bi bi-grid-1x2-fill me-2"></i> Dashboard</span>
+            </div>
+
+            <a href="rpw.html" class="nav-item" style="text-decoration: none; display: block; color: inherit;">
+                <span><i class="bi bi-bar-chart-fill me-2" style="color: #10b981;"></i> Dashboard Perosak RPW</span>
+            </a>
+                
+            <div class="nav-item" id="navTasks" style="display:none" data-view="tasks">
+                <span><i class="bi bi-list-task me-2"></i> Tugasan Saya</span>
+                <span class="badge-pending" id="badgeTask" style="background:#dc2626;">0</span>
+            </div>
 
             <div class="nav-item" id="navVerify" style="display:none" data-view="verify">
                 <span><i class="bi bi-check-circle-fill me-2"></i> Pengesahan</span>
@@ -140,9 +138,7 @@
                     </button>
                 </div>
             </div>
-        </div>
-        
-        <div class="sidebar-footer">
+        </div> <div class="sidebar-footer">
             <div class="nav-item mb-3 bg-success text-white shadow-sm" data-view="form" style="cursor: pointer;">
                 <span><i class="bi bi-plus-lg me-2"></i> Tambah Data</span>
             </div>
@@ -151,9 +147,7 @@
                 <button class="btn btn-link text-danger btn-sm p-0" id="btnLogout" title="Log Keluar"><i class="bi bi-box-arrow-right fs-5"></i></button>
             </div>
         </div>
-    </div>
-
-    <div class="main-content">
+    </div> <div class="main-content">
         <div class="d-md-none mb-3 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm">
             <span class="fw-bold text-success fs-5"><i class="bi bi-flower1"></i> PNR</span>
             <button class="btn btn-light btn-sm border" onclick="document.getElementById('sidebar').classList.toggle('active'); document.getElementById('mobileOverlay').classList.toggle('active');"><i class="bi bi-list fs-5"></i></button>
@@ -229,17 +223,17 @@
                 <div class="d-flex justify-content-between mb-3"><h6 class="fw-bold"><i class="bi bi-table me-2"></i>Jadual Rekod</h6><small id="pgInfo" class="text-muted"></small></div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle">
-     <thead class="table-light">
-         <tr>
-        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('t')">Tarikh <i class="bi bi-arrow-down-up small text-muted" id="sort_t"></i></th>
-        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('n')">Negeri <i class="bi bi-arrow-down-up small text-muted" id="sort_n"></i></th>
-        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('l')">Lokasi <i class="bi bi-arrow-down-up small text-muted" id="sort_l"></i></th>
-        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('tn')">Tanaman <i class="bi bi-arrow-down-up small text-muted" id="sort_tn"></i></th>
-        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('lt')">Luas Bancian <i class="bi bi-arrow-down-up small text-muted" id="sort_lt"></i></th>
-        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('ls')">Luas Serangan <i class="bi bi-arrow-down-up small text-muted" id="sort_ls"></i></th>
-        <th class="text-center">Tindakan</th>
-         </tr>
-    </thead>
+                     <thead class="table-light">
+                         <tr>
+                        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('t')">Tarikh <i class="bi bi-arrow-down-up small text-muted" id="sort_t"></i></th>
+                        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('n')">Negeri <i class="bi bi-arrow-down-up small text-muted" id="sort_n"></i></th>
+                        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('l')">Lokasi <i class="bi bi-arrow-down-up small text-muted" id="sort_l"></i></th>
+                        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('tn')">Tanaman <i class="bi bi-arrow-down-up small text-muted" id="sort_tn"></i></th>
+                        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('lt')">Luas Bancian <i class="bi bi-arrow-down-up small text-muted" id="sort_lt"></i></th>
+                        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('ls')">Luas Serangan <i class="bi bi-arrow-down-up small text-muted" id="sort_ls"></i></th>
+                        <th class="text-center">Tindakan</th>
+                         </tr>
+                    </thead>
                         <tbody id="tBody"></tbody>
                     </table>
                 </div>
@@ -294,8 +288,8 @@
                 </div>
             </div>
         </div>
-<div id="view-sku" class="app-view" style="display:none">
-            
+
+        <div id="view-sku" class="app-view" style="display:none">
             <div class="print-header d-none d-print-flex">
                 <div class="print-header-title">
                     <h4>LAPORAN PENCAPAIAN SKU 2026</h4>
@@ -435,35 +429,33 @@
         </div>
     </div>
 
-  
-<div id="nlp-chatbot-fab" title="Tanya BoT PNR Digital">
-    <i class="bi bi-robot"></i>
-</div>
-
-<div id="nlp-chatbot-window">
-    <div class="bot-header">
-        <span class="d-flex align-items-center"><i class="bi bi-robot fs-5 me-2"></i> PNR Smart AI</span>
-        <i class="bi bi-dash-lg fs-5" style="cursor:pointer;" onclick="SmartNLPBot.toggle()"></i>
+    <div id="nlp-chatbot-fab" title="Tanya BoT PNR Digital">
+        <i class="bi bi-robot"></i>
     </div>
-    
-    <div class="bot-body" id="nlp-chat-messages">
-        <div class="chat-bubble bubble-bot">
-            👋 Salam sejahtera! Saya adalah enjin analitik NLP. Anda boleh menaip soalan dalam bahasa biasa, atau klik cadangan pantas di bawah:<br>
-            <div class="bot-chips-container">
-                <div class="bot-chip" onclick="SmartNLPBot.handleInput('Rumusan Nasional')">📊 Status Nasional</div>
-                <div class="bot-chip" onclick="SmartNLPBot.handleInput('Top perosak buah')">🍎 Top Perosak Buah</div>
-                <div class="bot-chip" onclick="SmartNLPBot.handleInput('Top perosak sayur di Pahang')">🥬 Sayur di Pahang</div>
-                <div class="bot-chip" onclick="SmartNLPBot.handleInput('Senarai serangan FAW')">🐛 Status FAW</div>
+
+    <div id="nlp-chatbot-window">
+        <div class="bot-header">
+            <span class="d-flex align-items-center"><i class="bi bi-robot fs-5 me-2"></i> PNR Smart AI</span>
+            <i class="bi bi-dash-lg fs-5" style="cursor:pointer;" onclick="SmartNLPBot.toggle()"></i>
+        </div>
+        
+        <div class="bot-body" id="nlp-chat-messages">
+            <div class="chat-bubble bubble-bot">
+                👋 Salam sejahtera! Saya adalah enjin analitik NLP. Anda boleh menaip soalan dalam bahasa biasa, atau klik cadangan pantas di bawah:<br>
+                <div class="bot-chips-container">
+                    <div class="bot-chip" onclick="SmartNLPBot.handleInput('Rumusan Nasional')">📊 Status Nasional</div>
+                    <div class="bot-chip" onclick="SmartNLPBot.handleInput('Top perosak buah')">🍎 Top Perosak Buah</div>
+                    <div class="bot-chip" onclick="SmartNLPBot.handleInput('Top perosak sayur di Pahang')">🥬 Sayur di Pahang</div>
+                    <div class="bot-chip" onclick="SmartNLPBot.handleInput('Senarai serangan FAW')">🐛 Status FAW</div>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <div class="bot-footer">
-        <input type="text" id="nlp-chat-input" placeholder="Tanya sesuatu (Cth: Apa perosak top di Johor?)..." onkeypress="if(event.key === 'Enter') SmartNLPBot.handleInput()">
-        <button onclick="SmartNLPBot.handleInput()"><i class="bi bi-send-fill"></i></button>
-    </div>
-</div>
         
+        <div class="bot-footer">
+            <input type="text" id="nlp-chat-input" placeholder="Tanya sesuatu (Cth: Apa perosak top di Johor?)..." onkeypress="if(event.key === 'Enter') SmartNLPBot.handleInput()">
+            <button onclick="SmartNLPBot.handleInput()"><i class="bi bi-send-fill"></i></button>
+        </div>
+    </div>
         
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
