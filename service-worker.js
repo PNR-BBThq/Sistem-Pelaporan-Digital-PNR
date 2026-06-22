@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pnr-v5-muttamada'; // ⚡ BUMP VERSION UNTUK COMPULSORY UPDATE
+const CACHE_NAME = "pnr-cache-v2"; // ⚡ BUMP VERSION UNTUK COMPULSORY UPDATE
 const ASSETS = [
   './',
   './index.html',
