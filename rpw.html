@@ -46,8 +46,8 @@
       <div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div>
     </div>
     <div class="h-[500px] bg-white rounded-3xl border border-slate-100 flex items-center justify-center text-slate-400 font-medium">
-      <svg class="animate-spin -ml-1 mr-3 h-6 w-6 text-emerald-700 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-      Memproses trend analitik & sempadan GIS Malaysia...
+      <svg class="animate-spin -ml-1 mr-3 h-6 w-6 text-emerald-700 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle></svg>
+      Menarik rekod raw data dengan teliti...
     </div>
   </div>
 
@@ -280,7 +280,7 @@
     let namaDaerahTerpilih = "";
     let modeTangkapan = "rf"; 
     let filterGrafRTD = "ALL"; 
-    let filterPetaRTD = "ALL"; // Pill Filter baru untuk peta
+    let filterPetaRTD = "ALL"; 
 
     let HALAMAN_SEMASA = 1;
     const REKOD_PER_HALAMAN = 15;
@@ -394,6 +394,7 @@
         else if (p.rtd_status.includes("RTD>1")) rtd2++;
       });
 
+      // 🚨 KIRAAN TEPAT DI SINI
       document.getElementById("kpiTangkapanSemasa").innerText = tCatch.toLocaleString();
       document.getElementById("kpiPokokSerang").innerText = tSerang.toLocaleString();
       document.getElementById("kpiPokokTebang").innerText = tTebang.toLocaleString();
@@ -414,7 +415,7 @@
       binaGrafTrendline();
     }
 
-    // ⚡ FILTER PILL KHAS UNTUK PETA
+    // ⚡ FILTER PETA KHAS (PIN TAK BERTINDIH)
     function tapisPetaBerasarkanRTD(status) {
       filterPetaRTD = status;
       ["ALL", "RTD=0", "RTD<1", "RTD>1"].forEach(id => {
@@ -433,11 +434,18 @@
         senaraiPeta = senaraiPeta.filter(p => p.rtd_status.toUpperCase() === filterPetaRTD);
       }
       
-      document.getElementById("infoPeta").innerText = `${senaraiPeta.length} Titik Perangkap`;
       markerGroup.clearLayers();
+      let seenMapPins = new Set(); // 🛡️ LOGIK PENGHALANG PIN BERTINDIH (HANYA UNTUK PETA)
+      let pinTerkira = 0;
 
       senaraiPeta.forEach(p => {
         if (!p.koordinat || !p.koordinat.includes(",")) return;
+        
+        let pinKey = p.koordinat + "_" + p.lokasi;
+        if (seenMapPins.has(pinKey)) return; 
+        seenMapPins.add(pinKey);
+        pinTerkira++;
+
         let latLng = p.koordinat.split(",").map(Number);
         if (isNaN(latLng[0]) || isNaN(latLng[1])) return;
 
@@ -492,6 +500,7 @@
         markerGroup.addLayer(marker);
       });
 
+      document.getElementById("infoPeta").innerText = `${pinTerkira} Lokasi Perangkap`;
       if (senaraiPeta.length > 0) map.fitBounds(markerGroup.getBounds().pad(0.08));
     }
 
@@ -622,7 +631,6 @@
       binaGrafDrilldown();
     }
 
-    // ⚡ BINA GRAF TRENDLINE BULANAN
     function binaGrafTrendline() {
       if (!MASTER_DATA_KESELURUHAN) return;
       const fNeg = document.getElementById("filterNegeri").value;
