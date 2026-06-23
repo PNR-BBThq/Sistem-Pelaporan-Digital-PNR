@@ -509,6 +509,10 @@
       document.getElementById("kpiAllTimeRV").innerText = allTimeRV.toLocaleString();
       document.getElementById("kpiUlanganPemantauan").innerText = historyDitapis.length.toLocaleString();
 
+      // 👈 TERUS HANTAR ANGKA KUMULATIF KE KAD KPI DI SINI
+      document.getElementById("kpiPokokSerang").innerText = totSerangKumulatif.toLocaleString();
+      document.getElementById("kpiPokokTebang").innerText = totTebangKumulatif.toLocaleString();
+
       let tCatch = 0, tSerang = 0, tTebang = 0;
       let rtd0 = 0, rtd1 = 0, rtd2 = 0;
 
@@ -531,8 +535,6 @@
       SENARAI_DUPLIKASI_KLON = DATA_DITAPIS_SEMASA.filter(p => kaunterKlon[p.lokasi.trim()] > 1);
 
       document.getElementById("kpiTangkapanSemasa").innerText = tCatch.toLocaleString();
-      document.getElementById("kpiPokokSerang").innerText = tSerang.toLocaleString();
-      document.getElementById("kpiPokokTebang").innerText = tTebang.toLocaleString();
       document.getElementById("kpiTrapAktif").innerText = DATA_DITAPIS_SEMASA.length.toLocaleString();
       
       document.getElementById("badgeRTD0").innerText = rtd0;
