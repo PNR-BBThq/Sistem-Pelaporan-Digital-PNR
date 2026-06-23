@@ -89,7 +89,12 @@
     </div>
 
     <!-- PANEL TAPISAN -->
-    <div class="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-200/80 grid grid-cols-1 sm:grid-cols-4 gap-3.5 items-end">
+    <div class="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-200/80 grid grid-cols-1 sm:grid-cols-5 gap-3.5 items-end">
+     <div>
+        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pilih Tahun</label>
+        <select id="filterTahun" onchange="laksanakanFilterLokal()" class="w-full bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs rounded-2xl p-3 focus:outline-none focus:border-emerald-600 cursor-pointer">
+          </select>
+      </div>
       <div>
         <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pilih Negeri</label>
         <select id="filterNegeri" onchange="TapisDataDaerah(); laksanakanFilterLokal();" class="w-full bg-slate-50 border border-slate-200 font-semibold text-slate-700 text-xs rounded-2xl p-3 focus:outline-none focus:border-emerald-600 cursor-pointer">
@@ -186,16 +191,39 @@
         <div id="mapRPW" class="w-full flex-1 rounded-2xl z-10 border border-slate-200 overflow-hidden shadow-inner mt-1"></div>
       </div>
 
-      <!-- Graf Multipurpose -->
-      <div class="lg:col-span-5 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[540px]">
-        <div class="flex justify-between items-center mb-2">
-          <div>
-            <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">HIERARKI TANGKAPAN</span>
-            <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider mt-0.5" id="tajukGrafPecahan">Pecahan Tangkapan RPW RF</h3>
+      <!-- BAR KAWALAN GRAF (UPGRADE: SKOP MASA & RTD) -->
+        <div class="flex flex-col sm:flex-row gap-2.5 justify-between items-start sm:items-center bg-slate-100 p-2 rounded-2xl mb-3 my-1 border border-slate-200/60">
+          
+          <!-- Kiri: Pilihan Skop Masa -->
+          <div class="flex items-center gap-1.5 w-full sm:w-auto">
+            <span class="text-[10px] font-black text-slate-400 uppercase px-1">Skop:</span>
+            <select id="filterGrafBulan" onchange="binaGrafDrilldown()" class="bg-white text-xs font-bold text-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs focus:outline-none focus:border-emerald-600 cursor-pointer flex-1 sm:flex-initial">
+              <option value="ALL_YEAR" selected>📅 Sepanjang Tahun (Kumulatif)</option>
+              <option value="SNAPSHOT">⚡ Tangkapan Terkini Sahaja</option>
+              <option disabled>──────────────</option>
+              <option value="1">Bulan: Januari</option>
+              <option value="2">Bulan: Februari</option>
+              <option value="3">Bulan: Mac</option>
+              <option value="4">Bulan: April</option>
+              <option value="5">Bulan: Mei</option>
+              <option value="6">Bulan: Jun</option>
+              <option value="7">Bulan: Julai</option>
+              <option value="8">Bulan: Ogos</option>
+              <option value="9">Bulan: September</option>
+              <option value="10">Bulan: Oktober</option>
+              <option value="11">Bulan: November</option>
+              <option value="12">Bulan: Disember</option>
+            </select>
           </div>
-          <button onclick="toggleModeTangkapan()" id="btnTogglePest" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold border border-indigo-200 text-xs px-3 py-1.5 rounded-xl transition cursor-pointer shadow-xs">
-            🔄 Tunjuk RV
-          </button>
+
+          <!-- Kanan: Pilihan Pill RTD -->
+          <div class="flex items-center gap-1 self-end sm:self-center">
+            <button onclick="tapisGrafBerasarkanRTD('ALL')" id="pill_ALL" class="text-xs font-bold px-2.5 py-1 rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer">Semua</button>
+            <button onclick="tapisGrafBerasarkanRTD('RTD=0')" id="pill_RTD=0" class="text-xs font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer">Bebas</button>
+            <button onclick="tapisGrafBerasarkanRTD('RTD<1')" id="pill_RTD<1" class="text-xs font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer"><1</button>
+            <button onclick="tapisGrafBerasarkanRTD('RTD>1')" id="pill_RTD>1" class="text-xs font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer">>1</button>
+          </div>
+
         </div>
 
         <div class="flex items-center justify-between bg-slate-100 p-1.5 rounded-2xl mb-3 my-1">
@@ -375,8 +403,23 @@
       markerGroup = L.featureGroup().addTo(map);
     }
 
-    function binaKamusDinamik(senaraiPins) {
+    function binaKamusDinamik(senaraiPins, historyData) {
       KAMUS_LOKAL = {};
+      let setTahun = new Set();
+
+      // Kutip Tahun dari data
+      if (historyData) historyData.forEach(h => { if(h.y) setTahun.add(h.y); });
+      if (senaraiPins) senaraiPins.forEach(p => { if(p.tahun) setTahun.add(p.tahun); });
+
+      const selTah = document.getElementById("filterTahun");
+      if (selTah) {
+        selTah.innerHTML = "";
+        let tahunSorted = Array.from(setTahun).sort((a,b) => b - a); // Susun tahun baru kat atas
+        tahunSorted.forEach(t => { selTah.innerHTML += `<option value="${t}">${t}</option>`; });
+        if(tahunSorted.includes(2026)) selTah.value = 2026; // Set default 2026
+      }
+      
+      // Kutip Negeri & Daerah macam biasa
       senaraiPins.forEach(p => {
         let neg = p.negeri.toUpperCase().trim();
         let dae = p.daerah.toUpperCase().trim();
@@ -385,6 +428,7 @@
           if (dae && dae !== "LAIN-LAIN" && dae !== "") KAMUS_LOKAL[neg].add(dae);
         }
       });
+
       const selNeg = document.getElementById("filterNegeri");
       if (!selNeg) return;
       selNeg.innerHTML = '<option value="ALL">Semua Negeri</option>';
@@ -422,7 +466,7 @@
         if(!res.success) { alert(res.message); return; }
 
         MASTER_DATA_KESELURUHAN = res;
-        if (res.mapPins) binaKamusDinamik(res.mapPins);
+        if (res.mapPins) binaKamusDinamik(res.mapPins, res.historyData);
 
         if(res.doaLogo) document.getElementById("doaLogo").src = res.doaLogo;
         else document.getElementById("doaLogo").src = "https://www.doa.gov.my/wp-content/themes/jpm/images/logo.png";
@@ -447,22 +491,27 @@
     function laksanakanFilterLokal() {
       if (!MASTER_DATA_KESELURUHAN) return;
 
+      const fTah = parseInt(document.getElementById("filterTahun").value) || 2026;
       const fNeg = document.getElementById("filterNegeri").value;
       const fDae = document.getElementById("filterDaerah").value;
       const fRtd = document.getElementById("filterRTD").value;
 
+      // 1. Tapis Semasa
       DATA_DITAPIS_SEMASA = MASTER_DATA_KESELURUHAN.mapPins.filter(p => {
+        let passY = (p.tahun === fTah);
         let passN = (fNeg === "ALL" || p.negeri.toUpperCase() === fNeg);
         let passD = (fDae === "ALL" || p.daerah.toUpperCase() === fDae);
         let passR = (fRtd === "ALL" || p.rtd_status.toUpperCase() === fRtd);
-        return passN && passD && passR;
+        return passY && passN && passD && passR;
       });
 
+      // 2. Tapis Sejarah
       let historyDitapis = MASTER_DATA_KESELURUHAN.historyData.filter(h => {
+        let passY = (h.y === fTah);
         let passN = (fNeg === "ALL" || h.n === fNeg);
         let passD = (fDae === "ALL" || h.d === fDae);
         let passR = (fRtd === "ALL" || h.rtd.toUpperCase() === fRtd);
-        return passN && passD && passR;
+        return passY && passN && passD && passR;
       });
 
       let allTimeRF = 0, allTimeRV = 0;
@@ -819,23 +868,74 @@
       binaGrafDrilldown();
     }
 
+   // 🚀 ENJIN GRAF DRILLDOWN (KEMASKINI: SOKONGAN MESIN MASA)
     function binaGrafDrilldown() {
-      let labelData = [], nilaiData = [], mapData = {};
+      if (!MASTER_DATA_KESELURUHAN) return;
 
-      let senaraiGraf = DATA_DITAPIS_SEMASA;
-      if (filterGrafRTD !== "ALL") {
-        senaraiGraf = senaraiGraf.filter(p => p.rtd_status.toUpperCase() === filterGrafRTD);
+      let labelData = [], nilaiData = [], mapData = {};
+      const modeMasa = document.getElementById("filterGrafBulan").value; // "ALL_YEAR", "SNAPSHOT", atau "1".."12"
+
+      let sumberKiraan = [];
+
+      // ALAM 1: BACA REALITI HARI INI (SNAPSHOT TERKINI)
+      if (modeMasa === "SNAPSHOT") {
+        sumberKiraan = DATA_DITAPIS_SEMASA.map(p => ({
+          negeri: p.negeri, daerah: p.daerah, lokasi: p.lokasi,
+          rtd: p.rtd_status,
+          rf: (parseInt(p.total_rf) || 0), rv: (parseInt(p.total_rv) || 0)
+        }));
+      } 
+      // ALAM 2: BACA SEJARAH (KUMULATIF TAHUNAN / BULANAN)
+      else {
+        let hist = MASTER_DATA_KESELURUHAN.historyData;
+        
+        // Hormati filter Negeri & Daerah di panel atas sekali
+        const fNeg = document.getElementById("filterNegeri").value;
+        const fDae = document.getElementById("filterDaerah").value;
+        
+      const fTah = parseInt(document.getElementById("filterTahun").value) || 2026;
+        hist = hist.filter(h => (fNeg === "ALL" || h.n === fNeg) && (fDae === "ALL" || h.d === fDae) && (h.y === fTah));
+
+        // Jika user pilih spesifik Bulan (Contoh: "5" untuk Mei)
+        if (modeMasa !== "ALL_YEAR") {
+          const targetBulan = parseInt(modeMasa);
+          hist = hist.filter(h => h.m === targetBulan);
+        }
+
+        sumberKiraan = hist.map(h => ({
+          negeri: h.n, daerah: h.d, lokasi: h.loc,
+          rtd: h.rtd, rf: h.rf, rv: h.rv
+        }));
       }
 
+      // Tapis mengikut Pill RTD di dalam graf (Semua / Bebas / <1 / >1)
+      if (filterGrafRTD !== "ALL") {
+        sumberKiraan = sumberKiraan.filter(item => item.rtd.toUpperCase() === filterGrafRTD);
+      }
+
+      // Proses Pengumpulan Data (Aggregation) mengikut hierarki
       if (tahapGraf === "negeri") {
-        document.getElementById("labelPeringkatGraf").innerText = "Peringkat: Negeri";
-        senaraiGraf.forEach(p => { mapData[p.negeri] = (mapData[p.negeri] || 0) + (modeTangkapan==='rf' ? parseInt(p.total_rf)||0 : parseInt(p.total_rv)||0); });
+        document.getElementById("labelPeringkatGraf").innerText = modeMasa === "ALL_YEAR" ? "Peringkat: Negeri (Kumulatif Tahunan)" : "Peringkat: Negeri";
+        sumberKiraan.forEach(item => {
+          let key = item.negeri || "LAIN-LAIN";
+          mapData[key] = (mapData[key] || 0) + (modeTangkapan === 'rf' ? item.rf : item.rv);
+        });
       } else if (tahapGraf === "daerah") {
         document.getElementById("labelPeringkatGraf").innerText = `Peringkat: Daerah (${namaNegeriTerpilih})`;
-        senaraiGraf.forEach(p => { if(p.negeri === namaNegeriTerpilih) mapData[p.daerah] = (mapData[p.daerah] || 0) + (modeTangkapan==='rf' ? parseInt(p.total_rf)||0 : parseInt(p.total_rv)||0); });
+        sumberKiraan.forEach(item => {
+          if (item.negeri.toUpperCase() === namaNegeriTerpilih.toUpperCase()) {
+            let key = item.daerah || "LAIN-LAIN";
+            mapData[key] = (mapData[key] || 0) + (modeTangkapan === 'rf' ? item.rf : item.rv);
+          }
+        });
       } else if (tahapGraf === "perangkap") {
         document.getElementById("labelPeringkatGraf").innerText = `Peringkat: Perangkap (${namaDaerahTerpilih})`;
-        senaraiGraf.forEach(p => { if(p.daerah === namaDaerahTerpilih && p.negeri === namaNegeriTerpilih) mapData[p.lokasi] = (modeTangkapan==='rf' ? parseInt(p.total_rf)||0 : parseInt(p.total_rv)||0); });
+        sumberKiraan.forEach(item => {
+          if (item.daerah.toUpperCase() === namaDaerahTerpilih.toUpperCase() && item.negeri.toUpperCase() === namaNegeriTerpilih.toUpperCase()) {
+            let key = item.lokasi || "TIADA NAMA";
+            mapData[key] = (mapData[key] || 0) + (modeTangkapan === 'rf' ? item.rf : item.rv);
+          }
+        });
       }
 
       labelData = Object.keys(mapData);
@@ -843,15 +943,18 @@
 
       if (chartUtama) chartUtama.destroy();
 
-      let barWarna = modeTangkapan === 'rf' ? '#047857' : '#3730a3'; 
+      let barWarna = modeTangkapan === 'rf' ? '#047857' : '#3730a3';
 
       chartUtama = new Chart(document.getElementById('drilldownChart').getContext('2d'), {
         type: 'bar',
-        data: { labels: labelData, datasets: [{ label: modeTangkapan==='rf' ? 'Tangkapan RF' : 'Tangkapan RV', data: nilaiData, backgroundColor: barWarna, borderRadius: 8 }] },
+        data: { labels: labelData, datasets: [{ data: nilaiData, backgroundColor: barWarna, borderRadius: 8 }] },
         options: {
           responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-          scales: { x: { grid: { display: false }, ticks: { font: { weight: 'bold', family: 'Plus Jakarta Sans' } } }, y: { grid: { borderDash: [4, 4], color: '#e2e8f0' }, beginAtZero: true } },
-          onClick: (e, elements) => { if(elements.length > 0) handleGrafClick(labelData[elements[0].index]); }
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { weight: 'bold', family: 'Plus Jakarta Sans', size: 10 } } },
+            y: { grid: { borderDash: [4, 4], color: '#e2e8f0' }, beginAtZero: true }
+          },
+          onClick: (e, elements) => { if (elements.length > 0) handleGrafClick(labelData[elements[0].index]); }
         }
       });
     }
