@@ -141,9 +141,9 @@
       <div class="bg-white border border-slate-200/80 p-4 rounded-3xl flex flex-col justify-between shadow-2xs">
         <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">TABURAN RTD</span>
         <div class="space-y-0.5 my-auto text-[11px] font-bold">
-          <div class="flex justify-between"><span class="text-emerald-600">🟢 Bebas (0)</span><span id="badgeRTD0">0</span></div>
-          <div class="flex justify-between"><span class="text-amber-600">🟡 Amaran (<1)</span><span id="badgeRTD1">0</span></div>
-          <div class="flex justify-between"><span class="text-rose-600">🔴 Bahaya (>1)</span><span id="badgeRTD2">0</span></div>
+          <div class="flex justify-between"><span class="text-emerald-600">🟢 RTD=0 </span><span id="badgeRTD0">0</span></div>
+          <div class="flex justify-between"><span class="text-amber-600">🟡 RTD<1 (<1)</span><span id="badgeRTD1">0</span></div>
+          <div class="flex justify-between"><span class="text-rose-600">🔴 RTD>1 (>1)</span><span id="badgeRTD2">0</span></div>
         </div>
       </div>
       <div class="bg-white border border-slate-200/80 p-4 rounded-3xl flex flex-col justify-center shadow-2xs">
@@ -977,11 +977,15 @@
     }
 
     function muatTurunData(jenis) {
-      const neg = document.getElementById("filterNegeri").value;
-      const dae = document.getElementById("filterDaerah").value;
+      const tah = document.getElementById("filterTahun").value || 2026;
+      const neg = document.getElementById("filterNegeri").value; 
+      const dae = document.getElementById("filterDaerah").value; 
       const rtd = document.getElementById("filterRTD").value;
+      
       let fetchUrl = typeof CONFIG !== 'undefined' ? CONFIG.API_URL : "https://script.google.com/macros/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
-      window.open(`${fetchUrl}?action=${jenis === 'geojson' ? 'downloadRPWGeoJSON' : 'downloadRPWKML'}&terkiniOnly=true&negeri=${neg}&daerah=${dae}&rtd=${rtd}`, '_blank');
+      
+      // Hantar arahan melalui GET request berserta TAHUN
+      window.open(`${fetchUrl}?action=${jenis === 'geojson' ? 'downloadRPWGeoJSON' : 'downloadRPWKML'}&terkiniOnly=true&negeri=${neg}&daerah=${dae}&rtd=${rtd}&tahun=${tah}`, '_blank');
     }
   </script>
 </body>
