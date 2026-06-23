@@ -490,12 +490,16 @@
         return passY && passN && passD && passR;
       });
 
-      let allTimeRF = 0, allTimeRV = 0;
+     let allTimeRF = 0, allTimeRV = 0;
+      let totSerangKumulatif = 0, totTebangKumulatif = 0; // 👈 KITA BUKA KAUNTER BARU DI SINI
       let defaulterCounterLokal = {};
 
       historyDitapis.forEach(h => {
         allTimeRF += h.rf;
         allTimeRV += h.rv;
+        totSerangKumulatif += (h.serang || 0); // 👈 Kutip semua pokok diserang setahun
+        totTebangKumulatif += (h.tebang || 0); // 👈 Kutip semua pokok ditebang setahun
+
         if (h.rtd.includes("RTD>1") && h.loc && h.loc !== "LOKASI TIADA NAMA") {
           defaulterCounterLokal[h.loc] = (defaulterCounterLokal[h.loc] || 0) + 1;
         }
@@ -505,6 +509,10 @@
       document.getElementById("kpiAllTimeRV").innerText = allTimeRV.toLocaleString();
       document.getElementById("kpiUlanganPemantauan").innerText = historyDitapis.length.toLocaleString();
 
+      // 👈 TERUS HANTAR ANGKA KUMULATIF KE KAD KPI DI SINI
+      document.getElementById("kpiPokokSerang").innerText = totSerangKumulatif.toLocaleString();
+      document.getElementById("kpiPokokTebang").innerText = totTebangKumulatif.toLocaleString();
+
       let tCatch = 0, tSerang = 0, tTebang = 0;
       let rtd0 = 0, rtd1 = 0, rtd2 = 0;
 
@@ -513,9 +521,7 @@
       
       DATA_DITAPIS_SEMASA.forEach(p => {
         tCatch += (parseInt(p.total_rf) || 0);
-        tSerang += (parseInt(p.pokok_serang) || 0);
-        tTebang += (parseInt(p.pokok_tebang) || 0);
-        
+             
         if (p.rtd_status.includes("RTD=0")) rtd0++;
         else if (p.rtd_status.includes("RTD<1")) rtd1++;
         else if (p.rtd_status.includes("RTD>1")) rtd2++;
