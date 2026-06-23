@@ -37,7 +37,6 @@
     }
   </script>
 
-  <!-- ⏳ SKELETON LOADER -->
   <div id="skeletonLoader" class="w-full mx-auto space-y-6 animate-pulse">
     <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-4">
       <div class="w-16 h-16 bg-slate-200 rounded-2xl"></div>
@@ -52,10 +51,8 @@
     </div>
   </div>
 
-  <!-- 🟢 PAPAN PEMUKA KESELURUHAN -->
   <div id="dashboardContent" class="w-full mx-auto space-y-6 hidden transition-all duration-500">
     
-    <!-- HEADER -->
     <div class="bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border border-emerald-800/40">
       <div class="flex items-center gap-4">
         <div class="p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15"><img id="doaLogo" src="" alt="Logo" class="w-14 h-14 object-contain"></div>
@@ -77,7 +74,6 @@
       </div>
     </div>
 
-    <!-- 🚨 BANNER AMARAN AUDIT (KLIK UNTUK LIHAT KAMPUNG MANA BERMASALAH) -->
     <div id="bannerAmaranGPS" class="hidden bg-amber-500 text-slate-950 px-5 py-3.5 rounded-2xl font-extrabold text-xs flex items-center justify-between shadow-lg">
       <span class="flex items-center gap-2">⚠️ <b id="teksAmaranGPS"></b></span>
       <button onclick="bukaModalKuarantin('gps')" class="bg-slate-900 hover:bg-black text-white px-4 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 shadow-xs">🔍 Lihat Butiran Audit</button>
@@ -88,9 +84,8 @@
       <button onclick="bukaModalKuarantin('klon')" class="bg-white hover:bg-slate-100 text-rose-900 px-4 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 shadow-xs font-black">🔍 Semak Rekod Bertindih</button>
     </div>
 
-    <!-- PANEL TAPISAN -->
     <div class="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-200/80 grid grid-cols-1 sm:grid-cols-5 gap-3.5 items-end">
-     <div>
+      <div>
         <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pilih Tahun</label>
         <select id="filterTahun" onchange="laksanakanFilterLokal()" class="w-full bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs rounded-2xl p-3 focus:outline-none focus:border-emerald-600 cursor-pointer">
           </select>
@@ -123,17 +118,16 @@
       </div>
     </div>
 
-    <!-- 7 KAD KPI -->
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5">
       <div class="bg-emerald-50/90 border border-emerald-200/80 p-4 rounded-3xl flex flex-col justify-between shadow-2xs">
         <span class="text-[10px] font-black text-emerald-800 uppercase tracking-wider">KUMULATIF RPW RF</span>
         <span class="text-3xl font-black text-emerald-950 block mt-1" id="kpiAllTimeRF">0</span>
-        <span class="text-[10px] text-emerald-600 font-bold block mt-0.5">Sepanjang Tahun</span>
+        <span class="text-[10px] text-emerald-600 font-bold block mt-0.5">Tahun Terpilih</span>
       </div>
       <div class="bg-indigo-50/90 border border-indigo-200/80 p-4 rounded-3xl flex flex-col justify-between shadow-2xs">
         <span class="text-[10px] font-black text-indigo-800 uppercase tracking-wider">KUMULATIF RPW RV</span>
         <span class="text-3xl font-black text-indigo-950 block mt-1" id="kpiAllTimeRV">0</span>
-        <span class="text-[10px] text-indigo-600 font-bold block mt-0.5">Sepanjang Tahun</span>
+        <span class="text-[10px] text-indigo-600 font-bold block mt-0.5">Tahun Terpilih</span>
       </div>
       <div class="bg-white border border-slate-200/80 p-4 rounded-3xl flex flex-col justify-center shadow-2xs">
         <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">TANGKAPAN SEMASA</span>
@@ -162,10 +156,8 @@
       </div>
     </div>
 
-    <!-- PETA (60%) & GRAF (40%) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
-      <!-- Peta (Mazhab Tally dengan Excel: Angka 802) -->
       <div class="lg:col-span-7 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[540px] relative overflow-hidden">
         <div class="flex justify-between items-center mb-2 z-20">
           <h3 class="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">📍 Peta Lokasi Perangkap Feromon</h3>
@@ -191,10 +183,18 @@
         <div id="mapRPW" class="w-full flex-1 rounded-2xl z-10 border border-slate-200 overflow-hidden shadow-inner mt-1"></div>
       </div>
 
-      <!-- BAR KAWALAN GRAF (UPGRADE: SKOP MASA & RTD) -->
+      <div class="lg:col-span-5 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[540px]">
+        <div class="flex justify-between items-center mb-2">
+          <div>
+            <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">HIERARKI TANGKAPAN</span>
+            <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider mt-0.5" id="tajukGrafPecahan">Pecahan Tangkapan RPW RF</h3>
+          </div>
+          <button onclick="toggleModeTangkapan()" id="btnTogglePest" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold border border-indigo-200 text-xs px-3 py-1.5 rounded-xl transition cursor-pointer shadow-xs">
+            🔄 Tunjuk RV
+          </button>
+        </div>
+
         <div class="flex flex-col sm:flex-row gap-2.5 justify-between items-start sm:items-center bg-slate-100 p-2 rounded-2xl mb-3 my-1 border border-slate-200/60">
-          
-          <!-- Kiri: Pilihan Skop Masa -->
           <div class="flex items-center gap-1.5 w-full sm:w-auto">
             <span class="text-[10px] font-black text-slate-400 uppercase px-1">Skop:</span>
             <select id="filterGrafBulan" onchange="binaGrafDrilldown()" class="bg-white text-xs font-bold text-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs focus:outline-none focus:border-emerald-600 cursor-pointer flex-1 sm:flex-initial">
@@ -215,24 +215,11 @@
               <option value="12">Bulan: Disember</option>
             </select>
           </div>
-
-          <!-- Kanan: Pilihan Pill RTD -->
           <div class="flex items-center gap-1 self-end sm:self-center">
             <button onclick="tapisGrafBerasarkanRTD('ALL')" id="pill_ALL" class="text-xs font-bold px-2.5 py-1 rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer">Semua</button>
             <button onclick="tapisGrafBerasarkanRTD('RTD=0')" id="pill_RTD=0" class="text-xs font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer">Bebas</button>
             <button onclick="tapisGrafBerasarkanRTD('RTD<1')" id="pill_RTD<1" class="text-xs font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer"><1</button>
             <button onclick="tapisGrafBerasarkanRTD('RTD>1')" id="pill_RTD>1" class="text-xs font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer">>1</button>
-          </div>
-
-        </div>
-
-        <div class="flex items-center justify-between bg-slate-100 p-1.5 rounded-2xl mb-3 my-1">
-          <span class="text-[10px] font-bold text-slate-400 px-2 uppercase">Tapisan Graf:</span>
-          <div class="flex gap-1">
-            <button onclick="tapisGrafBerasarkanRTD('ALL')" id="pill_ALL" class="text-xs font-bold px-3 py-1 rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer">Semua</button>
-            <button onclick="tapisGrafBerasarkanRTD('RTD=0')" id="pill_RTD=0" class="text-xs font-bold px-3 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer">Bebas</button>
-            <button onclick="tapisGrafBerasarkanRTD('RTD<1')" id="pill_RTD<1" class="text-xs font-bold px-3 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer"><1</button>
-            <button onclick="tapisGrafBerasarkanRTD('RTD>1')" id="pill_RTD>1" class="text-xs font-bold px-3 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer">>1</button>
           </div>
         </div>
 
@@ -247,14 +234,12 @@
       </div>
     </div>
 
-    <!-- GRAF 15 LOKASI PENGULANGAN RTD > 1 -->
     <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
       <h3 class="text-sm font-extrabold text-slate-900 mb-1 flex items-center gap-2"><span>📊</span> Carta 15 Lokasi Perangkap Pengulangan RTD > 1</h3>
       <p class="text-xs text-slate-400 mb-4">Kawasan berisiko tinggi yang merekodkan ambang populasi kritikal secara berulang sepanjang tahun</p>
       <div class="relative h-64 w-full"><canvas id="defaulterChart"></canvas></div>
     </div>
 
-    <!-- GRAF TRENDLINE BULANAN -->
     <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
       <div class="flex justify-between items-center mb-4">
         <div>
@@ -265,7 +250,6 @@
       <div class="relative h-72 w-full"><canvas id="trendLineChart"></canvas></div>
     </div>
 
-    <!-- JADUAL DATA REKOD -->
     <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4 mb-12">
       <div class="flex justify-between items-center border-b border-slate-100 pb-3">
         <div>
@@ -304,13 +288,9 @@
 
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- 🏥 MODAL GERGASI: PUSAT KUARANTIN & AUDIT DATA (TERSEMBUNYI) -->
-  <!-- ========================================================================= -->
   <div id="modalKuarantin" class="fixed inset-0 z-[999] bg-slate-950/80 backdrop-blur-xs hidden flex items-center justify-center p-4 transition-all duration-300">
     <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
       
-      <!-- Modal Header -->
       <div class="bg-slate-900 text-white p-6 flex justify-between items-center border-b border-slate-800">
          <div>
            <div class="flex items-center gap-2">
@@ -322,7 +302,6 @@
          <button onclick="document.getElementById('modalKuarantin').classList.add('hidden')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition cursor-pointer">✕ Tutup</button>
       </div>
 
-      <!-- Modal Nav Tabs -->
       <div class="flex border-b border-slate-100 bg-slate-50 px-6 pt-3 gap-2">
         <button onclick="tukarTabModal('klon')" id="tabBtn_klon" class="px-4 py-2.5 text-xs font-black border-b-2 border-rose-600 text-rose-700 flex items-center gap-2 cursor-pointer transition">
           <span>🚨</span> Klon Bertindih (<span id="modalCountKlon">0</span>)
@@ -332,10 +311,8 @@
         </button>
       </div>
 
-      <!-- Modal Body (Scrollable Content) -->
       <div class="p-6 overflow-y-auto flex-1 space-y-6 text-xs">
          
-         <!-- TAB 1: ISI KLON BERTINDIH -->
          <div id="tabContent_klon" class="space-y-3">
            <div class="bg-rose-50 border border-rose-200/80 p-3 rounded-2xl text-rose-900 font-semibold">
              ℹ️ <b>Penerangan Ralat:</b> Senarai di bawah memaparkan unit perangkap yang telah diisi lebih daripada sekali pada lokasi yang sama pada tarikh yang sama. Sila semak data dan kemaskini.
@@ -350,7 +327,6 @@
            </div>
          </div>
 
-         <!-- TAB 2: ISI RALAT GPS -->
          <div id="tabContent_gps" class="space-y-3 hidden">
            <div class="bg-amber-50 border border-amber-200/80 p-3 rounded-2xl text-amber-950 font-semibold">
              ℹ️ <b>Penerangan Ralat:</b> Senarai di bawah memaparkan perangkap yang gagal dilukis di atas peta kerana koordinat GPS yang dimasukkan tidak sah, kosong, atau melangkaui sempadan peta Malaysia.
@@ -403,23 +379,23 @@
       markerGroup = L.featureGroup().addTo(map);
     }
 
+    // 🎯 SUNTIK KAMUS TAHUN SECARA DINAMIK
     function binaKamusDinamik(senaraiPins, historyData) {
       KAMUS_LOKAL = {};
       let setTahun = new Set();
 
-      // Kutip Tahun dari data
       if (historyData) historyData.forEach(h => { if(h.y) setTahun.add(h.y); });
       if (senaraiPins) senaraiPins.forEach(p => { if(p.tahun) setTahun.add(p.tahun); });
 
       const selTah = document.getElementById("filterTahun");
       if (selTah) {
         selTah.innerHTML = "";
-        let tahunSorted = Array.from(setTahun).sort((a,b) => b - a); // Susun tahun baru kat atas
+        let tahunSorted = Array.from(setTahun).sort((a,b) => b - a); 
         tahunSorted.forEach(t => { selTah.innerHTML += `<option value="${t}">${t}</option>`; });
-        if(tahunSorted.includes(2026)) selTah.value = 2026; // Set default 2026
+        // Jika belum ada nilai dipilih dan wujud 2026, set sebagai default
+        if(tahunSorted.includes(2026) && !selTah.value) selTah.value = 2026; 
       }
       
-      // Kutip Negeri & Daerah macam biasa
       senaraiPins.forEach(p => {
         let neg = p.negeri.toUpperCase().trim();
         let dae = p.daerah.toUpperCase().trim();
@@ -446,6 +422,7 @@
     }
 
     function resetTapisan() {
+      document.getElementById("filterTahun").value = 2026;
       document.getElementById("filterNegeri").value = (USER_STATE !== "ALL" && USER_STATE !== "SEMUA") ? USER_STATE : "ALL";
       TapisDataDaerah();
       document.getElementById("filterDaerah").value = "ALL";
@@ -488,6 +465,7 @@
       .catch(e => { alert("Gagal menyambung ke pangkalan data."); console.error(e); });
     }
 
+    // 🎯 SOKONGAN TAHUN DINAMIK PADA LOKAL FILTER
     function laksanakanFilterLokal() {
       if (!MASTER_DATA_KESELURUHAN) return;
 
@@ -496,7 +474,6 @@
       const fDae = document.getElementById("filterDaerah").value;
       const fRtd = document.getElementById("filterRTD").value;
 
-      // 1. Tapis Semasa
       DATA_DITAPIS_SEMASA = MASTER_DATA_KESELURUHAN.mapPins.filter(p => {
         let passY = (p.tahun === fTah);
         let passN = (fNeg === "ALL" || p.negeri.toUpperCase() === fNeg);
@@ -505,7 +482,6 @@
         return passY && passN && passD && passR;
       });
 
-      // 2. Tapis Sejarah
       let historyDitapis = MASTER_DATA_KESELURUHAN.historyData.filter(h => {
         let passY = (h.y === fTah);
         let passN = (fNeg === "ALL" || h.n === fNeg);
@@ -532,7 +508,6 @@
       let tCatch = 0, tSerang = 0, tTebang = 0;
       let rtd0 = 0, rtd1 = 0, rtd2 = 0;
 
-      // 🎯 JANA FORENSIK AUDIT LOKAL
       SENARAI_RALAT_GPS = [];
       let kaunterKlon = {};
       
@@ -545,15 +520,12 @@
         else if (p.rtd_status.includes("RTD<1")) rtd1++;
         else if (p.rtd_status.includes("RTD>1")) rtd2++;
 
-        // Asingkan GPS Rosak
         if (!p.is_valid_gis) SENARAI_RALAT_GPS.push(p);
 
-        // Kira kekerapan kemunculan nama kampung
         let kNama = p.lokasi.trim();
         kaunterKlon[kNama] = (kaunterKlon[kNama] || 0) + 1;
       });
 
-      // Asingkan data Klon bertindih
       SENARAI_DUPLIKASI_KLON = DATA_DITAPIS_SEMASA.filter(p => kaunterKlon[p.lokasi.trim()] > 1);
 
       document.getElementById("kpiTangkapanSemasa").innerText = tCatch.toLocaleString();
@@ -565,7 +537,6 @@
       document.getElementById("badgeRTD1").innerText = rtd1;
       document.getElementById("badgeRTD2").innerText = rtd2;
 
-      // 🚨 KAWAL SELIA BANNER AMARAN AUDIT
       const bGPS = document.getElementById("bannerAmaranGPS");
       if (SENARAI_RALAT_GPS.length > 0) {
         bGPS.classList.remove("hidden");
@@ -578,7 +549,6 @@
         document.getElementById("teksAmaranDuplikasi").innerText = `RALAT KRITIKAL: Terdapat ${SENARAI_DUPLIKASI_KLON.length} entri data didaftarkan berganda (Klon TRUE) pada kampung yang sama!`;
       } else bKlon.classList.add("hidden");
 
-      // Sumbat jadual modal
       binaJadualModalAuditContent();
       
       binaPetaPinDiTapis();
@@ -597,12 +567,10 @@
       binaGrafTrendline(historyDitapis);
     }
 
-    // ⚡ BINA JADUAL MODAL BERSERTA BUTANG TINDAKAN (CRUD)
     function binaJadualModalAuditContent() {
       document.getElementById("modalCountKlon").innerText = SENARAI_DUPLIKASI_KLON.length;
       document.getElementById("modalCountGPS").innerText = SENARAI_RALAT_GPS.length;
 
-      // 1. Jadual Klon (Dilengkapi Butang Padam / Tukar False)
       let hKlon = "";
       SENARAI_DUPLIKASI_KLON.forEach((k, idx) => {
         hKlon += `
@@ -612,17 +580,16 @@
           <td class="p-3">${k.daerah}</td><td class="p-3">${k.tarikh}</td>
           <td class="p-3 text-center font-black">${k.total_rf}</td>
           <td class="p-3 text-center flex justify-center gap-1">
-            <button onclick="laksanakanCRUD('setFalse', '${k.row_id}', '')" title="Matikan status kepada FALSE" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-2 py-1 rounded-md text-[10px] font-bold transition cursor-pointer">🚫 TUKAR FALSE</button>
-            <button onclick="laksanakanCRUD('delete', '${k.row_id}', '')" title="Padam baris ini dari Sheet" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded-md text-[10px] font-bold transition cursor-pointer">🗑️ PADAM</button>
+            <button onclick="mohonEditLokasi('${k.row_id}', '${k.lokasi}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 px-2 py-1 rounded-md text-[10px] font-black transition cursor-pointer">✏️ EDIT</button>
+            <button onclick="laksanakanCRUD('delete', '${k.row_id}', '')" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded-md text-[10px] font-bold transition cursor-pointer">🗑️ PADAM</button>
           </td>
         </tr>`;
       });
       document.getElementById("tbodyModalKlon").innerHTML = hKlon || `<tr><td colspan="6" class="p-4 text-center text-slate-400">Tiada ralat duplikasi dikesan.</td></tr>`;
 
-      // 2. Jadual GPS (Dilengkapi Butang Kemaskini GPS)
       let hGPS = "";
       SENARAI_RALAT_GPS.forEach((g, idx) => {
-        let sebab = g.koordinat === "" ? "Titik GPS Dibiarkan Kosong" : "Luar Sempadan Malaysia";
+        let sebab = g.koordinat === "" ? "Titik GPS Kosong" : "Luar Sempadan Malaysia";
         hGPS += `
         <tr class="border-b border-slate-100 hover:bg-amber-50/50">
           <td class="p-3 text-center">${idx+1}</td>
@@ -637,7 +604,6 @@
       document.getElementById("tbodyModalGPS").innerHTML = hGPS || `<tr><td colspan="5" class="p-4 text-center text-slate-400">Tiada ralat GPS dikesan.</td></tr>`;
     }
 
-    // ⚡ PROMPT INPUT GPS
     function mohonKemaskiniGPS(rowId) {
       let gpsBaru = prompt("Sila masukkan koordinat GPS yang tepat (Contoh format: 1.821, 103.11):");
       if(gpsBaru && gpsBaru.includes(",")) {
@@ -647,15 +613,20 @@
       }
     }
 
-    // ⚡ ENJIN PELAKSANA CRUD AUTO-HEALING
+    function mohonEditLokasi(rowId, namaLama) {
+      let namaBaru = prompt(`Masukkan nama kampung/lokasi yang sebenar bagi menggantikan "${namaLama}":`, namaLama);
+      if(namaBaru && namaBaru.trim() !== "" && namaBaru.trim().toUpperCase() !== namaLama.toUpperCase()) {
+        laksanakanCRUD('updateLocation', rowId, namaBaru.trim().toUpperCase());
+      }
+    }
+
     function laksanakanCRUD(actionType, rowId, valBaru) {
       if(!rowId) { alert("Ralat sistem: ROW-ID tiada. Sila semak pangkalan data anda."); return; }
       
       let tanya = actionType === 'delete' ? "Anda pasti mahu memadam rekod ini secara KEKAL dari pangkalan data?" : 
-                 (actionType === 'setFalse' ? "Matikan status rekod ini kepada FALSE?" : "Mengesahkan kemas kini koordinat?");
+                 (actionType === 'setFalse' ? "Matikan status rekod ini kepada FALSE?" : "Mengesahkan kemas kini?");
       if(!confirm(tanya)) return;
 
-      // Tutup semua ui, buka paparan loading memproses
       document.getElementById('modalKuarantin').classList.add('hidden');
       document.getElementById('dashboardContent').classList.add('hidden');
       document.getElementById('skeletonLoader').classList.remove('hidden');
@@ -670,7 +641,6 @@
       .then(res => {
          if(!res.success) { alert(res.message); window.location.reload(); return; }
          alert(res.message);
-         // ✨ AUTO-HEALING: Tarik semula data baru tanpa perlu tekan butang refresh di browser!
          muatNaikDataIndukSekali();
       }).catch(e => {
          alert("Ralat sambungan dengan pelayan Google!");
@@ -709,7 +679,6 @@
       binaPetaPinDiTapis();
     }
 
-    // Peta Mazhab Tally: Tiang terpacak 795, tulisan lencana kekal 802
     function binaPetaPinDiTapis() {
       let senaraiPeta = DATA_DITAPIS_SEMASA;
       if (filterPetaRTD !== "ALL") {
@@ -723,7 +692,7 @@
       senaraiPeta.forEach(p => {
         if (!p.is_valid_gis) return; 
         
-        kaunterTallyGPS++; // 👈 KIRAAN MAZHAB TALLY (802)
+        kaunterTallyGPS++; 
 
         let pinKey = p.koordinat + "_" + p.lokasi;
         if (seenMapPins.has(pinKey)) return; 
@@ -868,35 +837,28 @@
       binaGrafDrilldown();
     }
 
-   // 🚀 ENJIN GRAF DRILLDOWN (KEMASKINI: SOKONGAN MESIN MASA)
     function binaGrafDrilldown() {
       if (!MASTER_DATA_KESELURUHAN) return;
 
       let labelData = [], nilaiData = [], mapData = {};
-      const modeMasa = document.getElementById("filterGrafBulan").value; // "ALL_YEAR", "SNAPSHOT", atau "1".."12"
+      const modeMasa = document.getElementById("filterGrafBulan").value;
+      const fTah = parseInt(document.getElementById("filterTahun").value) || 2026;
 
       let sumberKiraan = [];
 
-      // ALAM 1: BACA REALITI HARI INI (SNAPSHOT TERKINI)
       if (modeMasa === "SNAPSHOT") {
         sumberKiraan = DATA_DITAPIS_SEMASA.map(p => ({
           negeri: p.negeri, daerah: p.daerah, lokasi: p.lokasi,
           rtd: p.rtd_status,
           rf: (parseInt(p.total_rf) || 0), rv: (parseInt(p.total_rv) || 0)
         }));
-      } 
-      // ALAM 2: BACA SEJARAH (KUMULATIF TAHUNAN / BULANAN)
-      else {
+      } else {
         let hist = MASTER_DATA_KESELURUHAN.historyData;
-        
-        // Hormati filter Negeri & Daerah di panel atas sekali
         const fNeg = document.getElementById("filterNegeri").value;
         const fDae = document.getElementById("filterDaerah").value;
         
-      const fTah = parseInt(document.getElementById("filterTahun").value) || 2026;
         hist = hist.filter(h => (fNeg === "ALL" || h.n === fNeg) && (fDae === "ALL" || h.d === fDae) && (h.y === fTah));
 
-        // Jika user pilih spesifik Bulan (Contoh: "5" untuk Mei)
         if (modeMasa !== "ALL_YEAR") {
           const targetBulan = parseInt(modeMasa);
           hist = hist.filter(h => h.m === targetBulan);
@@ -908,12 +870,10 @@
         }));
       }
 
-      // Tapis mengikut Pill RTD di dalam graf (Semua / Bebas / <1 / >1)
       if (filterGrafRTD !== "ALL") {
         sumberKiraan = sumberKiraan.filter(item => item.rtd.toUpperCase() === filterGrafRTD);
       }
 
-      // Proses Pengumpulan Data (Aggregation) mengikut hierarki
       if (tahapGraf === "negeri") {
         document.getElementById("labelPeringkatGraf").innerText = modeMasa === "ALL_YEAR" ? "Peringkat: Negeri (Kumulatif Tahunan)" : "Peringkat: Negeri";
         sumberKiraan.forEach(item => {
