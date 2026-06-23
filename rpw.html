@@ -18,7 +18,7 @@
     #tbodyRPW td { text-transform: uppercase; font-size: 11px; }
   </style>
 </head>
-<body class="p-2 sm:p-4 lg:p-6 w-full">
+<body class="p-2 sm:p-4 lg:p-6 w-full relative">
 
   <script>
     let USER_TOKEN = "", USER_NAME = "Pengguna", USER_STATE = "ALL";
@@ -48,11 +48,11 @@
     </div>
     <div class="h-[500px] bg-white rounded-3xl border border-slate-100 flex items-center justify-center text-slate-400 font-medium">
       <svg class="animate-spin -ml-1 mr-3 h-6 w-6 text-emerald-700 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle></svg>
-      Memuatkan dan mengasingkan data mengikut sekuriti wilayah...
+      Memuatkan dan mengaudit integriti rekod wilayah...
     </div>
   </div>
 
-  <!-- 🟢 PAPAN PEMUKA KESELURUHAN (FULL SCREEN WIDTH) -->
+  <!-- 🟢 PAPAN PEMUKA KESELURUHAN -->
   <div id="dashboardContent" class="w-full mx-auto space-y-6 hidden transition-all duration-500">
     
     <!-- HEADER -->
@@ -77,10 +77,15 @@
       </div>
     </div>
 
-    <!-- BANNER AMARAN KOORDINAT LUAR MALAYSIA -->
-    <div id="bannerAmaranGIS" class="hidden bg-amber-500 text-slate-950 px-5 py-3.5 rounded-2xl font-extrabold text-xs flex items-center justify-between shadow-lg animate-bounce">
-      <span class="flex items-center gap-2">⚠️ <b id="teksAmaranGIS"></b></span>
-      <button onclick="this.parentElement.style.display='none'" class="text-slate-900 hover:text-black cursor-pointer">✕ Tutup</button>
+    <!-- 🚨 BANNER AMARAN AUDIT (KLIK UNTUK LIHAT KAMPUNG MANA BERMASALAH) -->
+    <div id="bannerAmaranGPS" class="hidden bg-amber-500 text-slate-950 px-5 py-3.5 rounded-2xl font-extrabold text-xs flex items-center justify-between shadow-lg">
+      <span class="flex items-center gap-2">⚠️ <b id="teksAmaranGPS"></b></span>
+      <button onclick="bukaModalKuarantin('gps')" class="bg-slate-900 hover:bg-black text-white px-4 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 shadow-xs">🔍 Lihat Butiran Audit</button>
+    </div>
+
+    <div id="bannerAmaranDuplikasi" class="hidden bg-rose-600 text-white px-5 py-3.5 rounded-2xl font-extrabold text-xs flex items-center justify-between shadow-lg">
+      <span class="flex items-center gap-2">🚨 <b id="teksAmaranDuplikasi"></b></span>
+      <button onclick="bukaModalKuarantin('klon')" class="bg-white hover:bg-slate-100 text-rose-900 px-4 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 shadow-xs font-black">🔍 Semak Rekod Bertindih</button>
     </div>
 
     <!-- PANEL TAPISAN -->
@@ -152,10 +157,10 @@
       </div>
     </div>
 
-    <!-- PETA (60%) & GRAF PECERAHAN (40%) -->
+    <!-- PETA (60%) & GRAF (40%) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
-      <!-- Peta -->
+      <!-- Peta (Mazhab Tally dengan Excel: Angka 802) -->
       <div class="lg:col-span-7 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[540px] relative overflow-hidden">
         <div class="flex justify-between items-center mb-2 z-20">
           <h3 class="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">📍 Peta Lokasi Perangkap Feromon</h3>
@@ -271,6 +276,78 @@
 
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- 🏥 MODAL GERGASI: PUSAT KUARANTIN & AUDIT DATA (TERSEMBUNYI) -->
+  <!-- ========================================================================= -->
+  <div id="modalKuarantin" class="fixed inset-0 z-[999] bg-slate-950/80 backdrop-blur-xs hidden flex items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+      
+      <!-- Modal Header -->
+      <div class="bg-slate-900 text-white p-6 flex justify-between items-center border-b border-slate-800">
+         <div>
+           <div class="flex items-center gap-2">
+             <span class="p-1.5 bg-rose-500/20 text-rose-400 rounded-lg text-xs">🏥</span>
+             <h3 class="font-black text-lg tracking-tight">Pusat Kuarantin & Pembersihan Data</h3>
+           </div>
+           <p class="text-xs text-slate-400 mt-0.5">Senarai rekod bermasalah yang memerlukan pembetulan di dalam pangkalan utama Google Sheets</p>
+         </div>
+         <button onclick="document.getElementById('modalKuarantin').classList.add('hidden')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition cursor-pointer">✕ Tutup</button>
+      </div>
+
+      <!-- Modal Nav Tabs -->
+      <div class="flex border-b border-slate-100 bg-slate-50 px-6 pt-3 gap-2">
+        <button onclick="tukarTabModal('klon')" id="tabBtn_klon" class="px-4 py-2.5 text-xs font-black border-b-2 border-rose-600 text-rose-700 flex items-center gap-2 cursor-pointer transition">
+          <span>🚨</span> Klon Bertindih (<span id="modalCountKlon">0</span>)
+        </button>
+        <button onclick="tukarTabModal('gps')" id="tabBtn_gps" class="px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 flex items-center gap-2 cursor-pointer transition">
+          <span>⚠️</span> Ralat GPS / Luar Malaysia (<span id="modalCountGPS">0</span>)
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable Content) -->
+      <div class="p-6 overflow-y-auto flex-1 space-y-6 text-xs">
+         
+         <!-- TAB 1: ISI KLON BERTINDIH -->
+         <div id="tabContent_klon" class="space-y-3">
+           <div class="bg-rose-50 border border-rose-200/80 p-3 rounded-2xl text-rose-900 font-semibold">
+             ℹ️ <b>Penerangan Ralat:</b> Senarai di bawah memaparkan unit perangkap yang telah didaftarkan sebagai <b>TRUE</b> lebih daripada sekali pada lokasi yang sama. Sila semak Google Sheets dan tukarkan salah satu daripadanya kepada <i>FALSE</i>.
+           </div>
+           <div class="border border-slate-200/80 rounded-2xl overflow-hidden">
+             <table class="w-full text-left border-collapse uppercase">
+               <thead class="bg-slate-100 text-slate-600 text-[10px] font-black">
+                 <tr><th class="p-3 w-12 text-center">#</th><th class="p-3">Nama Kampung / Lokasi</th><th class="p-3">Daerah</th><th class="p-3">Tarikh Dicatat</th><th class="p-3 text-center">Tangkapan RF</th><th class="p-3 text-center">Status</th></tr>
+               </thead>
+               <tbody id="tbodyModalKlon" class="divide-y divide-slate-100 font-bold text-slate-700"></tbody>
+             </table>
+           </div>
+         </div>
+
+         <!-- TAB 2: ISI RALAT GPS -->
+         <div id="tabContent_gps" class="space-y-3 hidden">
+           <div class="bg-amber-50 border border-amber-200/80 p-3 rounded-2xl text-amber-950 font-semibold">
+             ℹ️ <b>Penerangan Ralat:</b> Senarai di bawah memaparkan perangkap yang gagal dilukis di atas peta kerana koordinat GPS yang dimasukkan tidak sah, kosong, atau melangkaui sempadan peta Malaysia.
+           </div>
+           <div class="border border-slate-200/80 rounded-2xl overflow-hidden">
+             <table class="w-full text-left border-collapse uppercase">
+               <thead class="bg-slate-100 text-slate-600 text-[10px] font-black">
+                 <tr><th class="p-3 w-12 text-center">#</th><th class="p-3">Nama Kampung / Lokasi</th><th class="p-3">Daerah</th><th class="p-3">Koordinat Dicatat</th><th class="p-3">Punca Ditolak</th></tr>
+               </thead>
+               <tbody id="tbodyModalGPS" class="divide-y divide-slate-100 font-bold text-slate-700"></tbody>
+             </table>
+           </div>
+         </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-50 p-4 px-6 border-t border-slate-100 flex justify-between items-center text-[11px] text-slate-400 font-semibold">
+        <span>*Pindaan di Google Sheets akan terpapar di sini selepas paparan disegarkan semula.</span>
+        <a href="https://docs.google.com/spreadsheets/d/1dyoktIK2DKlzUm6vngcwG80mqCi6kXeHueayJIUDJhY/edit" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-extrabold flex items-center gap-1">🛠️ Buka Google Sheets Sekarang ➔</a>
+      </div>
+
+    </div>
+  </div>
+
   <script>
     let map, markerGroup;
     let chartUtama, chartDefaulter, chartTrendline;
@@ -287,6 +364,10 @@
 
     let HALAMAN_SEMASA = 1;
     const REKOD_PER_HALAMAN = 15;
+
+    // 🔥 MEMORI AUDIT KHAS
+    let SENARAI_RALAT_GPS = [];
+    let SENARAI_DUPLIKASI_KLON = [];
 
     window.onload = function() {
       binaPetaAsas();
@@ -336,7 +417,6 @@
       laksanakanFilterLokal();
     }
 
-    // 🚨 KEMASKINI FUNGSI MUAT TURUN: HANTAR USER_STATE KE SERVER
     function muatNaikDataIndukSekali() {
       let fetchUrl = typeof CONFIG !== 'undefined' ? CONFIG.API_URL : "https://script.google.com/macros/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
       fetch(`${fetchUrl}?action=getRPWAnalytics`, {
@@ -352,11 +432,6 @@
 
         if(res.doaLogo) document.getElementById("doaLogo").src = res.doaLogo;
         else document.getElementById("doaLogo").src = "https://www.doa.gov.my/wp-content/themes/jpm/images/logo.png";
-        
-        if (res.summary.invalid_coords_count > 0) {
-          document.getElementById("bannerAmaranGIS").classList.remove("hidden");
-          document.getElementById("teksAmaranGIS").innerText = `AMARAN GIS: Terdapat ${res.summary.invalid_coords_count} unit diabaikan dalam paparan peta kerana koordinat GPS rosak.`;
-        }
 
         if(USER_STATE && USER_STATE !== "ALL" && USER_STATE !== "SEMUA") {
           const el = document.getElementById("filterNegeri");
@@ -375,7 +450,6 @@
       .catch(e => { alert("Gagal menyambung ke pangkalan data."); console.error(e); });
     }
 
-    // 🚨 KIRAAN SEMULA KESELURUHAN (TOTAL REACTIVE ENGINE)
     function laksanakanFilterLokal() {
       if (!MASTER_DATA_KESELURUHAN) return;
 
@@ -415,6 +489,10 @@
       let tCatch = 0, tSerang = 0, tTebang = 0;
       let rtd0 = 0, rtd1 = 0, rtd2 = 0;
 
+      // 🎯 JANA FORENSIK AUDIT LOKAL
+      SENARAI_RALAT_GPS = [];
+      let kaunterKlon = {};
+      
       DATA_DITAPIS_SEMASA.forEach(p => {
         tCatch += (parseInt(p.total_rf) || 0);
         tSerang += (parseInt(p.pokok_serang) || 0);
@@ -423,7 +501,17 @@
         if (p.rtd_status.includes("RTD=0")) rtd0++;
         else if (p.rtd_status.includes("RTD<1")) rtd1++;
         else if (p.rtd_status.includes("RTD>1")) rtd2++;
+
+        // Asingkan GPS Rosak
+        if (!p.is_valid_gis) SENARAI_RALAT_GPS.push(p);
+
+        // Kira kekerapan kemunculan nama kampung
+        let kNama = p.lokasi.trim();
+        kaunterKlon[kNama] = (kaunterKlon[kNama] || 0) + 1;
       });
+
+      // Asingkan data Klon bertindih
+      SENARAI_DUPLIKASI_KLON = DATA_DITAPIS_SEMASA.filter(p => kaunterKlon[p.lokasi.trim()] > 1);
 
       document.getElementById("kpiTangkapanSemasa").innerText = tCatch.toLocaleString();
       document.getElementById("kpiPokokSerang").innerText = tSerang.toLocaleString();
@@ -433,6 +521,22 @@
       document.getElementById("badgeRTD0").innerText = rtd0;
       document.getElementById("badgeRTD1").innerText = rtd1;
       document.getElementById("badgeRTD2").innerText = rtd2;
+
+      // 🚨 KAWAL SELIA BANNER AMARAN AUDIT
+      const bGPS = document.getElementById("bannerAmaranGPS");
+      if (SENARAI_RALAT_GPS.length > 0) {
+        bGPS.classList.remove("hidden");
+        document.getElementById("teksAmaranGPS").innerText = `AMARAN AUDIT: Terdapat ${SENARAI_RALAT_GPS.length} rekod ditolak dari peta kerana ralat GPS.`;
+      } else bGPS.classList.add("hidden");
+
+      const bKlon = document.getElementById("bannerAmaranDuplikasi");
+      if (SENARAI_DUPLIKASI_KLON.length > 0) {
+        bKlon.classList.remove("hidden");
+        document.getElementById("teksAmaranDuplikasi").innerText = `RALAT KRITIKAL: Terdapat ${SENARAI_DUPLIKASI_KLON.length} entri data didaftarkan berganda (Klon TRUE) pada kampung yang sama!`;
+      } else bKlon.classList.add("hidden");
+
+      // Sumbat jadual modal
+      binaJadualModalAuditContent();
       
       binaPetaPinDiTapis();
       HALAMAN_SEMASA = 1; 
@@ -450,6 +554,46 @@
       binaGrafTrendline(historyDitapis);
     }
 
+    // ⚡ BINA JADUAL DALAM MODAL AUDIT
+    function binaJadualModalAuditContent() {
+      document.getElementById("modalCountKlon").innerText = SENARAI_DUPLIKASI_KLON.length;
+      document.getElementById("modalCountGPS").innerText = SENARAI_RALAT_GPS.length;
+
+      // 1. Isi Jadual Klon
+      let hKlon = "";
+      SENARAI_DUPLIKASI_KLON.forEach((k, idx) => {
+        hKlon += `<tr class="border-b border-slate-100 hover:bg-rose-50/50"><td class="p-3 text-center">${idx+1}</td><td class="p-3 text-rose-900">${k.lokasi}</td><td class="p-3">${k.daerah}</td><td class="p-3">${k.tarikh}</td><td class="p-3 text-center font-black">${k.total_rf}</td><td class="p-3 text-center"><span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded-md text-[10px]">KLON TRUE</span></td></tr>`;
+      });
+      document.getElementById("tbodyModalKlon").innerHTML = hKlon || `<tr><td colspan="6" class="p-4 text-center text-slate-400">Tiada ralat duplikasi dikesan.</td></tr>`;
+
+      // 2. Isi Jadual GPS
+      let hGPS = "";
+      SENARAI_RALAT_GPS.forEach((g, idx) => {
+        let sebab = g.koordinat === "" ? "Titik GPS Dibiarkan Kosong" : "Koordinat Di Luar Sempadan Malaysia";
+        hGPS += `<tr class="border-b border-slate-100 hover:bg-amber-50/50"><td class="p-3 text-center">${idx+1}</td><td class="p-3 text-amber-900">${g.lokasi}</td><td class="p-3">${g.daerah}</td><td class="p-3 font-mono">${g.koordinat || '<i>[KOSONG]</i>'}</td><td class="p-3 text-rose-600 font-bold">${sebab}</td></tr>`;
+      });
+      document.getElementById("tbodyModalGPS").innerHTML = hGPS || `<tr><td colspan="5" class="p-4 text-center text-slate-400">Tiada ralat GPS dikesan.</td></tr>`;
+    }
+
+    function bukaModalKuarantin(tabAwal) {
+      document.getElementById("modalKuarantin").classList.remove("hidden");
+      tukarTabModal(tabAwal);
+    }
+
+    function tukarTabModal(sasaran) {
+      if(sasaran === 'klon') {
+        document.getElementById("tabBtn_klon").className = "px-4 py-2.5 text-xs font-black border-b-2 border-rose-600 text-rose-700 flex items-center gap-2 cursor-pointer transition";
+        document.getElementById("tabBtn_gps").className = "px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 flex items-center gap-2 cursor-pointer transition";
+        document.getElementById("tabContent_klon").classList.remove("hidden");
+        document.getElementById("tabContent_gps").classList.add("hidden");
+      } else {
+        document.getElementById("tabBtn_gps").className = "px-4 py-2.5 text-xs font-black border-b-2 border-amber-600 text-amber-700 flex items-center gap-2 cursor-pointer transition";
+        document.getElementById("tabBtn_klon").className = "px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 flex items-center gap-2 cursor-pointer transition";
+        document.getElementById("tabContent_gps").classList.remove("hidden");
+        document.getElementById("tabContent_klon").classList.add("hidden");
+      }
+    }
+
     function tapisPetaBerasarkanRTD(status) {
       filterPetaRTD = status;
       ["ALL", "RTD=0", "RTD<1", "RTD>1"].forEach(id => {
@@ -462,6 +606,7 @@
       binaPetaPinDiTapis();
     }
 
+    // Peta Mazhab Tally: Tiang terpacak 795, tulisan lencana kekal 802
     function binaPetaPinDiTapis() {
       let senaraiPeta = DATA_DITAPIS_SEMASA;
       if (filterPetaRTD !== "ALL") {
@@ -470,15 +615,16 @@
       
       markerGroup.clearLayers();
       let seenMapPins = new Set(); 
-      let pinTerkira = 0;
+      let kaunterTallyGPS = 0;
 
       senaraiPeta.forEach(p => {
         if (!p.is_valid_gis) return; 
         
+        kaunterTallyGPS++; // 👈 KIRAAN MAZHAB TALLY (802)
+
         let pinKey = p.koordinat + "_" + p.lokasi;
         if (seenMapPins.has(pinKey)) return; 
         seenMapPins.add(pinKey);
-        pinTerkira++;
 
         let latLng = p.koordinat.split(",").map(Number);
         if (isNaN(latLng[0]) || isNaN(latLng[1])) return;
@@ -534,7 +680,7 @@
         markerGroup.addLayer(marker);
       });
 
-      document.getElementById("infoPeta").innerText = `${pinTerkira} Lokasi Perangkap`;
+      document.getElementById("infoPeta").innerText = `${kaunterTallyGPS} Lokasi Perangkap`;
       if (senaraiPeta.length > 0) map.fitBounds(markerGroup.getBounds().pad(0.08));
     }
 
