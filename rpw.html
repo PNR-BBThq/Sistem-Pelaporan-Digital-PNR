@@ -234,8 +234,11 @@
       </div>
     </div>
 
-    <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
-      <h3 class="text-sm font-extrabold text-slate-900 mb-1 flex items-center gap-2"><span>📊</span> Carta 15 Lokasi Perangkap Pengulangan RTD > 1</h3>
+  <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
+      <div class="flex justify-between items-center mb-1">
+        <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2"><span>📊</span> Carta 15 Lokasi Perangkap Pengulangan RTD > 1</h3>
+        <button onclick="bukaModalDefaulter()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold px-3 py-1.5 rounded-xl transition shadow-xs border border-rose-200 cursor-pointer">Lihat Senarai Penuh</button>
+      </div>
       <p class="text-xs text-slate-400 mb-4">Kawasan berisiko tinggi yang merekodkan ambang populasi kritikal secara berulang sepanjang tahun</p>
       <div class="relative h-64 w-full"><canvas id="defaulterChart"></canvas></div>
     </div>
@@ -287,7 +290,40 @@
     </div>
 
   </div>
+<div id="modalDefaulter" class="fixed inset-0 z-[999] bg-slate-950/80 backdrop-blur-xs hidden flex items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+      
+      <div class="bg-rose-600 text-white p-6 flex justify-between items-center border-b border-rose-700">
+         <div>
+           <div class="flex items-center gap-2">
+             <span class="p-1.5 bg-white/20 rounded-lg text-xs">🚨</span>
+             <h3 class="font-black text-lg tracking-tight">Senarai Hitam: Pengulangan RTD > 1</h3>
+           </div>
+           <p class="text-xs text-rose-100 mt-0.5">Senarai penuh perangkap yang pernah merekodkan zon bahaya sepanjang tempoh tapisan</p>
+         </div>
+         <button onclick="tutupModalDefaulter()" class="px-3 py-1.5 bg-rose-800 hover:bg-rose-900 text-white rounded-xl text-xs font-bold transition cursor-pointer">✕ Tutup</button>
+      </div>
 
+      <div class="p-6 overflow-y-auto flex-1">
+         <div class="border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+           <table class="w-full text-left border-collapse uppercase text-xs">
+             <thead class="bg-slate-100 text-slate-600 text-[10px] font-black sticky top-0 shadow-sm z-10">
+               <tr>
+                 <th class="p-3 w-12 text-center">#</th>
+                 <th class="p-3">Lokasi Perangkap</th>
+                 <th class="p-3">Daerah</th>
+                 <th class="p-3">Negeri</th>
+                 <th class="p-3 text-center">Kekerapan (Bulan)</th>
+               </tr>
+             </thead>
+             <tbody id="tbodyModalDefaulter" class="divide-y divide-slate-100 font-bold text-slate-700"></tbody>
+           </table>
+         </div>
+      </div>
+
+    </div>
+  </div>
+            
   <div id="modalKuarantin" class="fixed inset-0 z-[999] bg-slate-950/80 backdrop-blur-xs hidden flex items-center justify-center p-4 transition-all duration-300">
     <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
       
@@ -366,6 +402,7 @@
     // 🔥 MEMORI AUDIT KHAS
     let SENARAI_RALAT_GPS = [];
     let SENARAI_DUPLIKASI_KLON = [];
+    let SENARAI_PENUH_DEFAULTER = [];
 
     window.onload = function() {
       binaPetaAsas();
@@ -494,14 +531,17 @@
       let totSerangKumulatif = 0, totTebangKumulatif = 0; // 👈 KITA BUKA KAUNTER BARU DI SINI
       let defaulterCounterLokal = {};
 
-      historyDitapis.forEach(h => {
+     historyDitapis.forEach(h => {
         allTimeRF += h.rf;
         allTimeRV += h.rv;
-        totSerangKumulatif += (h.serang || 0); // 👈 Kutip semua pokok diserang setahun
-        totTebangKumulatif += (h.tebang || 0); // 👈 Kutip semua pokok ditebang setahun
+        totSerangKumulatif += (h.serang || 0);
+        totTebangKumulatif += (h.tebang || 0);
 
         if (h.rtd.includes("RTD>1") && h.loc && h.loc !== "LOKASI TIADA NAMA") {
-          defaulterCounterLokal[h.loc] = (defaulterCounterLokal[h.loc] || 0) + 1;
+          if (!defaulterCounterLokal[h.loc]) {
+            defaulterCounterLokal[h.loc] = { kekerapan: 0, daerah: h.d, negeri: h.n };
+          }
+          defaulterCounterLokal[h.loc].kekerapan += 1;
         }
       });
 
@@ -563,13 +603,19 @@
       document.getElementById("btnBackGraf").classList.add("hidden");
       binaGrafDrilldown();
 
-      let topDefaultersLokal = Object.keys(defaulterCounterLokal).map(key => {
-        return { lokasi: key, kekerapan: defaulterCounterLokal[key] };
-      }).sort((a, b) => b.kekerapan - a.kekerapan).slice(0, 15);
-      binaGrafDefaulter(topDefaultersLokal);
+      // Tukar mapping defaulter dan simpan dalam memori global untuk Modal Pop-up
+      SENARAI_PENUH_DEFAULTER = Object.keys(defaulterCounterLokal).map(key => {
+        return { 
+           lokasi: key, 
+           kekerapan: defaulterCounterLokal[key].kekerapan,
+           daerah: defaulterCounterLokal[key].daerah,
+           negeri: defaulterCounterLokal[key].negeri
+        };
+      }).sort((a, b) => b.kekerapan - a.kekerapan);
 
-      binaGrafTrendline(historyDitapis);
-    }
+      // Graf bar hanya akan lukis Top 15 macam biasa
+      let topDefaultersLokal = SENARAI_PENUH_DEFAULTER.slice(0, 15);
+      binaGrafDefaulter(topDefaultersLokal);
 
     function binaJadualModalAuditContent() {
       document.getElementById("modalCountKlon").innerText = SENARAI_DUPLIKASI_KLON.length;
@@ -992,6 +1038,35 @@
       let paramUrl = `&terkiniOnly=true&negeri=${encodeURIComponent(neg)}&daerah=${encodeURIComponent(dae)}&rtd=${encodeURIComponent(rtd)}&tahun=${tah}`;
       
       window.open(`${fetchUrl}?action=${jenis === 'geojson' ? 'downloadRPWGeoJSON' : 'downloadRPWKML'}${paramUrl}`, '_blank');
+    }
+
+      function bukaModalDefaulter() {
+      const tbody = document.getElementById("tbodyModalDefaulter");
+      let html = "";
+      
+      if(SENARAI_PENUH_DEFAULTER.length === 0) {
+        html = `<tr><td colspan="5" class="p-6 text-center text-slate-400 font-medium">Tiada perangkap berstatus RTD>1 dikesan bagi tapisan ini.</td></tr>`;
+      } else {
+        SENARAI_PENUH_DEFAULTER.forEach((d, idx) => {
+          html += `
+            <tr class="hover:bg-rose-50 transition border-b border-slate-100">
+              <td class="p-3 text-center font-bold text-slate-400">${idx + 1}</td>
+              <td class="p-3 text-rose-900 font-extrabold">${d.lokasi}</td>
+              <td class="p-3">${d.daerah}</td>
+              <td class="p-3">${d.negeri}</td>
+              <td class="p-3 text-center">
+                <span class="bg-rose-100 border border-rose-300 text-rose-700 px-3 py-1 rounded-full font-black">${d.kekerapan} Bulan</span>
+              </td>
+            </tr>
+          `;
+        });
+      }
+      tbody.innerHTML = html;
+      document.getElementById("modalDefaulter").classList.remove("hidden");
+    }
+
+    function tutupModalDefaulter() {
+      document.getElementById("modalDefaulter").classList.add("hidden");
     }
   </script>
 </body>
