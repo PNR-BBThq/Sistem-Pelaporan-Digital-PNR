@@ -612,10 +612,11 @@
            negeri: defaulterCounterLokal[key].negeri
         };
       }).sort((a, b) => b.kekerapan - a.kekerapan);
-
-      // Graf bar hanya akan lukis Top 15 macam biasa
       let topDefaultersLokal = SENARAI_PENUH_DEFAULTER.slice(0, 15);
       binaGrafDefaulter(topDefaultersLokal);
+
+      binaGrafTrendline(historyDitapis);
+    }
 
     function binaJadualModalAuditContent() {
       document.getElementById("modalCountKlon").innerText = SENARAI_DUPLIKASI_KLON.length;
@@ -1040,7 +1041,7 @@
       window.open(`${fetchUrl}?action=${jenis === 'geojson' ? 'downloadRPWGeoJSON' : 'downloadRPWKML'}${paramUrl}`, '_blank');
     }
 
-      function bukaModalDefaulter() {
+    function bukaModalDefaulter() {
       const tbody = document.getElementById("tbodyModalDefaulter");
       let html = "";
       
@@ -1068,6 +1069,6 @@
     function tutupModalDefaulter() {
       document.getElementById("modalDefaulter").classList.add("hidden");
     }
-  </script>
-</body>
+
+  </script> </body>
 </html>
