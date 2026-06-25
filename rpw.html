@@ -106,9 +106,9 @@
         <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Status RTD</label>
         <select id="filterRTD" onchange="laksanakanFilterLokal()" class="w-full bg-slate-50 border border-slate-200 font-semibold text-slate-700 text-xs rounded-2xl p-3 focus:outline-none focus:border-emerald-600 cursor-pointer">
           <option value="ALL">Semua Tahap RTD</option>
-          <option value="RTD=0">RTD = 0 (Kawasan Bebas)</option>
-          <option value="RTD<1">RTD < 1 (Amaran Rendah)</option>
-          <option value="RTD>1">RTD > 1 (Zon Bahaya)</option>
+          <option value="RTD=0">RTD = 0 </option>
+          <option value="RTD<1">RTD < 1 </option>
+          <option value="RTD>1">RTD > 1 </option>
         </select>
       </div>
       <div>
@@ -118,17 +118,14 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5">
-      <div class="bg-emerald-50/90 border border-emerald-200/80 p-4 rounded-3xl flex flex-col justify-between shadow-2xs">
+   <div class="bg-emerald-50/90 border border-emerald-200/80 p-4 rounded-3xl flex flex-col justify-between shadow-2xs">
         <span class="text-[10px] font-black text-emerald-800 uppercase tracking-wider">KUMULATIF RPW RF</span>
         <span class="text-3xl font-black text-emerald-950 block mt-1" id="kpiAllTimeRF">0</span>
-        <span class="text-[10px] text-emerald-600 font-bold block mt-0.5">Tahun Terpilih</span>
-      </div>
+        <span class="text-[10px] text-emerald-600 font-bold block mt-0.5" id="lblTahunRF">Tahun Terpilih</span> </div>
       <div class="bg-indigo-50/90 border border-indigo-200/80 p-4 rounded-3xl flex flex-col justify-between shadow-2xs">
         <span class="text-[10px] font-black text-indigo-800 uppercase tracking-wider">KUMULATIF RPW RV</span>
         <span class="text-3xl font-black text-indigo-950 block mt-1" id="kpiAllTimeRV">0</span>
-        <span class="text-[10px] text-indigo-600 font-bold block mt-0.5">Tahun Terpilih</span>
-      </div>
+        <span class="text-[10px] text-indigo-600 font-bold block mt-0.5" id="lblTahunRV">Tahun Terpilih</span> </div>
       <div class="bg-white border border-slate-200/80 p-4 rounded-3xl flex flex-col justify-center shadow-2xs">
         <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">TANGKAPAN SEMASA</span>
         <span class="text-3xl font-black text-slate-900 block mt-1" id="kpiTangkapanSemasa">0</span>
@@ -142,8 +139,8 @@
         <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">TABURAN RTD</span>
         <div class="space-y-0.5 my-auto text-[11px] font-bold">
           <div class="flex justify-between"><span class="text-emerald-600">🟢 RTD=0 </span><span id="badgeRTD0">0</span></div>
-          <div class="flex justify-between"><span class="text-amber-600">🟡 RTD<1 (<1)</span><span id="badgeRTD1">0</span></div>
-          <div class="flex justify-between"><span class="text-rose-600">🔴 RTD>1 (>1)</span><span id="badgeRTD2">0</span></div>
+          <div class="flex justify-between"><span class="text-amber-600">🟡 RTD<1 </span><span id="badgeRTD1">0</span></div>
+          <div class="flex justify-between"><span class="text-rose-600">🔴 RTD>1 </span><span id="badgeRTD2">0</span></div>
         </div>
       </div>
       <div class="bg-white border border-slate-200/80 p-4 rounded-3xl flex flex-col justify-center shadow-2xs">
@@ -426,7 +423,7 @@
 
       const selTah = document.getElementById("filterTahun");
       if (selTah) {
-        selTah.innerHTML = "";
+       selTah.innerHTML = '<option value="ALL">Semua Tahun</option>';
         let tahunSorted = Array.from(setTahun).sort((a,b) => b - a); 
         tahunSorted.forEach(t => { selTah.innerHTML += `<option value="${t}">${t}</option>`; });
         // Jika belum ada nilai dipilih dan wujud 2026, set sebagai default
@@ -504,23 +501,26 @@
 
     // 🎯 SOKONGAN TAHUN DINAMIK PADA LOKAL FILTER
     function laksanakanFilterLokal() {
-      if (!MASTER_DATA_KESELURUHAN) return;
+     if (!MASTER_DATA_KESELURUHAN) return;
 
-      const fTah = parseInt(document.getElementById("filterTahun").value) || 2026;
+      // 👇 1. BACA STRING MENTAH (Sebab wujud pilihan "ALL")
+      const fTahRaw = document.getElementById("filterTahun").value;
       const fNeg = document.getElementById("filterNegeri").value;
       const fDae = document.getElementById("filterDaerah").value;
       const fRtd = document.getElementById("filterRTD").value;
 
+      // 👇 2. KEMASKINI LOGIK PENAPIS MAP PINS
       DATA_DITAPIS_SEMASA = MASTER_DATA_KESELURUHAN.mapPins.filter(p => {
-        let passY = (p.tahun === fTah);
+        let passY = (fTahRaw === "ALL" || p.tahun === parseInt(fTahRaw));
         let passN = (fNeg === "ALL" || p.negeri.toUpperCase() === fNeg);
         let passD = (fDae === "ALL" || p.daerah.toUpperCase() === fDae);
         let passR = (fRtd === "ALL" || p.rtd_status.toUpperCase() === fRtd);
         return passY && passN && passD && passR;
       });
 
+      // 👇 3. KEMASKINI LOGIK PENAPIS DATA SEJARAH
       let historyDitapis = MASTER_DATA_KESELURUHAN.historyData.filter(h => {
-        let passY = (h.y === fTah);
+        let passY = (fTahRaw === "ALL" || h.y === parseInt(fTahRaw));
         let passN = (fNeg === "ALL" || h.n === fNeg);
         let passD = (fDae === "ALL" || h.d === fDae);
         let passR = (fRtd === "ALL" || h.rtd.toUpperCase() === fRtd);
@@ -893,7 +893,7 @@
 
       let labelData = [], nilaiData = [], mapData = {};
       const modeMasa = document.getElementById("filterGrafBulan").value;
-      const fTah = parseInt(document.getElementById("filterTahun").value) || 2026;
+      const fTahRaw = document.getElementById("filterTahun").value;
 
       let sumberKiraan = [];
 
@@ -908,8 +908,8 @@
         const fNeg = document.getElementById("filterNegeri").value;
         const fDae = document.getElementById("filterDaerah").value;
         
-        hist = hist.filter(h => (fNeg === "ALL" || h.n === fNeg) && (fDae === "ALL" || h.d === fDae) && (h.y === fTah));
-
+       hist = hist.filter(h => (fNeg === "ALL" || h.n === fNeg) && (fDae === "ALL" || h.d === fDae) && (fTahRaw === "ALL" || h.y === parseInt(fTahRaw)));
+        
         if (modeMasa !== "ALL_YEAR") {
           const targetBulan = parseInt(modeMasa);
           hist = hist.filter(h => h.m === targetBulan);
