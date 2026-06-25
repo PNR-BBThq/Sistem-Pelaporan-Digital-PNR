@@ -241,16 +241,30 @@
       <div class="relative h-64 w-full"><canvas id="defaulterChart"></canvas></div>
     </div>
 
-    <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
-      <div class="flex justify-between items-center mb-4">
-        <div>
-          <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2"><span>📈</span> Trend Tangkapan Bulanan (RF & RV)</h3>
-          <p class="text-xs text-slate-400 mt-1">Pergerakan populasi kumbang sepanjang tahun berdasarkan rekod kutipan data dari Januari hingga Disember</p>
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
+        
+        <div class="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-full min-h-[350px]">
+          <div class="mb-5 flex justify-between items-start">
+            <div>
+              <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2"><span>🎯</span> Kecekapan CPT (Negeri)</h3>
+              <p class="text-[10px] text-slate-400 mt-1">Nisbah purata tangkapan per perangkap</p>
+            </div>
+            <span class="text-[9px] bg-slate-100 text-slate-500 px-2 py-1 rounded-md font-bold">Zon Kritikal > 20</span>
+          </div>
+          <div id="kontenaLolipop" class="flex flex-col gap-4 overflow-y-auto pr-2 flex-1">
+            <div class="text-xs text-center text-slate-400 mt-10">Memproses data kecekapan...</div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs h-full min-h-[350px] flex flex-col">
+          <div class="mb-4">
+            <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2"><span>📈</span> Trendline Tangkapan RPW</h3>
+            <p class="text-[10px] text-slate-400">Pola turun naik kumulatif populasi mengikut tempoh masa</p>
+          </div>
+          <div class="relative flex-1 w-full"><canvas id="trendlineChart"></canvas></div>
         </div>
       </div>
-      <div class="relative h-72 w-full"><canvas id="trendLineChart"></canvas></div>
-    </div>
-
+    
     <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4 mb-12">
       <div class="flex justify-between items-center border-b border-slate-100 pb-3">
         <div>
@@ -617,6 +631,36 @@
       binaGrafDefaulter(topDefaultersLokal);
 
       binaGrafTrendline(historyDitapis);
+      // =========================================================================
+      // 🚨 ENJIN KIRAAN CPT (CATCH PER TRAP) MENGIKUT NEGERI UNTUK CARTA LOLIPOP
+      // =========================================================================
+      let statistikNegeri = {};
+      
+      // 1. Kumpulkan data mengikut Negeri
+      historyDitapis.forEach(h => {
+          let namaNegeri = h.n || "TIADA MAKLUMAT";
+          if (!statistikNegeri[namaNegeri]) {
+              statistikNegeri[namaNegeri] = { tangkapan: 0, setPerangkap: new Set() };
+          }
+          statistikNegeri[namaNegeri].tangkapan += ((h.rf || 0) + (h.rv || 0));
+          if (h.loc) statistikNegeri[namaNegeri].setPerangkap.add(h.loc);
+      });
+
+      // 2. Kirakan CPT dan susun ranking dari tertinggi ke terendah
+      let dataLolipop = Object.keys(statistikNegeri).map(neg => {
+          let jumlahPerangkap = statistikNegeri[neg].setPerangkap.size || 1;
+          let cpt = statistikNegeri[neg].tangkapan / jumlahPerangkap;
+          return {
+              negeri: neg,
+              cpt: cpt,
+              traps: jumlahPerangkap,
+              tangkapan: statistikNegeri[neg].tangkapan
+          };
+      }).sort((a, b) => b.cpt - a.cpt);
+
+      // 3. Hantar data ke pelukis UI Lolipop
+      binaGrafLolipopHTML(dataLolipop);
+      // =========================================================================
     }
 
     function binaJadualModalAuditContent() {
@@ -1070,6 +1114,51 @@
     function tutupModalDefaulter() {
       document.getElementById("modalDefaulter").classList.add("hidden");
     }
+// ============================================================================
+    // 🎨 FUNGSI PELUKIS CARTA LOLIPOP (100% TAILWIND CSS & HTML)
+    // ============================================================================
+    function binaGrafLolipopHTML(dataArr) {
+        const kontena = document.getElementById('kontenaLolipop');
+        if (!kontena) return;
 
+        if (dataArr.length === 0) {
+            kontena.innerHTML = `<div class="text-xs text-center text-slate-400 mt-10 font-bold">Tiada data direkodkan untuk tapisan ini.</div>`;
+            return;
+        }
+
+        // Cari nilai maksimum untuk jadikan penanda aras lebar (100% width)
+        const nilaiMaksimum = dataArr[0].cpt || 1; 
+        let htmlLolipop = '';
+
+        dataArr.forEach(d => {
+            // Tentukan warna kepala lolipop (Traffic Light System)
+            let warnaLolipop = 'bg-emerald-500 shadow-emerald-200'; // Normal (< 10)
+            if (d.cpt >= 20) {
+                warnaLolipop = 'bg-rose-500 shadow-rose-200'; // Kritikal (> 20)
+            } else if (d.cpt >= 10) {
+                warnaLolipop = 'bg-amber-500 shadow-amber-200'; // Amaran (> 10)
+            }
+
+            // Kira peratusan panjang batang berdasarkan nilai maksimum
+            let peratusLebar = (d.cpt / nilaiMaksimum) * 100;
+            if (peratusLebar < 2) peratusLebar = 2; // Lebar minimum supaya tak ghaib
+
+            htmlLolipop += `
+            <div class="flex items-center text-xs font-bold w-full group cursor-default" title="Tangkapan: ${d.tangkapan} ekor | Perangkap Aktif: ${d.traps}">
+                
+                <div class="w-24 truncate text-slate-600 uppercase pr-2 text-[10px] tracking-wide" title="${d.negeri}">${d.negeri}</div>
+                
+                <div class="flex-1 flex items-center">
+                    <div class="bg-slate-200 h-1 rounded-l-full transition-all duration-700 ease-out" style="width: ${peratusLebar}%"></div>
+                    <div class="${warnaLolipop} h-3.5 w-3.5 rounded-full shadow-md z-10 -ml-1 transition-transform duration-300 group-hover:scale-150"></div>
+                </div>
+                
+                <div class="w-10 text-right text-slate-900 font-black ml-2">${d.cpt.toFixed(1)}</div>
+                
+            </div>`;
+        });
+
+        kontena.innerHTML = htmlLolipop;
+    }
   </script> </body>
 </html>
