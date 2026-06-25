@@ -631,36 +631,6 @@
       binaGrafDefaulter(topDefaultersLokal);
 
       binaGrafTrendline(historyDitapis);
-      // =========================================================================
-      // 🚨 ENJIN KIRAAN CPT (CATCH PER TRAP) MENGIKUT NEGERI UNTUK CARTA LOLIPOP
-      // =========================================================================
-      let statistikNegeri = {};
-      
-      // 1. Kumpulkan data mengikut Negeri
-      historyDitapis.forEach(h => {
-          let namaNegeri = h.n || "TIADA MAKLUMAT";
-          if (!statistikNegeri[namaNegeri]) {
-              statistikNegeri[namaNegeri] = { tangkapan: 0, setPerangkap: new Set() };
-          }
-          statistikNegeri[namaNegeri].tangkapan += ((h.rf || 0) + (h.rv || 0));
-          if (h.loc) statistikNegeri[namaNegeri].setPerangkap.add(h.loc);
-      });
-
-      // 2. Kirakan CPT dan susun ranking dari tertinggi ke terendah
-      let dataLolipop = Object.keys(statistikNegeri).map(neg => {
-          let jumlahPerangkap = statistikNegeri[neg].setPerangkap.size || 1;
-          let cpt = statistikNegeri[neg].tangkapan / jumlahPerangkap;
-          return {
-              negeri: neg,
-              cpt: cpt,
-              traps: jumlahPerangkap,
-              tangkapan: statistikNegeri[neg].tangkapan
-          };
-      }).sort((a, b) => b.cpt - a.cpt);
-
-      // 3. Hantar data ke pelukis UI Lolipop
-      binaGrafLolipopHTML(dataLolipop);
-      // =========================================================================
     }
 
     function binaJadualModalAuditContent() {
@@ -970,6 +940,42 @@
         sumberKiraan = sumberKiraan.filter(item => item.rtd.toUpperCase() === filterGrafRTD);
       }
 
+      // =========================================================================
+      // 🚨 ENJIN KIRAAN CPT (CARTA LOLIPOP) - KINI MENYOKONG TOGGLE RF/RV & BULAN!
+      // =========================================================================
+      let statistikNegeri = {};
+      
+      sumberKiraan.forEach(item => {
+          let namaNegeri = item.negeri || "TIADA MAKLUMAT";
+          if (!statistikNegeri[namaNegeri]) {
+              statistikNegeri[namaNegeri] = { tangkapan: 0, setPerangkap: new Set() };
+          }
+          
+          // 🔥 ASINGKAN KIRAAN BERDASARKAN STATUS BUTANG TOGGLE (RF ATAU RV)
+          let jumlahTangkap = (modeTangkapan === "rf") ? (item.rf || 0) : (item.rv || 0);
+          statistikNegeri[namaNegeri].tangkapan += jumlahTangkap;
+          
+          if (item.lokasi) statistikNegeri[namaNegeri].setPerangkap.add(item.lokasi);
+      });
+
+      let dataLolipop = Object.keys(statistikNegeri).map(neg => {
+          let jumlahPerangkap = statistikNegeri[neg].setPerangkap.size || 1;
+          let cpt = statistikNegeri[neg].tangkapan / jumlahPerangkap;
+          return {
+              negeri: neg,
+              cpt: cpt,
+              traps: jumlahPerangkap,
+              tangkapan: statistikNegeri[neg].tangkapan
+          };
+      }).sort((a, b) => b.cpt - a.cpt);
+
+      binaGrafLolipopHTML(dataLolipop);
+      // =========================================================================
+
+      // 👇 Kod asal di bawah ni biarkan sahaja 👇
+      if (tahapGraf === "negeri") {
+        document.getElementById("labelPeringkatGraf").innerText = modeMasa === "ALL_YEAR" ? "Peringkat: Negeri (Kumulatif Tahunan)" : "Peringkat: Negeri";
+
       if (tahapGraf === "negeri") {
         document.getElementById("labelPeringkatGraf").innerText = modeMasa === "ALL_YEAR" ? "Peringkat: Negeri (Kumulatif Tahunan)" : "Peringkat: Negeri";
         sumberKiraan.forEach(item => {
@@ -1132,11 +1138,16 @@
 
         dataArr.forEach(d => {
             // Tentukan warna kepala lolipop (Traffic Light System)
-            let warnaLolipop = 'bg-emerald-500 shadow-emerald-200'; // Normal (< 10)
-            if (d.cpt >= 20) {
-                warnaLolipop = 'bg-rose-500 shadow-rose-200'; // Kritikal (> 20)
-            } else if (d.cpt >= 10) {
-                warnaLolipop = 'bg-amber-500 shadow-amber-200'; // Amaran (> 10)
+           let warnaLolipop = 'bg-emerald-500 shadow-emerald-200'; // Normal
+
+            if (modeTangkapan === "rf") {
+                // Skala Amaran untuk RF
+                if (d.cpt >= 20) warnaLolipop = 'bg-rose-500 shadow-rose-200'; 
+                else if (d.cpt >= 10) warnaLolipop = 'bg-amber-500 shadow-amber-200'; 
+            } else {
+                // Skala Amaran untuk RV (Kumbang RV lebih bahaya, ambang lebih rendah)
+                if (d.cpt >= 10) warnaLolipop = 'bg-rose-500 shadow-rose-200'; 
+                else if (d.cpt >= 5) warnaLolipop = 'bg-amber-500 shadow-amber-200'; 
             }
 
             // Kira peratusan panjang batang berdasarkan nilai maksimum
