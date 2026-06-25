@@ -433,7 +433,7 @@
     }
 
     function muatNaikDataIndukSekali() {
-      let fetchUrl = typeof CONFIG !== 'undefined' ? CONFIG.API_URL : "https://script.google.com/macros/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
+      let fetchUrl = typeof CONFIG !== 'undefined' ? CONFIG.API_URL : "https://script.google.com/macros/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
       fetch(`${fetchUrl}?action=getRPWAnalytics`, {
         method: "POST", headers: { "Content-Type": "text/plain" }, 
         body: JSON.stringify({ action: "getRPWAnalytics", token: USER_TOKEN, u: USER_NAME, negeri: USER_STATE, daerah: "ALL", statusRTD: "ALL" })
