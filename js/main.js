@@ -93,9 +93,34 @@ document.addEventListener("DOMContentLoaded", () => {
         if (btnDlKML) btnDlKML.addEventListener('click', ExportManager.downloadKML);
     }
     
-    // External Links
-    const btnOpenRPW = document.getElementById('btnOpenRPW');
-    if (btnOpenRPW) btnOpenRPW.addEventListener('click', () => window.open(CONFIG.RPW_URL, '_blank'));
+   // ===============================================
+    // FUNGSI BUKA RPW SECURE (DENGAN TIKET PASPORT)
+    // ===============================================
+    async function bukaRPWSecure(btnEl) {
+        const originalHtml = btnEl.innerHTML;
+        btnEl.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Menjana Pasport...';
+        btnEl.style.pointerEvents = 'none';
+
+        try {
+            // Minta GAS Main DB tolong jahitkan tiket berdasarkan nama & negeri
+            const r = await API.postData('getRPWLink', { negeri: AppState.uProf.state });
+            
+            if (r.success && r.link) {
+                window.open(r.link, '_blank'); // Buka tab baru Vercel!
+            } else {
+                alert("Gagal menjana pautan selamat: " + r.message);
+            }
+        } catch (e) {
+            alert("Ralat pelayan. Sila semak sambungan internet.");
+        }
+
+        btnEl.innerHTML = originalHtml;
+        btnEl.style.pointerEvents = 'auto';
+    }
+
+    // Sambungkan fungsi kat sidebar menu
+    const navOpenRPW = document.getElementById('navOpenRPW');
+    if (navOpenRPW) navOpenRPW.addEventListener('click', function() { bukaRPWSecure(this); });
     
     // Filtering (Date Inputs & Reset)
     if (typeof FilterManager !== 'undefined') {
