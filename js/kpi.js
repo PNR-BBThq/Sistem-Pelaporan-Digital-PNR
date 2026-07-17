@@ -1,5 +1,5 @@
 // ==========================================
-// FAIL: js/kpi.js (ENTERPRISE GRADE + FILTER TARIKH + ADMIN SUMMARY)
+// FAIL: js/kpi.js (ENTERPRISE GRADE + FILTER TARIKH + ADMIN SUMMARY + EXCLUSION KEKWA & TEH)
 // ==========================================
 
 const KPIManager = {
@@ -109,6 +109,11 @@ const KPIManager = {
             fData.forEach(d => {
                 const effNegeri = this.getEffectiveState(d);
                 if(filterNegeri.length === 0 || filterNegeri.includes(effNegeri)) {
+                    // --- 🛑 EXCLUSION: ABBAIKAN KEKWA & TEH DARI KIRAAN HA ---
+                    let tnCheck = (d.tn || "").toUpperCase();
+                    if (tnCheck.includes("CHRYSANTHEMUM") || tnCheck.includes("KEKWA") || tnCheck === "TEH") return;
+                    // --------------------------------------------------------
+
                     let dbK = (d.kt || "").toUpperCase(), dbT = (d.tn || "").toUpperCase(), isMatch = false;
                     if (cat.id === "BUAH-BUAHAN" && dbK.includes("BUAH")) isMatch = true;
                     else if (cat.id === "SAYUR-SAYURAN" && dbK.includes("SAYUR")) isMatch = true;
@@ -173,6 +178,11 @@ const KPIManager = {
                 let area = 0;
                 fData.forEach(d => {
                     if(this.getEffectiveState(d) === this.currentDrillDownState) {
+                        // --- 🛑 EXCLUSION ---
+                        let tnCheck = (d.tn || "").toUpperCase();
+                        if (tnCheck.includes("CHRYSANTHEMUM") || tnCheck.includes("KEKWA") || tnCheck === "TEH") return;
+                        // --------------------
+
                         let dbK = (d.kt || "").toUpperCase();
                         if((cId==="BUAH-BUAHAN" && dbK.includes("BUAH")) || (cId==="SAYUR-SAYURAN" && dbK.includes("SAYUR")) || (cId==="KONTAN" && (dbK.includes("KONTAN")||dbK.includes("LAIN"))) || (cId==="KELAPA" && (dbK.includes("KELAPA")||(d.tn||"").toUpperCase().includes("KELAPA")))) area += parseFloat(d.lt)||0;
                     }
@@ -194,7 +204,14 @@ const KPIManager = {
                 if(this.targetData[neg]) sasaran += (this.targetData[neg]["BUAH-BUAHAN"]||0) + (this.targetData[neg]["SAYUR-SAYURAN"]||0) + (this.targetData[neg]["KONTAN"]||0) + (this.targetData[neg]["KELAPA"]||0);
                 
                 let total = 0;
-                fData.forEach(d => { if(this.getEffectiveState(d) === neg) total += (parseFloat(d.lt) || 0); });
+                fData.forEach(d => { 
+                    // --- 🛑 EXCLUSION ---
+                    let tnCheck = (d.tn || "").toUpperCase();
+                    if (tnCheck.includes("CHRYSANTHEMUM") || tnCheck.includes("KEKWA") || tnCheck === "TEH") return;
+                    // --------------------
+
+                    if(this.getEffectiveState(d) === neg) total += (parseFloat(d.lt) || 0); 
+                });
                 
                 let pct = sasaran > 0 ? ((total / sasaran) * 100).toFixed(1) : 0;
                 labels.push([shortNeg, `${pct}%`]); 
@@ -249,7 +266,14 @@ const KPIManager = {
             let sasaran = 0;
             if(this.targetData[neg]) sasaran += (this.targetData[neg]["BUAH-BUAHAN"]||0) + (this.targetData[neg]["SAYUR-SAYURAN"]||0) + (this.targetData[neg]["KONTAN"]||0) + (this.targetData[neg]["KELAPA"]||0);
             let actual = 0;
-            fData.forEach(d => { if(this.getEffectiveState(d) === neg) actual += (parseFloat(d.lt) || 0); });
+            fData.forEach(d => { 
+                // --- 🛑 EXCLUSION ---
+                let tnCheck = (d.tn || "").toUpperCase();
+                if (tnCheck.includes("CHRYSANTHEMUM") || tnCheck.includes("KEKWA") || tnCheck === "TEH") return;
+                // --------------------
+
+                if(this.getEffectiveState(d) === neg) actual += (parseFloat(d.lt) || 0); 
+            });
             arr.push({ state: neg, pct: sasaran > 0 ? (actual / sasaran) * 100 : 0, actual: actual, target: sasaran });
         });
 
@@ -292,6 +316,11 @@ const KPIManager = {
         fData.forEach(d => {
             const effNegeri = this.getEffectiveState(d);
             if(filterNegeri.length === 0 || filterNegeri.includes(effNegeri)) {
+                // --- 🛑 EXCLUSION ---
+                let tnCheck = (d.tn || "").toUpperCase();
+                if (tnCheck.includes("CHRYSANTHEMUM") || tnCheck.includes("KEKWA") || tnCheck === "TEH") return;
+                // --------------------
+
                 const date = new Date(d.t);
                 if(!isNaN(date)) monthlyData[date.getMonth()] += (parseFloat(d.lt) || 0);
             }
@@ -344,7 +373,14 @@ const KPIManager = {
             if(this.targetData[neg]) sasaranKanban += (this.targetData[neg]["BUAH-BUAHAN"]||0) + (this.targetData[neg]["SAYUR-SAYURAN"]||0) + (this.targetData[neg]["KONTAN"]||0) + (this.targetData[neg]["KELAPA"]||0);
             
             let actualKanban = 0;
-            fData.forEach(d => { if(this.getEffectiveState(d) === neg) actualKanban += (parseFloat(d.lt) || 0); });
+            fData.forEach(d => { 
+                // --- 🛑 EXCLUSION ---
+                let tnCheck = (d.tn || "").toUpperCase();
+                if (tnCheck.includes("CHRYSANTHEMUM") || tnCheck.includes("KEKWA") || tnCheck === "TEH") return;
+                // --------------------
+
+                if(this.getEffectiveState(d) === neg) actualKanban += (parseFloat(d.lt) || 0); 
+            });
             let pctKanban = sasaranKanban > 0 ? ((actualKanban / sasaranKanban) * 100).toFixed(1) : 0;
             
             let colorClass = pctKanban >= 100 ? 'text-success' : (pctKanban >= 50 ? 'text-primary' : 'text-danger');
@@ -452,6 +488,11 @@ const KPIManager = {
                 let actual = 0;
                 fData.forEach(d => {
                     if(this.getEffectiveState(d) === neg) {
+                        // --- 🛑 EXCLUSION ---
+                        let tnCheck = (d.tn || "").toUpperCase();
+                        if (tnCheck.includes("CHRYSANTHEMUM") || tnCheck.includes("KEKWA") || tnCheck === "TEH") return;
+                        // --------------------
+
                         let dbK = (d.kt || "").toUpperCase(), dbT = (d.tn || "").toUpperCase(), isM = false;
                         if (c.id === "BUAH-BUAHAN" && dbK.includes("BUAH")) isM = true;
                         else if (c.id === "SAYUR-SAYURAN" && dbK.includes("SAYUR")) isM = true;
