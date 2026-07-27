@@ -1,0 +1,424 @@
+/* ==========================================
+   FAIL: css/style.css (PNR DIGITAL MODEN UI)
+   ========================================== */
+:root { --primary: #064e3b; --accent: #10b981; --bg: #f3f4f6; }
+        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; margin:0; }
+        
+        /* LOGIN & LAYOUT */
+        #loginOverlay { position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center; background: #064e3b; }
+        .swal2-container { z-index: 9999999 !important; } /* Ubat supaya pop-up duduk di lapisan paling depan */
+        .login-box { background: white; padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .sidebar { width: 260px; height: 100vh; position: fixed; top: 0; left: 0; background: #e8f5e9; border-right: 1px solid #c6e7ce; padding: 20px; z-index: 100; transition: transform 0.3s; display: flex; flex-direction: column; }
+        .brand { font-size: 1.3rem; font-weight: 900; color: #000; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding-left: 10px; flex-shrink: 0; }
+        .sidebar-content { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding-right: 5px; margin-bottom: 10px; }
+        .sidebar-content::-webkit-scrollbar { width: 4px; }
+        .sidebar-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        .nav-item { padding: 12px 15px; margin-bottom: 5px; border-radius: 8px; cursor: pointer; color: #000; font-weight: 600; display: flex; align-items: center; justify-content: space-between; transition: 0.2s; }
+        .nav-item:hover { background: #c8e6c9; color: #000; }
+        .nav-item.active { background: #1b5e20; color: white; font-weight: 700; }
+        .sidebar-footer { flex-shrink: 0; border-top: 1px solid #c6e7ce; padding-top: 15px; }
+        .main-content { margin-left: 260px; padding: 25px; transition: margin-left 0.3s; }
+        
+        /* DASHBOARD CARDS */
+        .kpi-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); border: 1px solid #e5e7eb; height: 100%; transition: transform 0.2s; }
+        .kpi-value { font-size: 1.8rem; font-weight: 800; color: #111827; margin-top: 5px; }
+        .map-box { height: 400px; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; position: relative; z-index: 1; }
+        .table-box { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; overflow: hidden; }
+        .text-danger { color: #dc2626 !important; }
+        .badge-pending { background: #dc2626; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; display: none; }
+
+        /* STYLE REPORT CARD */
+        .verify-card { background: #fff; border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; height: 100%; display: flex; flex-direction: column; transition: transform 0.2s; border: 1px solid #e2e8f0; }
+        .verify-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        
+        .filter-label { font-size: 0.75rem; font-weight: 800; color: #000; margin-bottom: 3px; display: block; text-transform: uppercase; }
+
+        /* STYLE KHAS UNTUK TUGASAN */
+        .task-reject-box { background-color: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 8px; margin-bottom: 15px; color: #b91c1c; font-size: 0.85rem; }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.active { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 15px; }
+        }
+        /* =========================================
+           MOBILE APP UI (BOTTOM NAVIGATION BAR)
+           ========================================= */
+        .mobile-bottom-nav { display: none; }
+        .mobile-overlay { display: none; }
+
+        @media (max-width: 768px) {
+            /* 1. Sembunyikan Butang Menu Atas Lama */
+            .d-md-none.mb-3 { display: none !important; }
+            
+            /* 2. Ubah Sidebar jadi "Offcanvas" (Hanya buka bila ditekan) */
+            .sidebar { 
+                transform: translateX(-100%); 
+                z-index: 1050; 
+                box-shadow: 5px 0 15px rgba(0,0,0,0.2); 
+            }
+            .sidebar.active { transform: translateX(0); }
+            
+            /* 3. Ruang bernafas untuk main content (elak tertutup dengan menu bawah) */
+            .main-content { padding: 15px; padding-bottom: 90px; margin-left: 0; }
+            
+            /* 4. Bar Navigasi Bawah (Macam App Sebenar) */
+            .mobile-bottom-nav {
+                display: flex; position: fixed; bottom: 0; left: 0; right: 0;
+                background: #ffffff; box-shadow: 0 -4px 15px rgba(0,0,0,0.08);
+                z-index: 1040; padding: 10px 10px 15px 10px; justify-content: space-between;
+                align-items: flex-end; border-top-left-radius: 20px; border-top-right-radius: 20px;
+            }
+            .nav-bot-item {
+                text-align: center; color: #9ca3af; font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+                flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                cursor: pointer; transition: 0.3s;
+            }
+            .nav-bot-item i { font-size: 1.4rem; margin-bottom: 2px; }
+            .nav-bot-item.active { color: #064e3b; }
+            
+            /* 5. Butang Tambah Data Besar (Tengah) */
+            .nav-bot-fab {
+                background: linear-gradient(135deg, #10b981, #059669); color: white !important;
+                width: 55px; height: 55px; border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 2rem; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+                transform: translateY(-20px); border: 4px solid #f3f4f6;
+            }
+            
+            /* 6. Latar Hitam Gelap bila Filter dibuka */
+            .mobile-overlay {
+                position: fixed; top:0; left:0; right:0; bottom:0;
+                background: rgba(0,0,0,0.6); z-index: 1045; display: none;
+            }
+            .mobile-overlay.active { display: block; }
+        }
+
+/* =========================================
+   ANIMASI LIVE INDICATOR (CAP MASA)
+   ========================================= */
+@keyframes blinkIndicator {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+.live-indicator {
+    font-size: 0.5rem; 
+    vertical-align: middle; 
+    animation: blinkIndicator 1.5s infinite;
+}
+
+@media print {
+    @page { 
+        size: A4 landscape; 
+        margin: 12mm; 
+    }
+
+    body { 
+        font-family: 'Segoe UI', Roboto, Arial, sans-serif !important;
+        color: #1a1a1a !important;
+        background: white !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* 1. HEADER RASMI */
+    .print-header {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: flex-end;
+        border-bottom: 3px solid #0d6efd;
+        padding-bottom: 10px;
+        margin-bottom: 25px;
+    }
+    .print-header-title h4 { margin: 0; color: #0d6efd; font-weight: 800; text-transform: uppercase; font-size: 16pt !important; }
+
+    /* 2. KPI CARDS (4 Sebaris) */
+    #kpiCardsModern { 
+        display: flex !important; 
+        gap: 15px !important;
+        margin-bottom: 30px !important;
+    }
+    #kpiCardsModern .col-sm-6 { flex: 1 !important; max-width: 25% !important; padding: 0 !important; }
+
+    /* 3. CARTA (Letak satu page dengan KPI kalau muat) */
+    .print-chart-row { display: block !important; }
+    .print-chart-row .card { width: 100% !important; border: 1px solid #eee !important; page-break-inside: avoid; margin-bottom: 20px !important; }
+    .print-chart-row .card-body div { height: 280px !important; }
+
+    /* 4. JADUAL RINGKASAN DATA (DETAIL) - INI ADALAH HERO LAPORAN SEKARANG */
+    .d-print-block { 
+        display: block !important;
+        page-break-before: auto !important; /* Benarkan dia naik ke ruang kosong page sebelum jika ada */
+        margin-top: 10px !important;
+    }
+    #printSummaryTable { 
+        width: 100% !important; 
+        border-collapse: collapse !important; 
+        border: 1.5px solid #333 !important; 
+        margin-top: 10px !important;
+    }
+    #printSummaryTable th { background-color: #0d6efd !important; color: white !important; padding: 8px !important; border: 1px solid #333 !important; text-transform: uppercase; font-size: 9pt; }
+    #printSummaryTable td { border: 1px solid #ccc !important; padding: 6px 10px !important; font-size: 9pt; }
+    #printSummaryTable tr { page-break-inside: avoid !important; }
+
+    /* SEMBUNYIKAN SEMUA YANG X PERLU */
+    .sidebar, .mobile-bottom-nav, .btn-group, .d-print-none, .card-header small, #kanbanMatrixContainer, #extraCropsContainer { 
+        display: none !important; 
+    }
+    
+    .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+}
+
+/* CHATBOX*/
+    #nlp-chatbot-fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(135deg, #064e3b, #10b981); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.3); z-index: 9999; transition: all 0.3s ease; border: 3px solid white; }
+    #nlp-chatbot-fab:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+    #nlp-chatbot-window { position: fixed; bottom: 105px; right: 30px; width: 360px; max-width: 90vw; height: 520px; background: white; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); display: none; flex-direction: column; z-index: 9999; overflow: hidden; border: 1px solid #e5e7eb; font-family: 'Inter', sans-serif; }
+    .bot-header { background: #064e3b; color: white; padding: 16px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #10b981; }
+    .bot-body { flex: 1; padding: 15px; overflow-y: auto; background: #f3f4f6; display: flex; flex-direction: column; gap: 12px; }
+    .chat-bubble { max-width: 88%; padding: 12px 16px; border-radius: 18px; font-size: 0.85rem; line-height: 1.5; position: relative; }
+    .bubble-bot { background: white; border: 1px solid #e5e7eb; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); color: #374151;}
+    .bubble-user { background: #d1fae5; color: #064e3b; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 500; }
+    .bot-chips-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .bot-chip { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; font-weight: 500; }
+    .bot-chip:hover { background: #bbf7d0; transform: translateY(-1px); }
+    .bot-footer { padding: 12px; border-top: 1px solid #e5e7eb; background: white; display: flex; gap: 10px; align-items: center; }
+    .bot-footer input { flex: 1; border: 1px solid #d1d5db; border-radius: 24px; padding: 10px 16px; font-size: 0.85rem; outline: none; background: #f9fafb; transition: border 0.3s; }
+    .bot-footer input:focus { border-color: #10b981; background: white; }
+    .bot-footer button { background: #064e3b; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
+    .bot-footer button:hover { background: #047857; }
+
+/* =========================================
+   DASHBOARD V8 REDESIGN & ENTERPRISE UI/UX
+   ========================================= */
+/* Executive Insights Card & Banner */
+.insight-hub-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    position: relative;
+    transition: all 0.3s ease;
+}
+.insight-accent-line {
+    height: 4px;
+    background: linear-gradient(90deg, #059669, #10b981, #3b82f6, #6366f1);
+    width: 100%;
+}
+.insight-pill {
+    background: #f1f5f9;
+    color: #334155;
+    padding: 4px 12px;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 1px solid #e2e8f0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.insight-sub-card {
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 12px;
+    padding: 16px;
+    height: 100%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.insight-sub-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* Modern Executive KPI Cards (6-Card Bar) */
+.kpi-modern-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    border: 1px solid #e2e8f0;
+    border-left: 5px solid #10b981;
+    height: 100%;
+    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.kpi-modern-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+    border-color: #cbd5e1;
+}
+.kpi-modern-card.border-primary-card { border-left-color: #3b82f6; }
+.kpi-modern-card.border-danger-card { border-left-color: #ef4444; }
+.kpi-modern-card.border-warning-card { border-left-color: #f59e0b; }
+.kpi-modern-card.border-info-card { border-left-color: #06b6d4; }
+.kpi-modern-card.border-indigo-card { border-left-color: #8b5cf6; }
+.kpi-modern-card.border-rose-card { border-left-color: #f43f5e; }
+
+.kpi-modern-title {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.kpi-modern-val {
+    font-size: 1.65rem;
+    font-weight: 900;
+    color: #0f172a;
+    line-height: 1.2;
+    margin-top: 8px;
+}
+.kpi-modern-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+
+/* Quarantine & Watchlist Widget */
+.watchlist-card {
+    background: #ffffff;
+    border: 1px solid #fce7f3;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(244, 63, 94, 0.04);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+.watchlist-card:hover {
+    box-shadow: 0 10px 25px rgba(244, 63, 94, 0.08);
+    border-color: #fda4af;
+}
+.watchlist-header {
+    background: linear-gradient(135deg, #fff1f2, #fef2f2);
+    padding: 15px 20px;
+    border-bottom: 1px solid #fecaca;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.pest-chip-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    transition: all 0.2s;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+.pest-chip-box:hover {
+    border-color: #f43f5e;
+    background: #fff5f5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(244, 63, 94, 0.08);
+}
+
+/* Full Detail Table & Badges */
+.table-enhanced {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+.table-filter-header {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 16px 24px;
+}
+.input-quick-search {
+    border: 1.5px solid #cbd5e1;
+    border-radius: 30px;
+    padding: 8px 20px;
+    padding-left: 38px;
+    font-size: 0.85rem;
+    background-color: #ffffff;
+    transition: all 0.2s;
+    width: 100%;
+    max-width: 350px;
+}
+.input-quick-search:focus {
+    border-color: #10b981;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.badge-sev {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.badge-t1 { background-color: #dcfce7; color: #166534; border: 1px solid #86efac; }
+.badge-t2 { background-color: #ecfccb; color: #3f6212; border: 1px solid #bef264; }
+.badge-t3 { background-color: #fef08a; color: #713f12; border: 1px solid #fde047; }
+.badge-t4 { background-color: #ffedd5; color: #9a3412; border: 1px solid #fdba74; }
+.badge-t5 { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+.tag-crop-cat {
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 700;
+    text-transform: uppercase;
+    border: 1px solid #e2e8f0;
+    display: inline-block;
+    margin-top: 2px;
+}
+
+.mini-progress-bg {
+    background: #e2e8f0;
+    border-radius: 10px;
+    height: 6px;
+    width: 100%;
+    max-width: 120px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+.mini-progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.4s ease;
+}
+
+/* Chart Glass Container */
+.chart-card-modern {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.chart-card-modern:hover {
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
+}
+.avatar-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: #e0e7ff;
+    color: #4338ca;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    margin-right: 6px;
+}
+
