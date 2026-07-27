@@ -7,7 +7,7 @@ const FilterManager = {
     
     // Fungsi bantuan untuk dapatkan nilai kotak tapisan
     v: function(id) { 
-        if(id === 'dS' || id === 'dE') { 
+        if(id === 'dS' || id === 'dE' || id === 'fMonth') { 
             const el = document.getElementById(id); 
             return el ? el.value : ""; 
         }
@@ -21,9 +21,20 @@ const FilterManager = {
         const t = this.v('selTanaman');
         const p = this.v('selPerosak');
         const k = this.v('selKategori');
-        const s = this.v('dS');
-        const e = this.v('dE');
+        let s = this.v('dS');
+        let e = this.v('dE');
+        let m = this.v('fMonth');
         
+        // Elak pertembungan tapisan julat tarikh vs tapisan bulan
+        if (source === 'fMonth' && m) {
+            if (document.getElementById('dS')) document.getElementById('dS').value = "";
+            if (document.getElementById('dE')) document.getElementById('dE').value = "";
+            s = ""; e = "";
+        } else if ((source === 'dS' || source === 'dE') && (s || e)) {
+            if (document.getElementById('fMonth')) document.getElementById('fMonth').value = "";
+            m = "";
+        }
+
         // 1. TAPIS DATA UTAMA SISTEM
         AppState.fData = AppState.mData.filter(r => { 
             let pestOk = true; 
@@ -40,7 +51,9 @@ const FilterManager = {
                    (d.length === 0 || d.includes(r.d)) && 
                    (t.length === 0 || t.includes(r.tn)) && 
                    (k.length === 0 || k.includes(r.kt)) && 
-                   pestOk && (!s || r.t >= s) && (!e || r.t <= e);
+                   pestOk && 
+                   (!m || (r.t && r.t.startsWith(m))) && 
+                   (!s || r.t >= s) && (!e || r.t <= e);
         });
 
         // 2. KEMASKINI DROPDOWN (Bergantung kepada pilihan sebelumnya)
@@ -70,9 +83,7 @@ const FilterManager = {
         AppState.pg = 1; 
         DashboardManager.calcUI();
 
-        // ==========================================
         // 4. REFRESH DASHBOARD SKU (JIKA SEDANG DIBUKA)
-        // ==========================================
         const viewSKU = document.getElementById('view-sku');
         if (viewSKU && viewSKU.style.display !== 'none' && typeof KPIManager !== 'undefined') {
             KPIManager.renderDashboard();
@@ -86,11 +97,11 @@ const FilterManager = {
             if(container) {
                 const labelMap = { 'selNegeri': 'Negeri', 'selDaerah': 'Daerah', 'selTanaman': 'Tanaman', 'selPerosak': 'Perosak', 'selKategori': 'Kategori' };
                 const html = `
-                <div class="mb-2">
-                    <label class="filter-label">${labelMap[id]}</label>
+                <div class="filter-dropdown-item flex-grow-1">
+                    <label class="filter-label text-slate-700 fw-extrabold mb-1">${labelMap[id]}</label>
                     <div class="dropdown d-grid">
-                        <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btn${id}" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
-                        <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="list${id}"></div>
+                        <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white rounded-3 shadow-2xs py-2 d-flex justify-content-between align-items-center" type="button" id="btn${id}" data-bs-toggle="dropdown" data-bs-auto-close="outside"><span>- Semua -</span></button>
+                        <div class="dropdown-menu p-2 shadow-lg rounded-3 border-0 mt-1" style="max-height: 240px; overflow-y: auto; min-width: 220px;" id="list${id}"></div>
                     </div>
                 </div>`;
                 container.insertAdjacentHTML('beforeend', html);
@@ -122,9 +133,16 @@ const FilterManager = {
         const btn = document.getElementById('btn' + id);
         if(!btn) return;
         const checked = Array.from(document.querySelectorAll('.chk-' + id + ':checked')).map(cb => cb.value);
-        if (checked.length === 0) { btn.innerText = '- Semua -'; btn.classList.remove('fw-bold','text-primary'); }
-        else if (checked.length === 1) { btn.innerText = checked[0]; btn.classList.add('fw-bold','text-primary'); }
-        else { btn.innerText = checked.length + ' Dipilih'; btn.classList.add('fw-bold','text-primary'); }
+        if (checked.length === 0) { 
+            btn.innerHTML = '<span>- Semua -</span>'; 
+            btn.classList.remove('fw-extrabold','text-primary','border-primary-subtle'); 
+        } else if (checked.length === 1) { 
+            btn.innerHTML = `<span class="text-truncate">${checked[0]}</span>`; 
+            btn.classList.add('fw-extrabold','text-primary','border-primary-subtle'); 
+        } else { 
+            btn.innerHTML = `<span>${checked.length} Dipilih</span>`; 
+            btn.classList.add('fw-extrabold','text-primary','border-primary-subtle'); 
+        }
     },
 
     fillSel: function(id, arr, srcCode) { 
@@ -133,7 +151,7 @@ const FilterManager = {
 
     resetFilter: function(){ 
         document.querySelectorAll('.form-check-input').forEach(cb => { if(!cb.disabled) cb.checked = false; });
-        document.querySelectorAll('input[type=date]').forEach(e => e.value=""); 
+        document.querySelectorAll('input[type=date], input[type=month]').forEach(e => e.value=""); 
         ['selNegeri', 'selDaerah', 'selTanaman', 'selPerosak', 'selKategori'].forEach(id => FilterManager.updateBtnText(id));
         FilterManager.runFilter('n'); 
     }

@@ -62,12 +62,15 @@ const KPIManager = {
         
         const startDate = document.getElementById('dS') ? document.getElementById('dS').value : '';
         const endDate = document.getElementById('dE') ? document.getElementById('dE').value : '';
+        const monthVal = document.getElementById('fMonth') ? document.getElementById('fMonth').value : '';
         
         let filteredData = AppState.mData;
-        if (startDate && endDate) {
+        if (monthVal) {
+            filteredData = filteredData.filter(d => d.t && d.t.startsWith(monthVal));
+        } else if (startDate && endDate) {
             const s = new Date(startDate).setHours(0,0,0,0);
             const e = new Date(endDate).setHours(23,59,59,999);
-            filteredData = AppState.mData.filter(d => {
+            filteredData = filteredData.filter(d => {
                 const dt = new Date(d.t).getTime();
                 return dt >= s && dt <= e;
             });

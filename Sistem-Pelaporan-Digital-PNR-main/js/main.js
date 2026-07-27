@@ -107,10 +107,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnOpenRPW = document.getElementById('btnOpenRPW');
     if (btnOpenRPW) btnOpenRPW.addEventListener('click', () => window.open(CONFIG.RPW_URL, '_blank'));
     
-    // Filtering (Date Inputs & Reset)
+    // Filtering (Date Inputs, Month Picker & Reset)
     if (typeof FilterManager !== 'undefined') {
         document.querySelectorAll('.filter-input').forEach(el => {
-            el.addEventListener('change', () => FilterManager.runFilter());
+            el.addEventListener('change', () => FilterManager.runFilter(el.id));
         });
         const btnResetFilter = document.getElementById('btnResetFilter');
         if (btnResetFilter) btnResetFilter.addEventListener('click', FilterManager.resetFilter);
