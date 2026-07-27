@@ -82,9 +82,9 @@
                 <span><i class="bi bi-grid-1x2-fill me-2"></i> Dashboard</span>
             </div>
 
-            <div class="nav-item" id="navOpenRPW" style="cursor: pointer;">
-    <span><i class="bi bi-bar-chart-fill me-2" style="color: #10b981;"></i> Dashboard Perosak RPW</span>
-</div>
+            <a href="rpw.html" target="_blank" class="nav-item" style="text-decoration: none; display: block; color: inherit;">
+                <span><i class="bi bi-bar-chart-fill me-2" style="color: #10b981;"></i> Dashboard Perosak RPW</span>
+            </a>
                 
             <div class="nav-item" id="navTasks" style="display:none" data-view="tasks">
                 <span><i class="bi bi-list-task me-2"></i> Tugasan Saya</span>
@@ -156,90 +156,162 @@
         <div id="view-main" class="app-view">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                 <div>
-                    <h4 class="fw-bold m-0 text-dark">Analisis Data</h4>
+                    <h4 class="fw-bold m-0 text-dark d-flex align-items-center"><i class="bi bi-cpu-fill text-success me-2"></i> Analisis Eksekutif & Bancian Tanaman</h4>
                     <small class="text-muted" id="lastUpdate">Data setakat: Terkini</small>
                 </div>
                 <div class="d-flex flex-wrap gap-2 justify-content-md-end">
                     <div class="btn-group shadow-sm">
-                        <button class="btn btn-white border bg-white text-secondary btn-sm px-3" id="btnRefreshDash"><i class="bi bi-arrow-clockwise"></i></button>
-                        <button class="btn btn-success btn-sm px-3" id="btnDlExcel"><i class="bi bi-file-earmark-excel me-1"></i> Excel</button>
-                        <button class="btn btn-danger btn-sm px-3" id="btnDlPDF"><i class="bi bi-file-earmark-pdf me-1"></i> PDF</button>
+                        <button class="btn btn-white border bg-white text-secondary btn-sm px-3 fw-bold" id="btnRefreshDash"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
+                        <button class="btn btn-success btn-sm px-3 fw-bold" id="btnDlExcel"><i class="bi bi-file-earmark-excel me-1"></i> Excel</button>
+                        <button class="btn btn-danger btn-sm px-3 fw-bold" id="btnDlPDF"><i class="bi bi-file-earmark-pdf me-1"></i> PDF</button>
                     </div>
                     <div class="btn-group shadow-sm">
-                        <button class="btn btn-dark btn-sm px-3" id="btnDlGeoJSON"><i class="bi bi-geo-fill me-1"></i> GeoJSON</button>
-                        <button class="btn btn-primary btn-sm px-3" id="btnDlKML"><i class="bi bi-pin-map-fill me-1"></i> KML</button>
+                        <button class="btn btn-dark btn-sm px-3 fw-bold" id="btnDlGeoJSON"><i class="bi bi-geo-fill me-1"></i> GeoJSON</button>
+                        <button class="btn btn-primary btn-sm px-3 fw-bold" id="btnDlKML"><i class="bi bi-pin-map-fill me-1"></i> KML</button>
                     </div>
                 </div>
             </div>
             
-            <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(to right, #e0f2fe, #f0f9ff);">
-                <div class="card-body p-4">
+            <div class="insight-hub-card mb-4">
+                <div class="insight-accent-line"></div>
+                <div class="p-4">
                     <div id="smartSummary" class="text-dark">
-                        <div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Sedang menganalisis data...</div>
+                        <div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Menganalisis analitik pintar...</div>
                     </div>
                 </div>
             </div>
 
             <div class="row g-3 mb-4" id="kpiCardsContainer"></div>
 
+            <!-- WIDGET ANCAMAN PEROSAK UTAMA (WATCHLIST) -->
+            <div class="watchlist-card mb-4">
+                <div class="watchlist-header">
+                    <div>
+                        <h6 class="fw-bold m-0 text-danger d-flex align-items-center">
+                            <i class="bi bi-shield-exclamation text-danger me-2 fs-5"></i>
+                            STATUS PEMANTAUAN KUARANTIN & PEROSAK MASYHUR (WATCHLIST)
+                        </h6>
+                        <small class="text-muted fw-bold" style="font-size: 0.75rem;">Pemantauan titik panas (Hotspot #1) bagi ancaman biosekuriti pertanian utama negara</small>
+                    </div>
+                    <span class="badge bg-danger text-white px-3 py-2 fw-bold shadow-sm">
+                        <i class="bi bi-radar me-1"></i> LIVE MONITOR
+                    </span>
+                </div>
+                <div class="p-3">
+                    <div class="row g-3" id="watchlistContainer">
+                        <div class="col-12 text-center text-muted py-3">Memuatkan data pemantauan perosak utama...</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="row g-3 mb-4">
-                <div class="col-md-8">
-                    <div class="card h-100 shadow-sm border-0">
-                        <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                <div class="col-md-7 col-lg-8">
+                    <div class="chart-card-modern h-100 d-flex flex-column">
+                        <div class="p-4 pb-0 d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="fw-bold text-secondary m-0" id="tajukCBar">Carta Serangan Perosak Tertinggi (Ha)</h6>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 mb-1 fw-bold small"><i class="bi bi-bar-chart-fill me-1"></i> ANALITIK PEROSAK</span>
+                                <h6 class="fw-bold text-dark m-0" id="tajukCBar">Top 10 Perosak Tertinggi (Ha)</h6>
                                 <small class="text-muted d-block mt-1 fw-bold" style="font-size: 0.75rem;" id="subCBar"><i class="bi bi-hand-index-thumb-fill text-primary me-1"></i> Klik pada bar untuk lihat pecahan</small>
                             </div>
-                            <button id="btnBackPest" class="btn btn-sm btn-outline-secondary shadow-sm" style="display:none;"><i class="bi bi-arrow-left"></i> Kembali</button>
+                            <button id="btnBackPest" class="btn btn-sm btn-outline-primary rounded-pill shadow-sm px-3 fw-bold" style="display:none;"><i class="bi bi-arrow-left me-1"></i> Kembali</button>
                         </div>
-                        <div class="card-body px-4 pb-4"><div style="height: 350px"><canvas id="cBar"></canvas></div></div>
+                        <div class="p-4 flex-grow-1"><div style="height: 350px"><canvas id="cBar"></canvas></div></div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card h-100 shadow-sm border-0">
-                        <div class="card-header bg-transparent border-0 py-3 d-flex align-items-center px-4 pt-4">
-                            <div class="icon-shape bg-warning text-white rounded-3 p-2 me-3 shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="bi bi-pie-chart-fill"></i></div>
-                            <h6 class="m-0 fw-bold text-secondary">Tahap Keterukan</h6>
+                <div class="col-md-5 col-lg-4">
+                    <div class="chart-card-modern h-100 d-flex flex-column">
+                        <div class="p-4 pb-0 d-flex align-items-center">
+                            <div class="icon-shape bg-warning text-dark rounded-3 p-2 me-3 shadow-sm d-flex align-items-center justify-content-center fw-bold" style="width: 42px; height: 42px; font-size: 1.25rem;"><i class="bi bi-pie-chart-fill"></i></div>
+                            <div>
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 mb-1 fw-bold small"><i class="bi bi-shield-check me-1"></i> TABURAN RISIKO</span>
+                                <h6 class="m-0 fw-bold text-dark">Tahap Keterukan</h6>
+                            </div>
                         </div>
-                        <div class="card-body text-center position-relative px-4 pb-4">
-                            <div style="height: 250px;"><canvas id="cPie"></canvas></div>
-                            <div class="mt-4 pt-3 border-top" id="legendContainer"></div>
+                        <div class="p-4 text-center position-relative flex-grow-1 d-flex flex-column justify-content-between">
+                            <div style="height: 220px;"><canvas id="cPie"></canvas></div>
+                            <div class="mt-3 pt-3 border-top text-start" id="legendContainer"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="row g-3 mb-4">
-                <div class="col-md-8"><div class="map-box shadow-sm" id="map"></div></div>
-                <div class="col-md-4">
-                    <div class="table-box h-100 shadow-sm" style="max-height:400px; overflow-y:auto">
-                        <h6 class="fw-bold mb-3 text-danger d-flex align-items-center"><i class="bi bi-fire me-2"></i>Hotspot Daerah</h6>
-                        <table class="table table-hover small mb-0"><thead class="table-light sticky-top"><tr><th>Daerah</th><th class="text-end">Luas Serangan (Ha)</th></tr></thead><tbody id="hotspotTable"></tbody></table>
+                <div class="col-md-7 col-lg-8">
+                    <div class="chart-card-modern h-100">
+                        <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 fw-bold text-dark"><i class="bi bi-geo-alt-fill text-danger me-2"></i>Peta Taburan Hotspot Serangan GPS</h6>
+                            <span class="badge bg-secondary-subtle text-dark border"><i class="bi bi-layers me-1"></i> GIS Map</span>
+                        </div>
+                        <div class="map-box border-0 rounded-0" id="map" style="height: 420px;"></div>
+                    </div>
+                </div>
+                <div class="col-md-5 col-lg-4">
+                    <div class="chart-card-modern h-100 d-flex flex-column" style="max-height:468px;">
+                        <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 fw-bold text-danger d-flex align-items-center"><i class="bi bi-fire text-danger me-2"></i>Hotspot Daerah Utama</h6>
+                            <span class="badge bg-danger text-white">Top 5</span>
+                        </div>
+                        <div class="table-responsive flex-grow-1" style="overflow-y:auto;">
+                            <table class="table table-hover align-middle small mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th class="py-2 px-3">Daerah & Negeri</th>
+                                        <th class="text-end py-2 px-3">Luas Serangan (Ha)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="hotspotTable"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="table-box shadow-sm">
-                <div class="d-flex justify-content-between mb-3"><h6 class="fw-bold"><i class="bi bi-table me-2"></i>Jadual Rekod</h6><small id="pgInfo" class="text-muted"></small></div>
+            <div class="table-enhanced mb-4">
+                <div class="table-filter-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <div>
+                        <h6 class="fw-bold m-0 text-dark fs-5 d-flex align-items-center">
+                            <i class="bi bi-table text-primary me-2"></i> Jadual Rekod Bancian & Serangan (Butiran Penuh)
+                        </h6>
+                        <small class="text-muted fw-bold" id="pgInfo">Memuatkan senarai data...</small>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center gap-3">
+                        <div class="position-relative flex-grow-1" style="min-width: 240px;">
+                            <i class="bi bi-search position-absolute text-muted" style="left: 14px; top: 50%; transform: translateY(-50%);"></i>
+                            <input type="text" id="tableQuickSearch" class="form-control input-quick-search" placeholder="Cari Daerah, Perosak, Varieti, Pegawai...">
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="small text-muted fw-bold mb-0">Papar:</label>
+                            <select id="tablePageSize" class="form-select form-select-sm border-secondary-subtle fw-bold" style="width: 85px; border-radius: 20px;">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="9999">Semua</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
                 <div class="table-responsive">
-                    <table class="table table-sm table-hover align-middle">
-                     <thead class="table-light">
-                         <tr>
-                        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('t')">Tarikh <i class="bi bi-arrow-down-up small text-muted" id="sort_t"></i></th>
-                        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('n')">Negeri <i class="bi bi-arrow-down-up small text-muted" id="sort_n"></i></th>
-                        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('l')">Lokasi <i class="bi bi-arrow-down-up small text-muted" id="sort_l"></i></th>
-                        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('tn')">Tanaman <i class="bi bi-arrow-down-up small text-muted" id="sort_tn"></i></th>
-                        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('lt')">Luas Bancian <i class="bi bi-arrow-down-up small text-muted" id="sort_lt"></i></th>
-                        <th style="cursor: pointer; user-select: none;" onclick="DashboardManager.sortData('ls')">Luas Serangan <i class="bi bi-arrow-down-up small text-muted" id="sort_ls"></i></th>
-                        <th class="text-center">Tindakan</th>
-                         </tr>
-                    </thead>
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+                        <thead class="table-light text-secondary">
+                            <tr>
+                                <th style="cursor: pointer; user-select: none; width: 110px;" class="py-3 px-3" onclick="DashboardManager.sortData('t')">Tarikh <i class="bi bi-arrow-down-up small text-muted" id="sort_t"></i></th>
+                                <th style="cursor: pointer; user-select: none; min-width: 160px;" class="py-3" onclick="DashboardManager.sortData('l')">Lokasi & Daerah <i class="bi bi-arrow-down-up small text-muted" id="sort_l"></i></th>
+                                <th style="cursor: pointer; user-select: none; min-width: 170px;" class="py-3" onclick="DashboardManager.sortData('tn')">Tanaman & Varieti <i class="bi bi-arrow-down-up small text-muted" id="sort_tn"></i></th>
+                                <th style="cursor: pointer; user-select: none; width: 160px;" class="py-3" onclick="DashboardManager.sortData('ls')">Serangan / Bancian <i class="bi bi-arrow-down-up small text-muted" id="sort_ls"></i></th>
+                                <th style="cursor: pointer; user-select: none; min-width: 190px;" class="py-3" onclick="DashboardManager.sortData('p')">Perosak & Keterukan <i class="bi bi-arrow-down-up small text-muted" id="sort_p"></i></th>
+                                <th style="cursor: pointer; user-select: none; min-width: 160px;" class="py-3" onclick="DashboardManager.sortData('pg')">Pegawai Pelapor <i class="bi bi-arrow-down-up small text-muted" id="sort_pg"></i></th>
+                                <th class="text-center py-3 px-3" style="width: 100px;">Tindakan</th>
+                            </tr>
+                        </thead>
                         <tbody id="tBody"></tbody>
                     </table>
                 </div>
-                <div class="d-flex justify-content-end gap-2 mt-2">
-                    <button class="btn btn-sm btn-white border shadow-sm px-3" id="btnPrevPg">Prev</button>
-                    <button class="btn btn-sm btn-white border shadow-sm px-3" id="btnNextPg">Next</button>
+                <div class="p-3 bg-light border-top d-flex justify-content-between align-items-center">
+                    <span class="small text-muted fw-bold" id="tableRecordCount"></span>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-white border bg-white shadow-sm px-3 fw-bold" id="btnPrevPg"><i class="bi bi-chevron-left me-1"></i> Prev</button>
+                        <button class="btn btn-sm btn-white border bg-white shadow-sm px-3 fw-bold" id="btnNextPg">Next <i class="bi bi-chevron-right ms-1"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
