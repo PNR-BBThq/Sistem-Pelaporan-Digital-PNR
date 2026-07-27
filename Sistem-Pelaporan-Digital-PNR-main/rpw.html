@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analisis Data RPW</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="./js/config.js"></script>
+
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; color: #0f172a; }
+    .map-popup .leaflet-popup-content-wrapper { border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+    #tbodyRPW td { text-transform: uppercase; font-size: 11px; }
+  </style>
+</head>
+<body class="p-2 sm:p-4 lg:p-6 w-full relative">
+
+  <script>
+    let USER_TOKEN = "", USER_NAME = "Pengguna", USER_STATE = "ALL";
+    const savedSession = localStorage.getItem("pnr_session");
+    if (savedSession) {
+      try {
+        const sData = JSON.parse(savedSession);
+        USER_TOKEN = sData.userToken || "";
+        USER_NAME = sData.currentUserID || "Pengguna";
+        USER_STATE = (sData.uProf && sData.uProf.state) ? sData.uProf.state : "ALL";
+      } catch(e) {}
+    }
+    if (!USER_TOKEN) {
+      alert("⛔ Akses ditolak. Sila log masuk melalui pangkalan utama PNR.");
+      window.location.href = "index.html"; 
+    }
+  </script>
+
+  <div id="skeletonLoader" class="w-full mx-auto space-y-6 animate-pulse">
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-4">
+      <div class="w-16 h-16 bg-slate-200 rounded-2xl"></div>
+      <div class="space-y-2 flex-1"><div class="h-6 bg-slate-200 rounded-lg w-1/3"></div><div class="h-4 bg-slate-100 rounded-lg w-1/4"></div></div>
+    </div>
+    <div class="grid grid-cols-2 lg:grid-cols-7 gap-4">
+      <div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div><div class="h-28 bg-white rounded-3xl border border-slate-100"></div>
+    </div>
+    <div class="h-[500px] bg-white rounded-3xl border border-slate-100 flex items-center justify-center text-slate-400 font-medium">
+      <svg class="animate-spin -ml-1 mr-3 h-6 w-6 text-emerald-700 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle></svg>
+      Memuatkan dan mengaudit integriti rekod wilayah...
+    </div>
+  </div>
+
+  <div id="dashboardContent" class="w-full mx-auto space-y-6 hidden transition-all duration-500">
+    
+    <div class="bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900 p-6 sm:p-8 rounded-3xl shadow-xl text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border border-emerald-800/40">
+      <div class="flex items-center gap-4">
+        <div class="p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15"><img id="doaLogo" src="" alt="Logo" class="w-14 h-14 object-contain"></div>
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold tracking-wide">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> UNIT PENGAWASAN DAN RAMALAN PEROSAK, BAHAGIAN BIOSEKURITI TUMBUHAN
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Pengurusan Data Tangkapan RPW Menggunakan Perangkap Feromon</h1>
+          <p class="text-xs sm:text-sm text-slate-300">Analisis Tangkapan Red Palm Weevil RPW di Malaysia</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2.5 w-full md:w-auto">
+        <button onclick="muatTurunData('geojson')" class="flex-1 md:flex-initial bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-semibold px-5 py-3.5 rounded-full transition flex items-center justify-center gap-2 cursor-pointer">
+          <span>📥</span> Eksport GeoJSON
+        </button>
+        <button onclick="muatTurunData('kml')" class="flex-1 md:flex-initial bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-5 py-3.5 rounded-full transition flex items-center justify-center gap-2 shadow-lg cursor-pointer">
+          <span>🌍</span> Eksport KML
+        </button>
+      </div>
+    </div>
+
+    <div id="bannerAmaranGPS" class="hidden bg-amber-500 text-slate-950 px-5 py-3.5 rounded-2xl font-extrabold text-xs flex items-center justify-between shadow-lg">
+      <span class="flex items-center gap-2">⚠️ <b id="teksAmaranGPS"></b></span>
+      <button onclick="bukaModalKuarantin('gps')" class="bg-slate-900 hover:bg-black text-white px-4 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 shadow-xs">🔍 Lihat Butiran Audit</button>
+    </div>
+
+    <div id="bannerAmaranDuplikasi" class="hidden bg-rose-600 text-white px-5 py-3.5 rounded-2xl font-extrabold text-xs flex items-center justify-between shadow-lg">
+      <span class="flex items-center gap-2">🚨 <b id="teksAmaranDuplikasi"></b></span>
+      <button onclick="bukaModalKuarantin('klon')" class="bg-white hover:bg-slate-100 text-rose-900 px-4 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1 shadow-xs font-black">🔍 Semak Rekod Bertindih</button>
+    </div>
+
+    <div class="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-200/80 grid grid-cols-1 sm:grid-cols-5 gap-3.5 items-end">
+      <div>
+        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pilih Tahun</label>
+        <select id="filterTahun" onchange="laksanakanFilterLokal()" class="w-full bg-slate-50 border border-slate-200 font-bold text-slate-800 text-xs rounded-2xl p-3 focus:outline-none focus:border-emerald-600 cursor-pointer">
+          </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pilih Negeri</label>
+        <select id="filterNegeri" onchange="TapisDataDaerah(); laksanakanFilterLokal();" class="w-full bg-slate-50 border border-slate-200 font-semibold text-slate-700 text-xs rounded-2xl p-3 focus:outline-none focus:border-emerald-600 cursor-pointer">
+          <option value="ALL">Semua Negeri</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pilih Daerah</label>
+        <select id="filterDaerah" onchange="laksanakanFilterLokal()" class="w-full bg-slate-50 border border-slate-200 font-semibold text-slate-700 text-xs rounded-2xl p-3 focus:outline-none focus:border-emerald-600 cursor-pointer">
+          <option value="ALL">Semua Daerah</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Status RTD</label>
+        <select id="filterRTD" onchange="laksanakanFilterLokal()" class="w-full bg-slate-50 border border-slate-200 font-semibold text-slate-700 text-xs rounded-2xl p-3 focus:outline-none focus:border-emerald-600 cursor-pointer">
+          <option value="ALL">Semua Tahap RTD</option>
+          <option value="RTD=0">RTD = 0 </option>
+          <option value="RTD<1">RTD < 1 </option>
+          <option value="RTD>1">RTD > 1 </option>
+        </select>
+      </div>
+      <div>
+        <button onclick="resetTapisan()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs p-3 rounded-2xl transition cursor-pointer flex items-center justify-center gap-2">
+          <span>🔄</span> Reset Tapisan
+        </button>
+      </div>
+    </div>
+    
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5">
+   <div class="bg-emerald-50/90 border border-emerald-200/80 p-4 rounded-3xl flex flex-col justify-between shadow-2xs">
+        <span class="text-[10px] font-black text-emerald-800 uppercase tracking-wider">KUMULATIF RPW RF</span>
+        <span class="text-3xl font-black text-emerald-950 block mt-1" id="kpiAllTimeRF">0</span>
+        <span class="text-[10px] text-emerald-600 font-bold block mt-0.5" id="lblTahunRF">Tahun Terpilih</span> </div>
+      <div class="bg-indigo-50/90 border border-indigo-200/80 p-4 rounded-3xl flex flex-col justify-between shadow-2xs">
+        <span class="text-[10px] font-black text-indigo-800 uppercase tracking-wider">KUMULATIF RPW RV</span>
+        <span class="text-3xl font-black text-indigo-950 block mt-1" id="kpiAllTimeRV">0</span>
+        <span class="text-[10px] text-indigo-600 font-bold block mt-0.5" id="lblTahunRV">Tahun Terpilih</span> </div>
+      <div class="bg-white border border-slate-200/80 p-4 rounded-3xl flex flex-col justify-center shadow-2xs">
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">TANGKAPAN SEMASA</span>
+        <span class="text-3xl font-black text-slate-900 block mt-1" id="kpiTangkapanSemasa">0</span>
+      </div>
+      <div class="bg-white border border-slate-200/80 p-4 rounded-3xl flex flex-col justify-between shadow-2xs">
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">OPERASI TRAP</span>
+        <span class="text-3xl font-black text-slate-900 block mt-1" id="kpiTrapAktif">0</span>
+        <span class="text-[10px] font-semibold text-slate-400 block mt-1"><span id="kpiUlanganPemantauan" class="font-bold text-emerald-700">0</span> Jumlah Pemantauan</span>
+      </div>
+      <div class="bg-white border border-slate-200/80 p-4 rounded-3xl flex flex-col justify-between shadow-2xs">
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">TABURAN RTD</span>
+        <div class="space-y-0.5 my-auto text-[11px] font-bold">
+          <div class="flex justify-between"><span class="text-emerald-600">🟢 RTD=0 </span><span id="badgeRTD0">0</span></div>
+          <div class="flex justify-between"><span class="text-amber-600">🟡 RTD<1 </span><span id="badgeRTD1">0</span></div>
+          <div class="flex justify-between"><span class="text-rose-600">🔴 RTD>1 </span><span id="badgeRTD2">0</span></div>
+        </div>
+      </div>
+      <div class="bg-white border border-slate-200/80 p-4 rounded-3xl flex flex-col justify-center shadow-2xs">
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">BIL POKOK DISERANG</span>
+        <span class="text-3xl font-black text-rose-600 block mt-1" id="kpiPokokSerang">0</span>
+      </div>
+      <div class="bg-white border border-slate-200/80 p-4 rounded-3xl flex flex-col justify-center shadow-2xs">
+        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">BIL POKOK DITEBANG</span>
+        <span class="text-3xl font-black text-amber-600 block mt-1" id="kpiPokokTebang">0</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <div class="lg:col-span-7 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[540px] relative overflow-hidden">
+        <div class="flex justify-between items-center mb-2 z-20">
+          <h3 class="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">📍 Peta Lokasi Perangkap Feromon</h3>
+          <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200" id="infoPeta">Memuatkan Peta...</span>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between bg-slate-100 p-2 rounded-2xl mb-2 gap-2 z-20 border border-slate-200/60">
+          <div class="flex items-center gap-1">
+            <span class="text-[10px] font-bold text-slate-400 px-1.5 uppercase">Tapisan Peta:</span>
+            <button onclick="tapisPetaBerasarkanRTD('ALL')" id="mapPill_ALL" class="text-[10px] font-bold px-2.5 py-1 rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer">Semua</button>
+            <button onclick="tapisPetaBerasarkanRTD('RTD=0')" id="mapPill_RTD=0" class="text-[10px] font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/70 transition cursor-pointer">Bebas</button>
+            <button onclick="tapisPetaBerasarkanRTD('RTD<1')" id="mapPill_RTD<1" class="text-[10px] font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/70 transition cursor-pointer"><1</button>
+            <button onclick="tapisPetaBerasarkanRTD('RTD>1')" id="mapPill_RTD>1" class="text-[10px] font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/70 transition cursor-pointer">>1</button>
+          </div>
+          <div class="flex items-center gap-2.5 text-[11px] font-bold text-slate-700 bg-white/80 px-3 py-1 rounded-xl border border-slate-200/60 shadow-2xs">
+            <span class="text-[9px] text-slate-400 font-extrabold uppercase">Petunjuk:</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> RTD=0</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> RTD<1</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> RTD>1</span>
+          </div>
+        </div>
+
+        <div id="mapRPW" class="w-full flex-1 rounded-2xl z-10 border border-slate-200 overflow-hidden shadow-inner mt-1"></div>
+      </div>
+
+      <div class="lg:col-span-5 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-[540px]">
+        <div class="flex justify-between items-center mb-2">
+          <div>
+            <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">HIERARKI TANGKAPAN</span>
+            <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider mt-0.5" id="tajukGrafPecahan">Pecahan Tangkapan RPW RF</h3>
+          </div>
+          <button onclick="toggleModeTangkapan()" id="btnTogglePest" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold border border-indigo-200 text-xs px-3 py-1.5 rounded-xl transition cursor-pointer shadow-xs">
+            🔄 Tunjuk RV
+          </button>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2.5 justify-between items-start sm:items-center bg-slate-100 p-2 rounded-2xl mb-3 my-1 border border-slate-200/60">
+          <div class="flex items-center gap-1.5 w-full sm:w-auto">
+            <span class="text-[10px] font-black text-slate-400 uppercase px-1">Skop:</span>
+            <select id="filterGrafBulan" onchange="binaGrafDrilldown()" class="bg-white text-xs font-bold text-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-2xs focus:outline-none focus:border-emerald-600 cursor-pointer flex-1 sm:flex-initial">
+              <option value="ALL_YEAR" selected>📅 Sepanjang Tahun (Kumulatif)</option>
+              <option value="SNAPSHOT">⚡ Tangkapan Terkini Sahaja</option>
+              <option disabled>──────────────</option>
+              <option value="1">Bulan: Januari</option>
+              <option value="2">Bulan: Februari</option>
+              <option value="3">Bulan: Mac</option>
+              <option value="4">Bulan: April</option>
+              <option value="5">Bulan: Mei</option>
+              <option value="6">Bulan: Jun</option>
+              <option value="7">Bulan: Julai</option>
+              <option value="8">Bulan: Ogos</option>
+              <option value="9">Bulan: September</option>
+              <option value="10">Bulan: Oktober</option>
+              <option value="11">Bulan: November</option>
+              <option value="12">Bulan: Disember</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-1 self-end sm:self-center">
+            <button onclick="tapisGrafBerasarkanRTD('ALL')" id="pill_ALL" class="text-xs font-bold px-2.5 py-1 rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer">Semua</button>
+            <button onclick="tapisGrafBerasarkanRTD('RTD=0')" id="pill_RTD=0" class="text-xs font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer">Bebas</button>
+            <button onclick="tapisGrafBerasarkanRTD('RTD<1')" id="pill_RTD<1" class="text-xs font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer"><1</button>
+            <button onclick="tapisGrafBerasarkanRTD('RTD>1')" id="pill_RTD>1" class="text-xs font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer">>1</button>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-[11px] text-slate-400 font-semibold" id="labelPeringkatGraf">Peringkat: Negeri</span>
+          <button id="btnBackGraf" onclick="kembaliGrafAtas()" class="hidden bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-3 py-1 rounded-xl transition cursor-pointer shadow-sm">⬅️ Kembali</button>
+        </div>
+
+        <div class="relative flex-1 w-full flex items-center justify-center">
+          <canvas id="drilldownChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
+      <div class="flex justify-between items-center mb-1">
+        <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2"><span>📊</span> Carta 15 Lokasi Perangkap Pengulangan RTD > 1</h3>
+        <button onclick="bukaModalDefaulter()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold px-3 py-1.5 rounded-xl transition shadow-xs border border-rose-200 cursor-pointer">Lihat Senarai Penuh</button>
+      </div>
+      <p class="text-xs text-slate-400 mb-4">Kawasan berisiko tinggi yang merekodkan ambang populasi kritikal secara berulang sepanjang tahun</p>
+      <div class="relative h-64 w-full"><canvas id="defaulterChart"></canvas></div>
+    </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
+        
+        <div class="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col h-full min-h-[350px]">
+          <div class="mb-5 flex justify-between items-start">
+            <div>
+              <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2"><span>🎯</span> Kecekapan CPT (Negeri)</h3>
+              <p class="text-[10px] text-slate-400 mt-1">Nisbah purata tangkapan per perangkap</p>
+            </div>
+            <span class="text-[9px] bg-slate-100 text-slate-500 px-2 py-1 rounded-md font-bold">Zon Kritikal > 20</span>
+          </div>
+          <div id="kontenaLolipop" class="flex flex-col gap-4 overflow-y-auto pr-2 flex-1">
+            <div class="text-xs text-center text-slate-400 mt-10">Memproses data kecekapan...</div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs h-full min-h-[350px] flex flex-col">
+          <div class="mb-4">
+            <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2"><span>📈</span> Trendline Tangkapan RPW</h3>
+            <p class="text-[10px] text-slate-400">Pola turun naik kumulatif populasi mengikut tempoh masa</p>
+          </div>
+          <div class="relative flex-1 w-full"><canvas id="trendLineChart"></canvas></div>
+        </div>
+      </div>
+    
+    <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-4 mb-12">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-sm font-extrabold text-slate-800">📋 Senarai Lengkap Rekod Perangkap Yang Ditapis</h3>
+          <p class="text-xs text-slate-400">Paparan terperinci (15 rekod setiap halaman)</p>
+        </div>
+      </div>
+      <div class="overflow-x-auto border border-slate-100 rounded-2xl">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-extrabold tracking-wider">
+            <tr>
+              <th class="p-3 text-center w-12">#</th>
+              <th class="p-3">Tarikh Kutip</th>
+              <th class="p-3">Negeri</th>
+              <th class="p-3">Daerah</th>
+              <th class="p-3">Lokasi / Kampung</th>
+              <th class="p-3">Tanaman</th>
+              <th class="p-3 text-center">Tangkapan RF</th>
+              <th class="p-3 text-center">Tangkapan RV</th>
+              <th class="p-3 text-center">Status RTD</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyRPW" class="divide-y divide-slate-100 text-slate-700 font-bold uppercase text-[11px]">
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="flex justify-between items-center pt-2">
+        <span class="text-[11px] text-slate-500 font-bold" id="infoMukaSurat">Memaparkan 0 rekod</span>
+        <div class="flex gap-2">
+          <button id="btnPrevPage" onclick="tukarMukaSurat(-1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-extrabold py-2 px-4 rounded-xl transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">⬅️ Sebelum</button>
+          <button id="btnNextPage" onclick="tukarMukaSurat(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-extrabold py-2 px-4 rounded-xl transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Seterusnya ➡️</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+<div id="modalDefaulter" class="fixed inset-0 z-[999] bg-slate-950/80 backdrop-blur-xs hidden flex items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+      
+      <div class="bg-rose-600 text-white p-6 flex justify-between items-center border-b border-rose-700">
+         <div>
+           <div class="flex items-center gap-2">
+             <span class="p-1.5 bg-white/20 rounded-lg text-xs">🚨</span>
+             <h3 class="font-black text-lg tracking-tight">Senarai Hitam: Pengulangan RTD > 1</h3>
+           </div>
+           <p class="text-xs text-rose-100 mt-0.5">Senarai penuh perangkap yang pernah merekodkan zon bahaya sepanjang tempoh tapisan</p>
+         </div>
+         <button onclick="tutupModalDefaulter()" class="px-3 py-1.5 bg-rose-800 hover:bg-rose-900 text-white rounded-xl text-xs font-bold transition cursor-pointer">✕ Tutup</button>
+      </div>
+
+      <div class="p-6 overflow-y-auto flex-1">
+         <div class="border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+           <table class="w-full text-left border-collapse uppercase text-xs">
+             <thead class="bg-slate-100 text-slate-600 text-[10px] font-black sticky top-0 shadow-sm z-10">
+               <tr>
+                 <th class="p-3 w-12 text-center">#</th>
+                 <th class="p-3">Lokasi Perangkap</th>
+                 <th class="p-3">Daerah</th>
+                 <th class="p-3">Negeri</th>
+                 <th class="p-3 text-center">Kekerapan (Bulan)</th>
+               </tr>
+             </thead>
+             <tbody id="tbodyModalDefaulter" class="divide-y divide-slate-100 font-bold text-slate-700"></tbody>
+           </table>
+         </div>
+      </div>
+
+    </div>
+  </div>
+            
+  <div id="modalKuarantin" class="fixed inset-0 z-[999] bg-slate-950/80 backdrop-blur-xs hidden flex items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+      
+      <div class="bg-slate-900 text-white p-6 flex justify-between items-center border-b border-slate-800">
+         <div>
+           <div class="flex items-center gap-2">
+             <span class="p-1.5 bg-rose-500/20 text-rose-400 rounded-lg text-xs">🏥</span>
+             <h3 class="font-black text-lg tracking-tight">Pembersihan Data</h3>
+           </div>
+           <p class="text-xs text-slate-400 mt-0.5">Senarai rekod bermasalah yang memerlukan pembetulan di dalam pangkalan utama Google Sheets</p>
+         </div>
+         <button onclick="document.getElementById('modalKuarantin').classList.add('hidden')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition cursor-pointer">✕ Tutup</button>
+      </div>
+
+      <div class="flex border-b border-slate-100 bg-slate-50 px-6 pt-3 gap-2">
+        <button onclick="tukarTabModal('klon')" id="tabBtn_klon" class="px-4 py-2.5 text-xs font-black border-b-2 border-rose-600 text-rose-700 flex items-center gap-2 cursor-pointer transition">
+          <span>🚨</span> Klon Bertindih (<span id="modalCountKlon">0</span>)
+        </button>
+        <button onclick="tukarTabModal('gps')" id="tabBtn_gps" class="px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 flex items-center gap-2 cursor-pointer transition">
+          <span>⚠️</span> Ralat GPS / Luar Malaysia (<span id="modalCountGPS">0</span>)
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto flex-1 space-y-6 text-xs">
+         
+         <div id="tabContent_klon" class="space-y-3">
+           <div class="bg-rose-50 border border-rose-200/80 p-3 rounded-2xl text-rose-900 font-semibold">
+             ℹ️ <b>Penerangan Ralat:</b> Senarai di bawah memaparkan unit perangkap yang telah diisi lebih daripada sekali pada lokasi yang sama pada tarikh yang sama. Sila semak data dan kemaskini.
+           </div>
+           <div class="border border-slate-200/80 rounded-2xl overflow-hidden">
+             <table class="w-full text-left border-collapse uppercase">
+               <thead class="bg-slate-100 text-slate-600 text-[10px] font-black">
+                 <tr><th class="p-3 w-12 text-center">#</th><th class="p-3">Nama Kampung / Lokasi</th><th class="p-3">Daerah</th><th class="p-3">Tarikh Dicatat</th><th class="p-3 text-center">Tangkapan RF</th><th class="p-3 text-center">Status</th></tr>
+               </thead>
+               <tbody id="tbodyModalKlon" class="divide-y divide-slate-100 font-bold text-slate-700"></tbody>
+             </table>
+           </div>
+         </div>
+
+         <div id="tabContent_gps" class="space-y-3 hidden">
+           <div class="bg-amber-50 border border-amber-200/80 p-3 rounded-2xl text-amber-950 font-semibold">
+             ℹ️ <b>Penerangan Ralat:</b> Senarai di bawah memaparkan perangkap yang gagal dilukis di atas peta kerana koordinat GPS yang dimasukkan tidak sah, kosong, atau melangkaui sempadan peta Malaysia.
+           </div>
+           <div class="border border-slate-200/80 rounded-2xl overflow-hidden">
+             <table class="w-full text-left border-collapse uppercase">
+               <thead class="bg-slate-100 text-slate-600 text-[10px] font-black">
+                 <tr><th class="p-3 w-12 text-center">#</th><th class="p-3">Nama Kampung / Lokasi</th><th class="p-3">Daerah</th><th class="p-3">Koordinat Dicatat</th><th class="p-3">Punca Ditolak</th></tr>
+               </thead>
+               <tbody id="tbodyModalGPS" class="divide-y divide-slate-100 font-bold text-slate-700"></tbody>
+             </table>
+           </div>
+         </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let map, markerGroup;
+    let chartUtama, chartDefaulter, chartTrendline;
+    let MASTER_DATA_KESELURUHAN = null; 
+    let DATA_DITAPIS_SEMASA = [];
+    let KAMUS_LOKAL = {}; 
+
+    let tahapGraf = "negeri"; 
+    let namaNegeriTerpilih = "";
+    let namaDaerahTerpilih = "";
+    let modeTangkapan = "rf"; 
+    let filterGrafRTD = "ALL"; 
+    let filterPetaRTD = "ALL"; 
+
+    let HALAMAN_SEMASA = 1;
+    const REKOD_PER_HALAMAN = 15;
+
+    // 🔥 MEMORI AUDIT KHAS
+    let SENARAI_RALAT_GPS = [];
+    let SENARAI_DUPLIKASI_KLON = [];
+    let SENARAI_PENUH_DEFAULTER = [];
+
+    window.onload = function() {
+      binaPetaAsas();
+      muatNaikDataIndukSekali();
+    };
+
+    function binaPetaAsas() {
+      map = L.map('mapRPW', { zoomControl: false, preferCanvas: true }).setView([4.2105, 101.9758], 6); 
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+      markerGroup = L.featureGroup().addTo(map);
+    }
+
+    // 🎯 SUNTIK KAMUS TAHUN SECARA DINAMIK
+    function binaKamusDinamik(senaraiPins, historyData) {
+      KAMUS_LOKAL = {};
+      let setTahun = new Set();
+
+      if (historyData) historyData.forEach(h => { if(h.y) setTahun.add(h.y); });
+      if (senaraiPins) senaraiPins.forEach(p => { if(p.tahun) setTahun.add(p.tahun); });
+
+      const selTah = document.getElementById("filterTahun");
+      if (selTah) {
+       selTah.innerHTML = '<option value="ALL">Semua Tahun</option>';
+        let tahunSorted = Array.from(setTahun).sort((a,b) => b - a); 
+        tahunSorted.forEach(t => { selTah.innerHTML += `<option value="${t}">${t}</option>`; });
+        // Jika belum ada nilai dipilih dan wujud 2026, set sebagai default
+        if(tahunSorted.includes(2026) && !selTah.value) selTah.value = 2026; 
+      }
+      
+      senaraiPins.forEach(p => {
+        let neg = p.negeri.toUpperCase().trim();
+        let dae = p.daerah.toUpperCase().trim();
+        if (neg && neg !== "LAIN-LAIN" && neg !== "") {
+          if (!KAMUS_LOKAL[neg]) KAMUS_LOKAL[neg] = new Set();
+          if (dae && dae !== "LAIN-LAIN" && dae !== "") KAMUS_LOKAL[neg].add(dae);
+        }
+      });
+
+      const selNeg = document.getElementById("filterNegeri");
+      if (!selNeg) return;
+      selNeg.innerHTML = '<option value="ALL">Semua Negeri</option>';
+      Object.keys(KAMUS_LOKAL).sort().forEach(n => { selNeg.innerHTML += `<option value="${n}">${n}</option>`; });
+    }
+
+    function TapisDataDaerah() {
+      const negTerpilih = document.getElementById("filterNegeri").value;
+      const selDae = document.getElementById("filterDaerah");
+      if (!selDae) return;
+      selDae.innerHTML = '<option value="ALL">Semua Daerah</option>';
+      if (KAMUS_LOKAL[negTerpilih]) {
+        Array.from(KAMUS_LOKAL[negTerpilih]).sort().forEach(d => { selDae.innerHTML += `<option value="${d}">${d}</option>`; });
+      }
+    }
+
+    function resetTapisan() {
+      document.getElementById("filterTahun").value = 2026;
+      document.getElementById("filterNegeri").value = (USER_STATE !== "ALL" && USER_STATE !== "SEMUA") ? USER_STATE : "ALL";
+      TapisDataDaerah();
+      document.getElementById("filterDaerah").value = "ALL";
+      document.getElementById("filterRTD").value = "ALL";
+      tapisGrafBerasarkanRTD('ALL');
+      tapisPetaBerasarkanRTD('ALL');
+      laksanakanFilterLokal();
+    }
+
+    function muatNaikDataIndukSekali() {
+      let fetchUrl = typeof CONFIG !== 'undefined' ? CONFIG.API_URL : "https://script.google.com/macros/s/AKfycbyKB5-TBuZ8JXs1pz9s7LBCT5stsFaNP8fMzw8UvbPYbKCWuus8mSuDdaLFaK1PNDG8/exec";
+      fetch(`${fetchUrl}?action=getRPWAnalytics`, {
+        method: "POST", headers: { "Content-Type": "text/plain" }, 
+        body: JSON.stringify({ action: "getRPWAnalytics", token: USER_TOKEN, u: USER_NAME, negeri: USER_STATE, daerah: "ALL", statusRTD: "ALL" })
+      })
+      .then(r => r.json())
+      .then(res => {
+        if(!res.success) { alert(res.message); return; }
+
+        MASTER_DATA_KESELURUHAN = res;
+        if (res.mapPins) binaKamusDinamik(res.mapPins, res.historyData);
+
+        if(res.doaLogo) document.getElementById("doaLogo").src = res.doaLogo;
+        else document.getElementById("doaLogo").src = "https://www.doa.gov.my/wp-content/themes/jpm/images/logo.png";
+
+        if(USER_STATE && USER_STATE !== "ALL" && USER_STATE !== "SEMUA") {
+          const el = document.getElementById("filterNegeri");
+          if(el) { el.value = USER_STATE.toUpperCase(); el.disabled = true; TapisDataDaerah(); }
+        }
+
+        laksanakanFilterLokal();
+
+        setTimeout(() => {
+          document.getElementById("skeletonLoader").classList.add("hidden");
+          document.getElementById("dashboardContent").classList.remove("hidden");
+          map.invalidateSize();
+          if(markerGroup.getLayers().length > 0) map.fitBounds(markerGroup.getBounds().pad(0.08));
+        }, 300);
+      })
+      .catch(e => { alert("Gagal menyambung ke pangkalan data."); console.error(e); });
+    }
+
+    // 🎯 SOKONGAN TAHUN DINAMIK PADA LOKAL FILTER
+    function laksanakanFilterLokal() {
+     if (!MASTER_DATA_KESELURUHAN) return;
+
+      // 👇 1. BACA STRING MENTAH (Sebab wujud pilihan "ALL")
+      const fTahRaw = document.getElementById("filterTahun").value;
+      const fNeg = document.getElementById("filterNegeri").value;
+      const fDae = document.getElementById("filterDaerah").value;
+      const fRtd = document.getElementById("filterRTD").value;
+
+      // 👇 2. KEMASKINI LOGIK PENAPIS MAP PINS
+      DATA_DITAPIS_SEMASA = MASTER_DATA_KESELURUHAN.mapPins.filter(p => {
+        let passY = (fTahRaw === "ALL" || p.tahun === parseInt(fTahRaw));
+        let passN = (fNeg === "ALL" || p.negeri.toUpperCase() === fNeg);
+        let passD = (fDae === "ALL" || p.daerah.toUpperCase() === fDae);
+        let passR = (fRtd === "ALL" || p.rtd_status.toUpperCase() === fRtd);
+        return passY && passN && passD && passR;
+      });
+
+      // 👇 3. KEMASKINI LOGIK PENAPIS DATA SEJARAH
+      let historyDitapis = MASTER_DATA_KESELURUHAN.historyData.filter(h => {
+        let passY = (fTahRaw === "ALL" || h.y === parseInt(fTahRaw));
+        let passN = (fNeg === "ALL" || h.n === fNeg);
+        let passD = (fDae === "ALL" || h.d === fDae);
+        let passR = (fRtd === "ALL" || h.rtd.toUpperCase() === fRtd);
+        return passY && passN && passD && passR;
+      });
+
+     let allTimeRF = 0, allTimeRV = 0;
+      let totSerangKumulatif = 0, totTebangKumulatif = 0; // 👈 KITA BUKA KAUNTER BARU DI SINI
+      let defaulterCounterLokal = {};
+
+     historyDitapis.forEach(h => {
+        allTimeRF += h.rf;
+        allTimeRV += h.rv;
+        totSerangKumulatif += (h.serang || 0);
+        totTebangKumulatif += (h.tebang || 0);
+
+        if (h.rtd.includes("RTD>1") && h.loc && h.loc !== "LOKASI TIADA NAMA") {
+          if (!defaulterCounterLokal[h.loc]) {
+            defaulterCounterLokal[h.loc] = { kekerapan: 0, daerah: h.d, negeri: h.n };
+          }
+          defaulterCounterLokal[h.loc].kekerapan += 1;
+        }
+      });
+
+      document.getElementById("kpiAllTimeRF").innerText = allTimeRF.toLocaleString();
+      document.getElementById("kpiAllTimeRV").innerText = allTimeRV.toLocaleString();
+      document.getElementById("kpiUlanganPemantauan").innerText = historyDitapis.length.toLocaleString();
+
+      // 👈 TERUS HANTAR ANGKA KUMULATIF KE KAD KPI DI SINI
+      document.getElementById("kpiPokokSerang").innerText = totSerangKumulatif.toLocaleString();
+      document.getElementById("kpiPokokTebang").innerText = totTebangKumulatif.toLocaleString();
+
+      let tCatch = 0, tSerang = 0, tTebang = 0;
+      let rtd0 = 0, rtd1 = 0, rtd2 = 0;
+
+      SENARAI_RALAT_GPS = [];
+      let kaunterKlon = {};
+      
+      DATA_DITAPIS_SEMASA.forEach(p => {
+        tCatch += (parseInt(p.total_rf) || 0);
+             
+        if (p.rtd_status.includes("RTD=0")) rtd0++;
+        else if (p.rtd_status.includes("RTD<1")) rtd1++;
+        else if (p.rtd_status.includes("RTD>1")) rtd2++;
+
+        if (!p.is_valid_gis) SENARAI_RALAT_GPS.push(p);
+
+        let kNama = p.lokasi.trim();
+        kaunterKlon[kNama] = (kaunterKlon[kNama] || 0) + 1;
+      });
+
+      SENARAI_DUPLIKASI_KLON = DATA_DITAPIS_SEMASA.filter(p => kaunterKlon[p.lokasi.trim()] > 1);
+
+      document.getElementById("kpiTangkapanSemasa").innerText = tCatch.toLocaleString();
+      document.getElementById("kpiTrapAktif").innerText = DATA_DITAPIS_SEMASA.length.toLocaleString();
+      
+      document.getElementById("badgeRTD0").innerText = rtd0;
+      document.getElementById("badgeRTD1").innerText = rtd1;
+      document.getElementById("badgeRTD2").innerText = rtd2;
+
+      const bGPS = document.getElementById("bannerAmaranGPS");
+      if (SENARAI_RALAT_GPS.length > 0) {
+        bGPS.classList.remove("hidden");
+        document.getElementById("teksAmaranGPS").innerText = `AMARAN AUDIT: Terdapat ${SENARAI_RALAT_GPS.length} rekod ditolak dari peta kerana ralat GPS.`;
+      } else bGPS.classList.add("hidden");
+
+      const bKlon = document.getElementById("bannerAmaranDuplikasi");
+      if (SENARAI_DUPLIKASI_KLON.length > 0) {
+        bKlon.classList.remove("hidden");
+        document.getElementById("teksAmaranDuplikasi").innerText = `RALAT KRITIKAL: Terdapat ${SENARAI_DUPLIKASI_KLON.length} entri data didaftarkan berganda (Klon TRUE) pada kampung yang sama!`;
+      } else bKlon.classList.add("hidden");
+
+      binaJadualModalAuditContent();
+      
+      binaPetaPinDiTapis();
+      HALAMAN_SEMASA = 1; 
+      binaJadualDataMengikutHalaman(); 
+      
+      tahapGraf = "negeri";
+      document.getElementById("btnBackGraf").classList.add("hidden");
+      binaGrafDrilldown();
+
+      // Tukar mapping defaulter dan simpan dalam memori global untuk Modal Pop-up
+      SENARAI_PENUH_DEFAULTER = Object.keys(defaulterCounterLokal).map(key => {
+        return { 
+           lokasi: key, 
+           kekerapan: defaulterCounterLokal[key].kekerapan,
+           daerah: defaulterCounterLokal[key].daerah,
+           negeri: defaulterCounterLokal[key].negeri
+        };
+      }).sort((a, b) => b.kekerapan - a.kekerapan);
+      let topDefaultersLokal = SENARAI_PENUH_DEFAULTER.slice(0, 15);
+      binaGrafDefaulter(topDefaultersLokal);
+
+      binaGrafTrendline(historyDitapis);
+    }
+
+    function binaJadualModalAuditContent() {
+      document.getElementById("modalCountKlon").innerText = SENARAI_DUPLIKASI_KLON.length;
+      document.getElementById("modalCountGPS").innerText = SENARAI_RALAT_GPS.length;
+
+      let hKlon = "";
+      SENARAI_DUPLIKASI_KLON.forEach((k, idx) => {
+        hKlon += `
+        <tr class="border-b border-slate-100 hover:bg-rose-50/50">
+          <td class="p-3 text-center">${idx+1}</td>
+          <td class="p-3 text-rose-900">${k.lokasi}</td>
+          <td class="p-3">${k.daerah}</td><td class="p-3">${k.tarikh}</td>
+          <td class="p-3 text-center font-black">${k.total_rf}</td>
+          <td class="p-3 text-center flex justify-center gap-1">
+            <button onclick="mohonEditLokasi('${k.row_id}', '${k.lokasi}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 px-2 py-1 rounded-md text-[10px] font-black transition cursor-pointer">✏️ EDIT</button>
+            <button onclick="laksanakanCRUD('delete', '${k.row_id}', '')" class="bg-rose-100 hover:bg-rose-200 text-rose-800 px-2 py-1 rounded-md text-[10px] font-bold transition cursor-pointer">🗑️ PADAM</button>
+          </td>
+        </tr>`;
+      });
+      document.getElementById("tbodyModalKlon").innerHTML = hKlon || `<tr><td colspan="6" class="p-4 text-center text-slate-400">Tiada ralat duplikasi dikesan.</td></tr>`;
+
+      let hGPS = "";
+      SENARAI_RALAT_GPS.forEach((g, idx) => {
+        let sebab = g.koordinat === "" ? "Titik GPS Kosong" : "Luar Sempadan Malaysia";
+        hGPS += `
+        <tr class="border-b border-slate-100 hover:bg-amber-50/50">
+          <td class="p-3 text-center">${idx+1}</td>
+          <td class="p-3 text-amber-900">${g.lokasi}</td>
+          <td class="p-3 font-mono">${g.koordinat || '<i>[KOSONG]</i>'}</td>
+          <td class="p-3 text-rose-600 font-bold">${sebab}</td>
+          <td class="p-3 text-center">
+            <button onclick="mohonKemaskiniGPS('${g.row_id}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 px-3 py-1 rounded-lg text-[10px] font-black transition shadow-xs cursor-pointer">✏️ KEMASKINI GPS</button>
+          </td>
+        </tr>`;
+      });
+      document.getElementById("tbodyModalGPS").innerHTML = hGPS || `<tr><td colspan="5" class="p-4 text-center text-slate-400">Tiada ralat GPS dikesan.</td></tr>`;
+    }
+
+    function mohonKemaskiniGPS(rowId) {
+      let gpsBaru = prompt("Sila masukkan koordinat GPS yang tepat (Contoh format: 1.821, 103.11):");
+      if(gpsBaru && gpsBaru.includes(",")) {
+        laksanakanCRUD('updateGPS', rowId, gpsBaru.trim());
+      } else if (gpsBaru) {
+        alert("Sila masukkan format yang mengandungi koma (,) seperti: Latitud, Longitud");
+      }
+    }
+
+    function mohonEditLokasi(rowId, namaLama) {
+      let namaBaru = prompt(`Masukkan nama kampung/lokasi yang sebenar bagi menggantikan "${namaLama}":`, namaLama);
+      if(namaBaru && namaBaru.trim() !== "" && namaBaru.trim().toUpperCase() !== namaLama.toUpperCase()) {
+        laksanakanCRUD('updateLocation', rowId, namaBaru.trim().toUpperCase());
+      }
+    }
+
+    function laksanakanCRUD(actionType, rowId, valBaru) {
+      if(!rowId) { alert("Ralat sistem: ROW-ID tiada. Sila semak pangkalan data anda."); return; }
+      
+      let tanya = actionType === 'delete' ? "Anda pasti mahu memadam rekod ini secara KEKAL dari pangkalan data?" : 
+                 (actionType === 'setFalse' ? "Matikan status rekod ini kepada FALSE?" : "Mengesahkan kemas kini?");
+      if(!confirm(tanya)) return;
+
+      document.getElementById('modalKuarantin').classList.add('hidden');
+      document.getElementById('dashboardContent').classList.add('hidden');
+      document.getElementById('skeletonLoader').classList.remove('hidden');
+
+      let fetchUrl = typeof CONFIG !== 'undefined' ? CONFIG.API_URL : "https://script.google.com/macros/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
+      
+      fetch(`${fetchUrl}?action=crudRPW`, {
+        method: "POST", headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ action: "crudRPW", token: USER_TOKEN, u: USER_NAME, crudAction: actionType, recordId: rowId, newValue: valBaru })
+      })
+      .then(r => r.json())
+      .then(res => {
+         if(!res.success) { alert(res.message); window.location.reload(); return; }
+         alert(res.message);
+         muatNaikDataIndukSekali();
+      }).catch(e => {
+         alert("Ralat sambungan dengan pelayan Google!");
+         window.location.reload();
+      });
+    }
+
+    function bukaModalKuarantin(tabAwal) {
+      document.getElementById("modalKuarantin").classList.remove("hidden");
+      tukarTabModal(tabAwal);
+    }
+
+    function tukarTabModal(sasaran) {
+      if(sasaran === 'klon') {
+        document.getElementById("tabBtn_klon").className = "px-4 py-2.5 text-xs font-black border-b-2 border-rose-600 text-rose-700 flex items-center gap-2 cursor-pointer transition";
+        document.getElementById("tabBtn_gps").className = "px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 flex items-center gap-2 cursor-pointer transition";
+        document.getElementById("tabContent_klon").classList.remove("hidden");
+        document.getElementById("tabContent_gps").classList.add("hidden");
+      } else {
+        document.getElementById("tabBtn_gps").className = "px-4 py-2.5 text-xs font-black border-b-2 border-amber-600 text-amber-700 flex items-center gap-2 cursor-pointer transition";
+        document.getElementById("tabBtn_klon").className = "px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 flex items-center gap-2 cursor-pointer transition";
+        document.getElementById("tabContent_gps").classList.remove("hidden");
+        document.getElementById("tabContent_klon").classList.add("hidden");
+      }
+    }
+
+    function tapisPetaBerasarkanRTD(status) {
+      filterPetaRTD = status;
+      ["ALL", "RTD=0", "RTD<1", "RTD>1"].forEach(id => {
+        let btn = document.getElementById(`mapPill_${id}`);
+        if(btn) {
+          if(id === status) btn.className = "text-[10px] font-bold px-2.5 py-1 rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer";
+          else btn.className = "text-[10px] font-bold px-2.5 py-1 rounded-xl text-slate-600 hover:bg-white/70 transition cursor-pointer";
+        }
+      });
+      binaPetaPinDiTapis();
+    }
+
+    function binaPetaPinDiTapis() {
+      let senaraiPeta = DATA_DITAPIS_SEMASA;
+      if (filterPetaRTD !== "ALL") {
+        senaraiPeta = senaraiPeta.filter(p => p.rtd_status.toUpperCase() === filterPetaRTD);
+      }
+      
+      markerGroup.clearLayers();
+      let seenMapPins = new Set(); 
+      let kaunterTallyGPS = 0;
+
+      senaraiPeta.forEach(p => {
+        if (!p.is_valid_gis) return; 
+        
+        kaunterTallyGPS++; 
+
+        let pinKey = p.koordinat + "_" + p.lokasi;
+        if (seenMapPins.has(pinKey)) return; 
+        seenMapPins.add(pinKey);
+
+        let latLng = p.koordinat.split(",").map(Number);
+        if (isNaN(latLng[0]) || isNaN(latLng[1])) return;
+
+        let warna = "#10b981"; 
+        if (p.rtd_status.includes("RTD<1")) warna = "#f59e0b"; 
+        if (p.rtd_status.includes("RTD>1")) warna = "#f43f5e"; 
+
+        let marker = L.circleMarker(latLng, { radius: 8, fillColor: warna, color: "#ffffff", weight: 2.5, fillOpacity: 0.95 });
+
+        marker.on('click', function() {
+          marker.bindPopup(`<div class="map-popup p-3 text-center font-bold text-emerald-800">Menjana Carta Sejarah...</div>`).openPopup();
+          
+          let fetchUrl = typeof CONFIG !== 'undefined' ? CONFIG.API_URL : "https://script.google.com/macros/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
+          fetch(`${fetchUrl}?action=getRPWHistory`, { 
+            method: "POST", headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ action: "getRPWHistory", token: USER_TOKEN, u: USER_NAME, lokasi: p.lokasi }) 
+          })
+          .then(r => r.json())
+          .then(res => {
+            let streakTeks = res.streakMonths > 0 ? 
+              `<div class="mt-2 text-xs bg-rose-50 text-rose-700 p-2.5 rounded-xl font-extrabold border border-rose-200">⚠️ Amaran: RTD>1 bertahan selama ${res.streakMonths} bulan!</div>` : 
+              `<div class="mt-2 text-xs bg-emerald-50 text-emerald-700 p-2.5 rounded-xl font-bold border border-emerald-200">✅ Rekod terkawal.</div>`;
+
+            let popupHtml = `
+              <div class="map-popup space-y-2 p-1 w-64">
+                <h4 class="font-black text-slate-900 text-sm uppercase">${res.lokasi}</h4>
+                <p class="text-[11px] text-slate-400 font-semibold">${p.daerah}, ${p.negeri}</p>
+                <div class="text-xs pt-1 text-slate-700">Tangkapan Semasa: <b class="text-slate-900 font-black">${p.total_rf} RF</b> | <b class="text-indigo-900 font-black">${p.total_rv} RV</b></div>
+                ${streakTeks}
+                <div class="pt-2 border-t border-slate-100">
+                  <span class="text-[10px] font-extrabold text-slate-400 block mb-1">TREND TANGKAPAN RF (SEJARAH)</span>
+                  <div class="h-28 w-full relative"><canvas id="canvasPopup_${res.id}"></canvas></div>
+                </div>
+              </div>
+            `;
+            marker.bindPopup(popupHtml).openPopup();
+
+            setTimeout(() => {
+              const el = document.getElementById(`canvasPopup_${res.id}`);
+              if(!el) return;
+              new Chart(el.getContext('2d'), {
+                type: 'line',
+                data: {
+                  labels: res.historyLog.map(h => h.tarikh.substring(0, 5)),
+                  datasets: [{ data: res.historyLog.map(h => h.rf), borderColor: '#059669', backgroundColor: '#34d399', tension: 0.3, pointRadius: 3 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 9 } } }, y: { ticks: { font: { size: 9 }, stepSize: 1 } } } }
+              });
+            }, 250);
+          });
+        });
+        markerGroup.addLayer(marker);
+      });
+
+      document.getElementById("infoPeta").innerText = `${kaunterTallyGPS} Lokasi Perangkap`;
+      if (senaraiPeta.length > 0) map.fitBounds(markerGroup.getBounds().pad(0.08));
+    }
+
+    function binaJadualDataMengikutHalaman() {
+      const tbody = document.getElementById("tbodyRPW");
+      const senarai = DATA_DITAPIS_SEMASA;
+      
+      if(senarai.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400 font-medium">Tiada unit perangkap dijumpai bagi kriteria penapisan ini.</td></tr>`;
+        document.getElementById("infoMukaSurat").innerText = "Memaparkan 0 rekod";
+        document.getElementById("btnPrevPage").disabled = true;
+        document.getElementById("btnNextPage").disabled = true;
+        return;
+      }
+
+      const jumlahHalaman = Math.ceil(senarai.length / REKOD_PER_HALAMAN);
+      if (HALAMAN_SEMASA > jumlahHalaman) HALAMAN_SEMASA = jumlahHalaman;
+      if (HALAMAN_SEMASA < 1) HALAMAN_SEMASA = 1;
+
+      const mulaIndex = (HALAMAN_SEMASA - 1) * REKOD_PER_HALAMAN;
+      const akhirIndex = Math.min(mulaIndex + REKOD_PER_HALAMAN, senarai.length);
+      const senaraiPotong = senarai.slice(mulaIndex, akhirIndex);
+
+      let htmlString = ""; 
+      
+      senaraiPotong.forEach((item, i) => {
+        let nomborSebenar = mulaIndex + i + 1;
+        let bColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
+        if(item.rtd_status.includes("RTD<1")) bColor = "bg-amber-100 text-amber-800 border-amber-300";
+        if(item.rtd_status.includes("RTD>1")) bColor = "bg-rose-100 text-rose-800 border-rose-300";
+
+        let penandaGPS = !item.is_valid_gis ? `<span title="Ralat GIS: Koordinat GPS Tidak Sah" class="ml-1 text-rose-600 font-extrabold cursor-help">⚠️</span>` : '';
+
+        htmlString += `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100 text-xs">
+            <td class="p-3 text-center font-bold text-slate-400">${nomborSebenar}</td>
+            <td class="p-3 font-medium text-slate-600">${item.tarikh}</td>
+            <td class="p-3 font-bold text-slate-800">${item.negeri}</td>
+            <td class="p-3 font-medium text-slate-700">${item.daerah}</td>
+            <td class="p-3 font-bold text-slate-900">${item.lokasi}${penandaGPS}</td>
+            <td class="p-3 text-slate-500">${item.tanaman}</td>
+            <td class="p-3 text-center font-black text-emerald-700">${item.total_rf}</td>
+            <td class="p-3 text-center font-black text-indigo-700">${item.total_rv}</td>
+            <td class="p-3 text-center"><span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${bColor}">${item.rtd_status}</span></td>
+          </tr>
+        `;
+      });
+      
+      tbody.innerHTML = htmlString;
+      document.getElementById("infoMukaSurat").innerText = `Memaparkan rekod ${mulaIndex + 1} hingga ${akhirIndex} daripada ${senarai.length.toLocaleString()} jumlah keseluruhan (Halaman ${HALAMAN_SEMASA}/${jumlahHalaman})`;
+      document.getElementById("btnPrevPage").disabled = (HALAMAN_SEMASA === 1);
+      document.getElementById("btnNextPage").disabled = (HALAMAN_SEMASA === jumlahHalaman);
+    }
+
+    function tukarMukaSurat(arah) {
+      HALAMAN_SEMASA += arah;
+      binaJadualDataMengikutHalaman();
+    }
+
+    function toggleModeTangkapan() {
+      if (modeTangkapan === "rf") {
+        modeTangkapan = "rv";
+        document.getElementById("btnTogglePest").innerHTML = "🔄 Papar RF";
+        document.getElementById("tajukGrafPecahan").innerText = "Pecahan Tangkapan RPW RV";
+      } else {
+        modeTangkapan = "rf";
+        document.getElementById("btnTogglePest").innerHTML = "🔄 Papar RV";
+        document.getElementById("tajukGrafPecahan").innerText = "Pecahan Tangkapan RPW RF";
+      }
+      binaGrafDrilldown();
+    }
+
+    function tapisGrafBerasarkanRTD(status) {
+      filterGrafRTD = status;
+      ["ALL", "RTD=0", "RTD<1", "RTD>1"].forEach(id => {
+        let btn = document.getElementById(`pill_${id}`);
+        if(btn) {
+          if(id === status) btn.className = "text-xs font-bold px-3 py-1 rounded-xl bg-white text-slate-900 shadow-xs transition cursor-pointer";
+          else btn.className = "text-xs font-bold px-3 py-1 rounded-xl text-slate-600 hover:bg-white/50 transition cursor-pointer";
+        }
+      });
+      binaGrafDrilldown();
+    }
+
+    function binaGrafDrilldown() {
+      if (!MASTER_DATA_KESELURUHAN) return;
+
+      let labelData = [], nilaiData = [], mapData = {};
+      const modeMasa = document.getElementById("filterGrafBulan").value;
+      const fTahRaw = document.getElementById("filterTahun").value;
+
+      let sumberKiraan = [];
+
+      if (modeMasa === "SNAPSHOT") {
+        sumberKiraan = DATA_DITAPIS_SEMASA.map(p => ({
+          negeri: p.negeri, daerah: p.daerah, lokasi: p.lokasi,
+          rtd: p.rtd_status,
+          rf: (parseInt(p.total_rf) || 0), rv: (parseInt(p.total_rv) || 0)
+        }));
+      } else {
+        let hist = MASTER_DATA_KESELURUHAN.historyData;
+        const fNeg = document.getElementById("filterNegeri").value;
+        const fDae = document.getElementById("filterDaerah").value;
+        
+       hist = hist.filter(h => (fNeg === "ALL" || h.n === fNeg) && (fDae === "ALL" || h.d === fDae) && (fTahRaw === "ALL" || h.y === parseInt(fTahRaw)));
+        
+        if (modeMasa !== "ALL_YEAR") {
+          const targetBulan = parseInt(modeMasa);
+          hist = hist.filter(h => h.m === targetBulan);
+        }
+
+        sumberKiraan = hist.map(h => ({
+          negeri: h.n, daerah: h.d, lokasi: h.loc,
+          rtd: h.rtd, rf: h.rf, rv: h.rv
+        }));
+      }
+
+      if (filterGrafRTD !== "ALL") {
+        sumberKiraan = sumberKiraan.filter(item => item.rtd.toUpperCase() === filterGrafRTD);
+      }
+
+      // =========================================================================
+      // 🚨 ENJIN KIRAAN CPT (CARTA LOLIPOP) - KINI MENYOKONG TOGGLE RF/RV & BULAN!
+      // =========================================================================
+      let statistikNegeri = {};
+      
+      sumberKiraan.forEach(item => {
+          let namaNegeri = item.negeri || "TIADA MAKLUMAT";
+          if (!statistikNegeri[namaNegeri]) {
+              statistikNegeri[namaNegeri] = { tangkapan: 0, setPerangkap: new Set() };
+          }
+          
+          // 🔥 ASINGKAN KIRAAN BERDASARKAN STATUS BUTANG TOGGLE (RF ATAU RV)
+          let jumlahTangkap = (modeTangkapan === "rf") ? (item.rf || 0) : (item.rv || 0);
+          statistikNegeri[namaNegeri].tangkapan += jumlahTangkap;
+          
+          if (item.lokasi) statistikNegeri[namaNegeri].setPerangkap.add(item.lokasi);
+      });
+
+      let dataLolipop = Object.keys(statistikNegeri).map(neg => {
+          let jumlahPerangkap = statistikNegeri[neg].setPerangkap.size || 1;
+          let cpt = statistikNegeri[neg].tangkapan / jumlahPerangkap;
+          return {
+              negeri: neg,
+              cpt: cpt,
+              traps: jumlahPerangkap,
+              tangkapan: statistikNegeri[neg].tangkapan
+          };
+      }).sort((a, b) => b.cpt - a.cpt);
+
+      binaGrafLolipopHTML(dataLolipop);
+      // =========================================================================
+
+      // 👇 Kod asal di bawah ni biarkan sahaja 👇
+     // 👇 Kod asal di bawah ni biarkan sahaja 👇
+      if (tahapGraf === "negeri") {
+        document.getElementById("labelPeringkatGraf").innerText = modeMasa === "ALL_YEAR" ? "Peringkat: Negeri (Kumulatif Tahunan)" : "Peringkat: Negeri";
+        sumberKiraan.forEach(item => {
+          let key = item.negeri || "LAIN-LAIN";
+          mapData[key] = (mapData[key] || 0) + (modeTangkapan === 'rf' ? item.rf : item.rv);
+        });
+      } else if (tahapGraf === "daerah") {
+        document.getElementById("labelPeringkatGraf").innerText = `Peringkat: Daerah (${namaNegeriTerpilih})`;
+        sumberKiraan.forEach(item => {
+          if (item.negeri.toUpperCase() === namaNegeriTerpilih.toUpperCase()) {
+            let key = item.daerah || "LAIN-LAIN";
+            mapData[key] = (mapData[key] || 0) + (modeTangkapan === 'rf' ? item.rf : item.rv);
+          }
+        });
+      } else if (tahapGraf === "perangkap") {
+        document.getElementById("labelPeringkatGraf").innerText = `Peringkat: Perangkap (${namaDaerahTerpilih})`;
+        sumberKiraan.forEach(item => {
+          if (item.daerah.toUpperCase() === namaDaerahTerpilih.toUpperCase() && item.negeri.toUpperCase() === namaNegeriTerpilih.toUpperCase()) {
+            let key = item.lokasi || "TIADA NAMA";
+            mapData[key] = (mapData[key] || 0) + (modeTangkapan === 'rf' ? item.rf : item.rv);
+          }
+        });
+      }
+
+      labelData = Object.keys(mapData);
+      nilaiData = Object.values(mapData);
+
+      if (chartUtama) chartUtama.destroy();
+
+      let barWarna = modeTangkapan === 'rf' ? '#047857' : '#3730a3';
+
+      chartUtama = new Chart(document.getElementById('drilldownChart').getContext('2d'), {
+        type: 'bar',
+        data: { labels: labelData, datasets: [{ data: nilaiData, backgroundColor: barWarna, borderRadius: 8 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { weight: 'bold', family: 'Plus Jakarta Sans', size: 10 } } },
+            y: { grid: { borderDash: [4, 4], color: '#e2e8f0' }, beginAtZero: true }
+          },
+          onClick: (e, elements) => { if (elements.length > 0) handleGrafClick(labelData[elements[0].index]); }
+        }
+      });
+    }
+
+    function handleGrafClick(label) {
+      if (tahapGraf === "negeri") { namaNegeriTerpilih = label; tahapGraf = "daerah"; document.getElementById("btnBackGraf").classList.remove("hidden"); binaGrafDrilldown(); } 
+      else if (tahapGraf === "daerah") { namaDaerahTerpilih = label; tahapGraf = "perangkap"; binaGrafDrilldown(); }
+    }
+
+    function kembaliGrafAtas() {
+      if (tahapGraf === "perangkap") tahapGraf = "daerah";
+      else if (tahapGraf === "daerah") { tahapGraf = "negeri"; document.getElementById("btnBackGraf").classList.add("hidden"); }
+      binaGrafDrilldown();
+    }
+
+    function binaGrafTrendline(filteredHist) {
+      let bulanMapRF = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0 };
+      let bulanMapRV = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0 };
+
+      filteredHist.forEach(h => {
+        if (h.m >= 1 && h.m <= 12) {
+           bulanMapRF[h.m] += h.rf;
+           bulanMapRV[h.m] += h.rv;
+        }
+      });
+
+      const namaBulan = ["Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogo", "Sep", "Okt", "Nov", "Dis"];
+      
+      if (chartTrendline) chartTrendline.destroy();
+      chartTrendline = new Chart(document.getElementById('trendLineChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: namaBulan,
+          datasets: [
+            { label: 'Tangkapan RF', data: Object.values(bulanMapRF), borderColor: '#059669', backgroundColor: '#34d399', tension: 0.3, pointRadius: 4, borderWidth: 3 },
+            { label: 'Tangkapan RV', data: Object.values(bulanMapRV), borderColor: '#4f46e5', backgroundColor: '#818cf8', tension: 0.3, pointRadius: 4, borderWidth: 3 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: true, position: 'top', labels: { font: { family: 'Plus Jakarta Sans', weight: 'bold' } } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { weight: 'bold', family: 'Plus Jakarta Sans' } } },
+            y: { grid: { borderDash: [4, 4], color: '#f1f5f9' }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function binaGrafDefaulter(data) {
+      if (chartDefaulter) chartDefaulter.destroy();
+      chartDefaulter = new Chart(document.getElementById('defaulterChart').getContext('2d'), {
+        type: 'bar',
+        data: { labels: data.map(d => d.lokasi), datasets: [{ data: data.map(d => d.kekerapan), backgroundColor: '#f43f5e', hoverBackgroundColor: '#fb7185', borderRadius: 6 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+          scales: { x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { weight: 'bold', family: 'Plus Jakarta Sans' } } }, y: { grid: { borderDash: [4, 4], color: '#f1f5f9' }, ticks: { stepSize: 1 }, beginAtZero: true } }
+        }
+      });
+    }
+
+   function muatTurunData(jenis) {
+      const tah = document.getElementById("filterTahun").value || 2026;
+      const neg = document.getElementById("filterNegeri").value;
+      const dae = document.getElementById("filterDaerah").value;
+      const rtd = document.getElementById("filterRTD").value;
+      
+      let fetchUrl = typeof CONFIG !== 'undefined' ? CONFIG.API_URL : "https://script.google.com/macros/s/AKfycbwmlorXpSkvDx_PJT4eRYcWc0MGii7nyeafpSIDPdD-z_At1hY8leUzFyvAKy5kLrrA/exec";
+      
+      // 👈 KITA TAMBAH 'encodeURIComponent' SUPAYA SIMBOL '&', '<', '>' TAK PECAHKAN URL
+      let paramUrl = `&terkiniOnly=true&negeri=${encodeURIComponent(neg)}&daerah=${encodeURIComponent(dae)}&rtd=${encodeURIComponent(rtd)}&tahun=${tah}`;
+      
+      window.open(`${fetchUrl}?action=${jenis === 'geojson' ? 'downloadRPWGeoJSON' : 'downloadRPWKML'}${paramUrl}`, '_blank');
+    }
+
+    function bukaModalDefaulter() {
+      const tbody = document.getElementById("tbodyModalDefaulter");
+      let html = "";
+      
+      if(SENARAI_PENUH_DEFAULTER.length === 0) {
+        html = `<tr><td colspan="5" class="p-6 text-center text-slate-400 font-medium">Tiada perangkap berstatus RTD>1 dikesan bagi tapisan ini.</td></tr>`;
+      } else {
+        SENARAI_PENUH_DEFAULTER.forEach((d, idx) => {
+          html += `
+            <tr class="hover:bg-rose-50 transition border-b border-slate-100">
+              <td class="p-3 text-center font-bold text-slate-400">${idx + 1}</td>
+              <td class="p-3 text-rose-900 font-extrabold">${d.lokasi}</td>
+              <td class="p-3">${d.daerah}</td>
+              <td class="p-3">${d.negeri}</td>
+              <td class="p-3 text-center">
+                <span class="bg-rose-100 border border-rose-300 text-rose-700 px-3 py-1 rounded-full font-black">${d.kekerapan} Bulan</span>
+              </td>
+            </tr>
+          `;
+        });
+      }
+      tbody.innerHTML = html;
+      document.getElementById("modalDefaulter").classList.remove("hidden");
+    }
+
+    function tutupModalDefaulter() {
+      document.getElementById("modalDefaulter").classList.add("hidden");
+    }
+// ============================================================================
+    // 🎨 FUNGSI PELUKIS CARTA LOLIPOP (100% TAILWIND CSS & HTML)
+    // ============================================================================
+    function binaGrafLolipopHTML(dataArr) {
+        const kontena = document.getElementById('kontenaLolipop');
+        if (!kontena) return;
+
+        if (dataArr.length === 0) {
+            kontena.innerHTML = `<div class="text-xs text-center text-slate-400 mt-10 font-bold">Tiada data direkodkan untuk tapisan ini.</div>`;
+            return;
+        }
+
+        // Cari nilai maksimum untuk jadikan penanda aras lebar (100% width)
+        const nilaiMaksimum = dataArr[0].cpt || 1; 
+        let htmlLolipop = '';
+
+        dataArr.forEach(d => {
+            // Tentukan warna kepala lolipop (Traffic Light System)
+           let warnaLolipop = 'bg-emerald-500 shadow-emerald-200'; // Normal
+
+            if (modeTangkapan === "rf") {
+                // Skala Amaran untuk RF
+                if (d.cpt >= 20) warnaLolipop = 'bg-rose-500 shadow-rose-200'; 
+                else if (d.cpt >= 10) warnaLolipop = 'bg-amber-500 shadow-amber-200'; 
+            } else {
+                // Skala Amaran untuk RV (Kumbang RV lebih bahaya, ambang lebih rendah)
+                if (d.cpt >= 10) warnaLolipop = 'bg-rose-500 shadow-rose-200'; 
+                else if (d.cpt >= 5) warnaLolipop = 'bg-amber-500 shadow-amber-200'; 
+            }
+
+            // Kira peratusan panjang batang berdasarkan nilai maksimum
+            let peratusLebar = (d.cpt / nilaiMaksimum) * 100;
+            if (peratusLebar < 2) peratusLebar = 2; // Lebar minimum supaya tak ghaib
+
+            htmlLolipop += `
+            <div class="flex items-center text-xs font-bold w-full group cursor-default" title="Tangkapan: ${d.tangkapan} ekor | Perangkap Aktif: ${d.traps}">
+                
+                <div class="w-24 truncate text-slate-600 uppercase pr-2 text-[10px] tracking-wide" title="${d.negeri}">${d.negeri}</div>
+                
+                <div class="flex-1 flex items-center">
+                    <div class="bg-slate-200 h-1 rounded-l-full transition-all duration-700 ease-out" style="width: ${peratusLebar}%"></div>
+                    <div class="${warnaLolipop} h-3.5 w-3.5 rounded-full shadow-md z-10 -ml-1 transition-transform duration-300 group-hover:scale-150"></div>
+                </div>
+                
+                <div class="w-10 text-right text-slate-900 font-black ml-2">${d.cpt.toFixed(1)}</div>
+                
+            </div>`;
+        });
+
+        kontena.innerHTML = htmlLolipop;
+    }
+  </script> </body>
+</html>
