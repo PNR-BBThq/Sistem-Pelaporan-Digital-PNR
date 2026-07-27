@@ -1,7 +1,7 @@
 // ==========================================
 // FAIL: js/charts.js
 // FUNGSI: Menguruskan Carta Bar dan Pie
-// REDESIGN: Gradient fills, smooth animations, premium tooltips
+// REDESIGN: Ranking-based Gradients, Direct Data Labels, Gridline Cleanup
 // ==========================================
 
 const ChartManager = {
@@ -10,14 +10,6 @@ const ChartManager = {
     chartLevel: 1,
     pilihanPerosak: "",
     pilihanTanaman: "",
-
-    // Create gradient for bar charts
-    createGradient: function(ctx, color1, color2) {
-        const gradient = ctx.createLinearGradient(0, 0, ctx.canvas.width, 0);
-        gradient.addColorStop(0, color1);
-        gradient.addColorStop(1, color2);
-        return gradient;
-    },
 
     updateCharts: function(pm, km) { 
         if (typeof Chart === 'undefined') return;
@@ -127,8 +119,7 @@ const ChartManager = {
         const ctx = canvas.getContext('2d'); 
         if (this.myPestChart) this.myPestChart.destroy();
 
-        let labelX = [], dataY = [], tajuk = "", warna = "", warnaHover = "", sub = "";
-        let gradientColor1 = "", gradientColor2 = "";
+        let labelX = [], dataY = [], tajuk = "", sub = "";
 
         if (level === 1) {
             let kiraPerosak = {};
@@ -147,8 +138,7 @@ const ChartManager = {
             let top10 = Object.entries(kiraPerosak).sort((a,b)=>b[1]-a[1]).slice(0,10);
             labelX = top10.map(x => x[0].toUpperCase()); dataY = top10.map(x => x[1]); 
             tajuk = "Top 10 Perosak Tertinggi (Ha)"; sub = "Klik pada bar untuk lihat pecahan tanaman"; 
-            gradientColor1 = "#f43f5e"; gradientColor2 = "#e11d48";
-            warna = "#f43f5e"; warnaHover = "#e11d48"; this.chartLevel = 1; 
+            this.chartLevel = 1; 
             const btn = document.getElementById('btnBackPest');
             if(btn) btn.style.display = 'none';
         } 
@@ -174,8 +164,7 @@ const ChartManager = {
             let susun = Object.entries(kiraTanaman).sort((a,b)=>b[1]-a[1]).slice(0, 10);
             labelX = susun.map(x=>x[0]); dataY = susun.map(x=>x[1]); 
             tajuk = `Tanaman Diserang: ${namaPest} (Ha)`; sub = "Klik pada bar tanaman untuk lihat pecahan daerah"; 
-            gradientColor1 = "#6366f1"; gradientColor2 = "#8b5cf6";
-            warna = "#6366f1"; warnaHover = "#4f46e5"; this.chartLevel = 2; this.pilihanPerosak = namaPest; 
+            this.chartLevel = 2; this.pilihanPerosak = namaPest; 
             const btn = document.getElementById('btnBackPest');
             if(btn) btn.style.display = 'inline-block';
         } 
@@ -203,8 +192,7 @@ const ChartManager = {
             let susun = Object.entries(kiraDaerah).sort((a,b)=>b[1]-a[1]).slice(0, 15);
             labelX = susun.map(x=>x[0]); dataY = susun.map(x=>x[1]); 
             tajuk = `Daerah Terlibat: ${namaTanaman} - ${this.pilihanPerosak} (Ha)`; sub = "Pecahan terperinci mengikut daerah & negeri"; 
-            gradientColor1 = "#10b981"; gradientColor2 = "#059669";
-            warna = "#10b981"; warnaHover = "#059669"; this.chartLevel = 3; this.pilihanTanaman = namaTanaman; 
+            this.chartLevel = 3; this.pilihanTanaman = namaTanaman; 
             const btn = document.getElementById('btnBackPest');
             if(btn) btn.style.display = 'inline-block';
         }
@@ -214,14 +202,60 @@ const ChartManager = {
         if (tajukEl) tajukEl.innerText = tajuk;
         if (subEl) subEl.innerHTML = `<i class="bi bi-hand-index-thumb-fill text-primary me-1"></i> ${sub}`;
 
-        // Create gradient
-        const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-        gradient.addColorStop(0, gradientColor1);
-        gradient.addColorStop(1, gradientColor2);
+        // Create ranking-based gradient colors for each bar according to rank
+        const rankColorPairs = [
+            ['#ef4444', '#dc2626'], // Rank 1: Red
+            ['#f97316', '#ea580c'], // Rank 2: Orange
+            ['#f59e0b', '#d97706'], // Rank 3: Amber
+            ['#84cc16', '#65a30d'], // Rank 4: Lime
+            ['#10b981', '#059669'], // Rank 5: Emerald
+            ['#06b6d4', '#0891b2'], // Rank 6: Cyan
+            ['#3b82f6', '#2563eb'], // Rank 7: Blue
+            ['#6366f1', '#4f46e5'], // Rank 8: Indigo
+            ['#8b5cf6', '#7c3aed'], // Rank 9: Violet
+            ['#ec4899', '#db2777']  // Rank 10: Pink
+        ];
 
-        const hoverGradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-        hoverGradient.addColorStop(0, gradientColor2);
-        hoverGradient.addColorStop(1, gradientColor1);
+        const barCount = labelX.length || 1;
+        const bgGradients = [];
+        const hoverGradients = [];
+
+        for (let i = 0; i < barCount; i++) {
+            const pair = rankColorPairs[i % rankColorPairs.length];
+            const g = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            g.addColorStop(0, pair[0]);
+            g.addColorStop(1, pair[1]);
+            bgGradients.push(g);
+
+            const hg = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            hg.addColorStop(0, pair[1]);
+            hg.addColorStop(1, pair[0]);
+            hoverGradients.push(hg);
+        }
+
+        // Inline plugin to render values directly at the end of each bar
+        const barEndLabelsPlugin = {
+            id: 'barEndLabelsPlugin',
+            afterDatasetsDraw(chart) {
+                const { ctx } = chart;
+                chart.data.datasets.forEach((dataset, datasetIdx) => {
+                    const meta = chart.getDatasetMeta(datasetIdx);
+                    meta.data.forEach((bar, index) => {
+                        const val = dataset.data[index];
+                        if (val !== undefined && val !== null && val > 0) {
+                            ctx.save();
+                            ctx.fillStyle = '#475569';
+                            ctx.font = "bold 11px 'Inter', sans-serif";
+                            ctx.textAlign = 'left';
+                            ctx.textBaseline = 'middle';
+                            const textStr = `${parseFloat(val).toFixed(2)} Ha`;
+                            ctx.fillText(textStr, bar.x + 8, bar.y);
+                            ctx.restore();
+                        }
+                    });
+                });
+            }
+        };
 
         const self = this;
         this.myPestChart = new Chart(ctx, { 
@@ -231,18 +265,24 @@ const ChartManager = {
                 datasets: [{ 
                     label: 'Luas Serangan (Ha)', 
                     data: dataY.length ? dataY : [0], 
-                    backgroundColor: gradient, 
-                    hoverBackgroundColor: hoverGradient,
-                    borderRadius: 8,
+                    backgroundColor: bgGradients, 
+                    hoverBackgroundColor: hoverGradients,
+                    borderRadius: 10,
                     barThickness: 'flex',
-                    maxBarThickness: 28,
+                    maxBarThickness: 26,
                     borderSkipped: false
                 }] 
             }, 
+            plugins: [barEndLabelsPlugin],
             options: { 
                 indexAxis: 'y', 
                 responsive: true, 
                 maintainAspectRatio: false, 
+                layout: {
+                    padding: {
+                        right: 75 // Extra right padding for end-of-bar labels
+                    }
+                },
                 animation: {
                     duration: 600,
                     easing: 'easeOutQuart'
@@ -266,12 +306,12 @@ const ChartManager = {
                 },
                 scales: {
                     x: {
-                        grid: { color: 'rgba(226, 232, 240, 0.5)', drawBorder: false },
+                        grid: { display: false }, // Remove vertical gridlines
                         ticks: { font: { size: 11, weight: '600', family: "'Inter', sans-serif" }, color: '#94a3b8' },
                         border: { display: false }
                     },
                     y: {
-                        grid: { display: false },
+                        grid: { display: false }, // Remove gridlines
                         ticks: { font: { size: 12, weight: 'bold', family: "'Inter', sans-serif" }, color: '#1e293b' },
                         border: { display: false }
                     }

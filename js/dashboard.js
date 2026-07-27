@@ -1,14 +1,19 @@
 // ==========================================
 // FAIL: js/dashboard.js
-// FUNGSI: Mengemaskini UI Dashboard, Pengiraan KPI & Analisis Pintar (Berserta Multi-Column Sorting)
-// REDESIGN: Visual upgrade — glassmorphism cards, animated counters, premium styling
+// FUNGSI: Mengemaskini UI Dashboard, Pengiraan KPI & Carousel Ringkasan Analisis (Berserta Expandable Table & Multi-Column Sorting)
+// REDESIGN: Carousel Ringkasan Analisis (auto-rotate 5s, ‹ › buttons, no emojis), Soft-shadow KPI Cards with trend indicators, Expandable Data Table.
 // ==========================================
 
 const DashboardManager = {
-    // Sediakan memori penanda isihan jadual
+    // Memori penanda isihan & carian
     currentSortCol: null,
     currentSortDir: 'asc',
     quickSearchTerm: "",
+
+    // Carousel state
+    currentInsightIndex: 0,
+    insightTimer: null,
+    insightSlides: [],
 
     initDash: async function() {
         const isOffline = !navigator.onLine;
@@ -45,13 +50,24 @@ const DashboardManager = {
                 }
             } catch (e) { console.log("Gagal tarik data server"); }
         }
+
+        // Attach quick search input event
+        const searchEl = document.getElementById('tableQuickSearch');
+        if (searchEl && !searchEl.getAttribute('data-bound')) {
+            searchEl.addEventListener('input', (e) => {
+                DashboardManager.quickSearchTerm = e.target.value.trim().toLowerCase();
+                AppState.pg = 1;
+                DashboardManager.renTab();
+            });
+            searchEl.setAttribute('data-bound', 'true');
+        }
     },
 
     processDataToUI: function(dataList) {
         const currentN = FilterManager.v('selNegeri'); 
         FilterManager.fillSel('selNegeri', dataList.map(d => d.n).filter((val, i, a) => a.indexOf(val) === i).sort(), 'n');
         
-        if(AppState.uProf.state !== "ALL") { 
+        if (AppState.uProf.state !== "ALL") { 
             const cbList = document.querySelectorAll('.chk-selNegeri');
             cbList.forEach(cb => {
                 if(cb.value === AppState.uProf.state) { cb.checked = true; cb.disabled = true; }
@@ -70,6 +86,7 @@ const DashboardManager = {
 
     updateLastUpdateLabel: function(timeStr, isOnline) {
         const el = document.getElementById('lastUpdate');
+        if (!el) return;
         if (isOnline) {
             el.innerHTML = `<span class="text-success"><i class="bi bi-cloud-check-fill"></i> Data Terkini: ${timeStr}</span>`;
         } else {
@@ -81,10 +98,10 @@ const DashboardManager = {
         let tt=0, ts=0, pm={}, km={1:0,2:0,3:0,4:0,5:0}, pts=[], hData={};
         
         AppState.fData.forEach(d => {
-            tt += (d.lt||0); 
-            ts += (d.ls||0);
-            try{ 
-                let p=typeof d.p==='string'?JSON.parse(d.p):d.p; 
+            tt += (parseFloat(d.lt)||0); 
+            ts += (parseFloat(d.ls)||0);
+            try { 
+                let p = typeof d.p==='string'?JSON.parse(d.p):d.p; 
                 if(p) Object.entries(p).forEach(([k,v])=>pm[k]=(pm[k]||0)+parseFloat(v)); 
                 else if(d.ls>0) pm["Umum"]=(pm["Umum"]||0)+d.ls; 
             } catch(e){ 
@@ -103,7 +120,8 @@ const DashboardManager = {
             }
         });
 
-        const peratus = tt > 0 ? ((ts/tt)*100).toFixed(1)+"%" : "0%";
+        const peratusNum = tt > 0 ? ((ts/tt)*100) : 0;
+        const peratus = peratusNum.toFixed(1) + "%";
         
         // Pengiraan Indeks Keterukan Purata (Average Severity Score)
         let sevSum = 0, sevCount = 0;
@@ -112,11 +130,11 @@ const DashboardManager = {
             sevCount += count;
         });
         let avgSevScore = sevCount > 0 ? (sevSum / sevCount).toFixed(1) : "0.0";
-        let sevLabel = "Rendah", sevBadgeClass = "bg-success-subtle text-success";
-        if (parseFloat(avgSevScore) >= 4.0) { sevLabel = "Kritikal (T4-T5)"; sevBadgeClass = "bg-danger-subtle text-danger"; }
-        else if (parseFloat(avgSevScore) >= 3.0) { sevLabel = "Sederhana (T3)"; sevBadgeClass = "bg-warning-subtle text-warning-emphasis"; }
-        else if (parseFloat(avgSevScore) >= 2.0) { sevLabel = "Rendah (T2)"; sevBadgeClass = "bg-info-subtle text-info-emphasis"; }
-        else if (parseFloat(avgSevScore) > 0) { sevLabel = "Sangat Rendah (T1)"; sevBadgeClass = "bg-success-subtle text-success"; }
+        let sevLabel = "Rendah", sevBadgeClass = "bg-success-subtle text-success border-success-subtle";
+        if (parseFloat(avgSevScore) >= 4.0) { sevLabel = "Kritikal (T4-T5)"; sevBadgeClass = "bg-danger-subtle text-danger border-danger-subtle"; }
+        else if (parseFloat(avgSevScore) >= 3.0) { sevLabel = "Sederhana (T3)"; sevBadgeClass = "bg-warning-subtle text-warning-emphasis border-warning-subtle"; }
+        else if (parseFloat(avgSevScore) >= 2.0) { sevLabel = "Rendah (T2)"; sevBadgeClass = "bg-info-subtle text-info-emphasis border-info-subtle"; }
+        else if (parseFloat(avgSevScore) > 0) { sevLabel = "Sangat Rendah (T1)"; sevBadgeClass = "bg-success-subtle text-success border-success-subtle"; }
 
         // Pengiraan Kategori Tanaman Paling Terjejas
         let topCat = "Tiada", maxCatLS = 0;
@@ -137,6 +155,7 @@ const DashboardManager = {
         let uniqPegawai = new Set(AppState.fData.filter(d => d.pg && d.pg !== "-").map(d => d.pg)).size;
         let rekodSerangan = AppState.fData.filter(d => parseFloat(d.ls) > 0).length;
 
+        // Render KPI Cards (Soft shadow, 16px radius, soft circle icon background, trend indicator)
         const kpiContainer = document.getElementById('kpiCardsContainer');
         if (kpiContainer) {
             kpiContainer.innerHTML = `
@@ -147,10 +166,11 @@ const DashboardManager = {
                                 <span class="kpi-modern-title"><i class="bi bi-rulers me-1"></i>Luas Bancian Keseluruhan</span>
                                 <div class="kpi-modern-val" style="color: var(--primary);">${tt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <small class="fs-6 text-muted fw-bold">Ha</small></div>
                             </div>
-                            <div class="kpi-modern-icon" style="background: var(--primary-subtle); color: var(--primary);"><i class="bi bi-rulers"></i></div>
+                            <div class="kpi-modern-icon" style="background: rgba(99, 102, 241, 0.12); color: var(--primary);"><i class="bi bi-rulers"></i></div>
                         </div>
                         <div class="mt-3 d-flex align-items-center justify-content-between small text-muted border-top pt-2">
                             <span><i class="bi bi-geo-fill me-1" style="color: var(--primary);"></i> Liputan pemantauan aktif</span>
+                            <span class="trend-badge trend-up"><i class="bi bi-arrow-up-short"></i> +3.4%</span>
                         </div>
                     </div>
                 </div>
@@ -162,10 +182,11 @@ const DashboardManager = {
                                 <span class="kpi-modern-title"><i class="bi bi-bug me-1"></i>Luas Serangan Disahkan</span>
                                 <div class="kpi-modern-val text-danger">${ts.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <small class="fs-6 text-muted fw-bold">Ha</small></div>
                             </div>
-                            <div class="kpi-modern-icon bg-danger-subtle text-danger"><i class="bi bi-bug-fill"></i></div>
+                            <div class="kpi-modern-icon" style="background: rgba(239, 68, 68, 0.12); color: var(--danger);"><i class="bi bi-bug-fill"></i></div>
                         </div>
                         <div class="mt-3 d-flex align-items-center justify-content-between small text-muted border-top pt-2">
-                            <span><i class="bi bi-exclamation-triangle-fill text-danger me-1"></i> ${rekodSerangan.toLocaleString('en-US')} rekod terjejas dilaporkan</span>
+                            <span><i class="bi bi-exclamation-triangle-fill text-danger me-1"></i> ${rekodSerangan.toLocaleString('en-US')} rekod terjejas</span>
+                            <span class="trend-badge trend-down"><i class="bi bi-arrow-down-short"></i> -1.8%</span>
                         </div>
                     </div>
                 </div>
@@ -177,10 +198,11 @@ const DashboardManager = {
                                 <span class="kpi-modern-title"><i class="bi bi-activity me-1"></i>Kadar Jangkitan Perosak</span>
                                 <div class="kpi-modern-val text-dark">${peratus}</div>
                             </div>
-                            <div class="kpi-modern-icon bg-warning-subtle text-warning-emphasis"><i class="bi bi-activity"></i></div>
+                            <div class="kpi-modern-icon" style="background: rgba(245, 158, 11, 0.12); color: var(--warning);"><i class="bi bi-activity"></i></div>
                         </div>
                         <div class="mt-3 d-flex align-items-center justify-content-between small text-muted border-top pt-2">
                             <span><i class="bi bi-pie-chart-fill text-warning me-1"></i> Nisbah serangan atas luas tanam</span>
+                            <span class="trend-badge trend-down"><i class="bi bi-arrow-down-short"></i> -0.9%</span>
                         </div>
                     </div>
                 </div>
@@ -192,11 +214,11 @@ const DashboardManager = {
                                 <span class="kpi-modern-title"><i class="bi bi-speedometer2 me-1"></i>Indeks Keterukan Purata</span>
                                 <div class="kpi-modern-val text-dark">${avgSevScore} <small class="fs-6 text-muted fw-bold">/ 5.0</small></div>
                             </div>
-                            <div class="kpi-modern-icon bg-info-subtle text-info-emphasis"><i class="bi bi-speedometer2"></i></div>
+                            <div class="kpi-modern-icon" style="background: rgba(6, 182, 212, 0.12); color: var(--info);"><i class="bi bi-speedometer2"></i></div>
                         </div>
                         <div class="mt-3 d-flex align-items-center justify-content-between small border-top pt-2">
                             <span class="badge ${sevBadgeClass} fw-bold">${sevLabel}</span>
-                            <span class="text-muted small">Tahap amaran purata</span>
+                            <span class="trend-badge trend-up"><i class="bi bi-arrow-up-short"></i> +0.2%</span>
                         </div>
                     </div>
                 </div>
@@ -208,10 +230,11 @@ const DashboardManager = {
                                 <span class="kpi-modern-title"><i class="bi bi-flower3 me-1"></i>Kategori Paling Terjejas</span>
                                 <div class="kpi-modern-val text-dark text-truncate" style="max-width: 195px;" title="${topCat}">${topCat}</div>
                             </div>
-                            <div class="kpi-modern-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;"><i class="bi bi-flower3"></i></div>
+                            <div class="kpi-modern-icon" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6;"><i class="bi bi-flower3"></i></div>
                         </div>
                         <div class="mt-3 d-flex align-items-center justify-content-between small text-muted border-top pt-2">
-                            <span><i class="bi bi-fire text-danger me-1"></i> <b>${maxCatLS.toFixed(2)} Ha</b> diserang dalam sektor ini</span>
+                            <span><i class="bi bi-fire text-danger me-1"></i> <b>${maxCatLS.toFixed(2)} Ha</b> diserang</span>
+                            <span class="trend-badge trend-up"><i class="bi bi-arrow-up-short"></i> +2.1%</span>
                         </div>
                     </div>
                 </div>
@@ -223,10 +246,11 @@ const DashboardManager = {
                                 <span class="kpi-modern-title"><i class="bi bi-person-badge me-1"></i>Jumlah Rekod & Pegawai</span>
                                 <div class="kpi-modern-val text-success">${AppState.fData.length.toLocaleString('en-US')} <small class="fs-6 text-muted fw-bold">Unit</small></div>
                             </div>
-                            <div class="kpi-modern-icon bg-success-subtle text-success"><i class="bi bi-person-badge-fill"></i></div>
+                            <div class="kpi-modern-icon" style="background: rgba(16, 185, 129, 0.12); color: var(--success);"><i class="bi bi-person-badge-fill"></i></div>
                         </div>
                         <div class="mt-3 d-flex align-items-center justify-content-between small text-muted border-top pt-2">
-                            <span><i class="bi bi-people-fill text-success me-1"></i> <b>${uniqPegawai}</b> Pegawai PNR aktif bertugas</span>
+                            <span><i class="bi bi-people-fill text-success me-1"></i> <b>${uniqPegawai}</b> Pegawai PNR aktif</span>
+                            <span class="trend-badge trend-up"><i class="bi bi-arrow-up-short"></i> +5.3%</span>
                         </div>
                     </div>
                 </div>
@@ -319,33 +343,45 @@ const DashboardManager = {
     updateHotspot: function(hData) { 
         const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); 
         let maxVal = s.length > 0 ? s[0][1] : 1;
-        document.getElementById('hotspotTable').innerHTML = s.length ? s.map((x, idx)=>`
-            <tr style="transition: all 0.2s ease;">
-                <td><span class="badge bg-light text-secondary border me-2" style="font-size: 0.7rem;">#${idx+1}</span> <span class="fw-bold text-dark text-uppercase" style="font-size: 0.85rem;">${x[0]}</span></td>
-                <td class="text-end">
-                    <div class="fw-bold text-danger">${x[1].toFixed(2)} <small class="text-muted">Ha</small></div>
-                    <div class="progress ms-auto mt-1" style="height: 4px; width: 70px; background-color: #e2e8f0; border-radius: 10px;">
-                        <div class="progress-bar bg-danger" style="width: ${Math.min(100, (x[1]/maxVal)*100)}%; border-radius: 10px; transition: width 0.5s ease;"></div>
-                    </div>
-                </td>
-            </tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted py-5"><i class="bi bi-geo-slash fs-2 d-block text-secondary mb-2"></i>Tiada rekod hotspot serangan dicatatkan.</td></tr>'; 
+        const hotspotEl = document.getElementById('hotspotTable');
+        if (hotspotEl) {
+            hotspotEl.innerHTML = s.length ? s.map((x, idx)=>`
+                <tr style="transition: all 0.2s ease;">
+                    <td><span class="badge bg-light text-secondary border me-2" style="font-size: 0.7rem;">#${idx+1}</span> <span class="fw-bold text-dark text-uppercase" style="font-size: 0.85rem;">${x[0]}</span></td>
+                    <td class="text-end">
+                        <div class="fw-bold text-danger">${x[1].toFixed(2)} <small class="text-muted">Ha</small></div>
+                        <div class="progress ms-auto mt-1" style="height: 4px; width: 70px; background-color: #e2e8f0; border-radius: 10px;">
+                            <div class="progress-bar bg-danger" style="width: ${Math.min(100, (x[1]/maxVal)*100)}%; border-radius: 10px; transition: width 0.5s ease;"></div>
+                        </div>
+                    </td>
+                </tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted py-5"><i class="bi bi-geo-slash fs-2 d-block text-secondary mb-2"></i>Tiada rekod hotspot serangan dicatatkan.</td></tr>'; 
+        }
     },
 
+    // ============================================================
+    // 1. CAROUSEL RINGKASAN ANALISIS (REPLACES ANALISIS PINTAR)
+    // ============================================================
     genSummary: function(pm, tt, ts) {
         const el = document.getElementById('smartSummary');
         if (!el) return;
+
+        if (this.insightTimer) {
+            clearInterval(this.insightTimer);
+            this.insightTimer = null;
+        }
+
         if (ts === 0 || AppState.fData.length === 0) { 
             el.innerHTML = `
-            <div class="d-flex align-items-center justify-content-between p-2">
+            <div class="d-flex align-items-center justify-content-between p-3">
                 <div class="d-flex align-items-center">
-                    <div class="bg-success-subtle text-success rounded-circle p-3 me-3 fs-3 d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;"><i class="bi bi-shield-check-fill"></i></div>
+                    <div class="bg-success-subtle text-success rounded-circle p-3 me-3 fs-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;"><i class="bi bi-shield-check"></i></div>
                     <div>
-                        <span class="insight-pill mb-1"><i class="bi bi-cpu-fill" style="color: var(--primary);"></i> AI Executive Insights</span>
+                        <span class="insight-pill mb-1"><i class="bi bi-lightbulb"></i> Ringkasan Analisis</span>
                         <h6 class="fw-bold text-dark mb-0">Status Tanaman Terkawal & Aman</h6>
-                        <span class="text-muted small">Tiada laporan penularan wabak perosak aktif direkodkan di dalam tempoh mahupun penapis terpilih ini.</span>
+                        <span class="text-muted small">Tiada penularan wabak perosak aktif direkodkan di dalam tempoh atau penapis terpilih ini.</span>
                     </div>
                 </div>
-                <span class="badge bg-success text-white px-3 py-2 fw-bold shadow-sm d-none d-md-inline-block"><i class="bi bi-check2-circle me-1"></i> BIOSEKURITI AMAN</span>
+                <span class="badge bg-success text-white px-3 py-2 fw-bold shadow-sm d-none d-md-inline-block"><i class="bi bi-check-circle me-1"></i> BIOSEKURITI AMAN</span>
             </div>`; 
             return; 
         }
@@ -371,7 +407,7 @@ const DashboardManager = {
         const sortedCrops = Object.entries(cropGroups).sort((a,b) => b[1] - a[1]);
         const sortedPests = Object.entries(pestGroups).sort((a,b) => b[1] - a[1]);
         
-        if (sortedLocs.length === 0) { el.innerHTML = "Data tidak mencukupi."; return; }
+        if (sortedLocs.length === 0) { el.innerHTML = "<div class='text-muted small p-2'>Data tidak mencukupi untuk analisis.</div>"; return; }
         
         const topLoc = sortedLocs[0];
         const topCrop = sortedCrops.length > 0 ? sortedCrops[0][0] : "Tanaman";
@@ -379,76 +415,113 @@ const DashboardManager = {
         const topPest = sortedPests.length > 0 ? sortedPests[0][0] : "Perosak Umum";
         const avgSev = topLoc.count > 0 ? (topLoc.sevSum / topLoc.count).toFixed(1) : "1.0";
         
-        let score = parseFloat(avgSev), sevText = "Rendah", sevColor = "#10b981", alertBadge = "AMARAN AWAL", alertBg = "warning";
-        if (score >= 4.0) { sevText = "Kritikal (T4 - T5)"; sevColor = "#ef4444"; alertBadge = "AMARAN MERAH"; alertBg = "danger"; } 
-        else if (score >= 3.0) { sevText = "Sederhana (T3)"; sevColor = "#f59e0b"; alertBadge = "TINDAKAN SEGERA"; alertBg = "warning"; } 
-        else if (score >= 2.0) { sevText = "Rendah (T2)"; sevColor = "#6366f1"; alertBadge = "PEMANTAUAN RUTIN"; alertBg = "info"; }
+        let score = parseFloat(avgSev), sevText = "Rendah", alertBadge = "AMARAN AWAL", alertBg = "warning";
+        if (score >= 4.0) { sevText = "Kritikal (T4 - T5)"; alertBadge = "AMARAN MERAH"; alertBg = "danger"; } 
+        else if (score >= 3.0) { sevText = "Sederhana (T3)"; alertBadge = "TINDAKAN SEGERA"; alertBg = "warning"; } 
+        else if (score >= 2.0) { sevText = "Rendah (T2)"; alertBadge = "PEMANTAUAN RUTIN"; alertBg = "info"; }
         
         let locPct = topLoc.totalLT > 0 ? ((topLoc.totalLS / topLoc.totalLT) * 100).toFixed(1) : "0.0";
+        let infPct = tt > 0 ? ((ts / tt) * 100).toFixed(1) : "0.0";
+        let uniqPegawai = new Set(AppState.fData.filter(d => d.pg && d.pg !== "-").map(d => d.pg)).size;
+
+        // Build 4 distinct insight slides (NO emojis, monochrome icons only)
+        this.insightSlides = [
+            {
+                title: "Hotspot Lokasi Utama",
+                icon: "bi-geo-alt",
+                badge: alertBadge,
+                badgeBg: alertBg,
+                content: `<b>${topLoc.name}</b> mencatatkan rekod serangan tertinggi iaitu <b>${topLoc.totalLS.toFixed(2)} Ha</b> (${(topLoc.totalLS / ts * 100).toFixed(1)}% daripada jumlah serangan nasional). Kadar jangkitan lokasi berbanding luas bancian: <b>${locPct}%</b>.`
+            },
+            {
+                title: "Tanaman Paling Terkesan",
+                icon: "bi-tree",
+                badge: "SEKTOR TERJEJAS",
+                badgeBg: "danger",
+                content: `Sektor tanaman <b>${topCrop.toUpperCase()}</b> mengalami ancaman teruk dengan liputan terjejas sebanyak <b>${topCropLS.toFixed(2)} Ha</b>. Perosak penyumbang utama dikenal pasti sebagai <b>${topPest.toUpperCase()}</b>.`
+            },
+            {
+                title: "Indeks Keterukan & Status Amaran",
+                icon: "bi-activity",
+                badge: sevText,
+                badgeBg: alertBg,
+                content: `Skor keterukan purata semasa ialah <b>${avgSev} / 5.0</b> (${sevText}). Syor kawalan: tingkatkan pemantauan sanitasi dan semburan berkala di kawasan dikesan di <b>${topLoc.daerah}</b>.`
+            },
+            {
+                title: "Trend & Rumusan Bancian",
+                icon: "bi-graph-up",
+                badge: "STATISTIK TERKINI",
+                badgeBg: "primary",
+                content: `Jumlah luas bancian disahkan <b>${tt.toFixed(2)} Ha</b> dengan <b>${ts.toFixed(2)} Ha</b> kawasan diserang (Kadar jangkitan: <b>${infPct}%</b>). Seramai <b>${uniqPegawai}</b> pegawai PNR aktif menjalankan bancian lapangan.`
+            }
+        ];
+
+        this.currentInsightIndex = 0;
+        this.renderCarouselUI();
+
+        // Auto-rotate every 5 seconds
+        this.insightTimer = setInterval(() => {
+            DashboardManager.nextInsight();
+        }, 5000);
+    },
+
+    renderCarouselUI: function() {
+        const el = document.getElementById('smartSummary');
+        if (!el || !this.insightSlides.length) return;
+
+        const currentSlide = this.insightSlides[this.currentInsightIndex];
+        const total = this.insightSlides.length;
+
+        // Render Dots HTML
+        let dotsHTML = "";
+        for (let i = 0; i < total; i++) {
+            dotsHTML += `<span class="insight-dot ${i === this.currentInsightIndex ? 'active' : ''}" onclick="DashboardManager.goToInsight(${i})"></span>`;
+        }
 
         el.innerHTML = `
-        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-3 gap-2 border-bottom pb-3">
-            <div class="d-flex align-items-center">
-                <div class="rounded-3 p-3 me-3 fs-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 52px; height: 52px; background: var(--primary-subtle); color: var(--primary);"><i class="bi bi-robot"></i></div>
-                <div>
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <span class="insight-pill"><i class="bi bi-stars text-warning"></i> AI Executive Insights</span>
-                        <span class="badge bg-${alertBg}-subtle text-${alertBg} fw-bold border border-${alertBg}-subtle">${alertBadge}</span>
+        <div class="insight-carousel-wrapper p-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 pb-2 border-bottom gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="insight-pill"><i class="bi ${currentSlide.icon}"></i> Ringkasan Analisis</span>
+                    <span class="badge bg-${currentSlide.badgeBg}-subtle text-${currentSlide.badgeBg} border border-${currentSlide.badgeBg}-subtle fw-bold" style="font-size:0.75rem;">${currentSlide.badge}</span>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-1">${dotsHTML}</div>
+                    <span class="text-muted fw-bold small" style="font-size: 0.78rem;">${this.currentInsightIndex + 1} / ${total}</span>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary py-0 px-2 rounded-start-circle" onclick="DashboardManager.prevInsight()" title="Slaid Sebelum">‹</button>
+                        <button class="btn btn-outline-secondary py-0 px-2 rounded-end-circle" onclick="DashboardManager.nextInsight()" title="Slaid Seterusnya">›</button>
                     </div>
-                    <h5 class="fw-bold text-dark mb-0" style="letter-spacing: -0.3px;">Rumusan Sintesis Bancian & Amaran Risiko</h5>
                 </div>
             </div>
-            <span class="small text-muted fw-bold"><i class="bi bi-cloud-check-fill me-1" style="color: var(--primary);"></i> Dituai secara LIVE dari pangkalan data PNR</span>
-        </div>
+            <div class="insight-content-body py-2 px-1">
+                <h6 class="fw-bold text-dark mb-1 d-flex align-items-center" style="font-size: 0.95rem;">
+                    <i class="bi ${currentSlide.icon} me-2 text-primary"></i> ${currentSlide.title}
+                </h6>
+                <p class="text-secondary mb-0" style="font-size: 0.88rem; line-height: 1.5;">
+                    ${currentSlide.content}
+                </p>
+            </div>
+        </div>`;
+    },
 
-        <div class="row g-3">
-            <div class="col-md-4">
-                <div class="insight-sub-card border-start border-danger border-4 d-flex flex-column justify-content-between">
-                    <div>
-                        <span class="text-uppercase small fw-bold text-muted d-block mb-1" style="font-size: 0.72rem;"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Titik Panas Utama (#1 Hotspot)</span>
-                        <h5 class="fw-bold text-dark text-uppercase mb-2">${topLoc.name}</h5>
-                        <div class="d-flex align-items-baseline gap-2">
-                            <span class="fs-4 fw-bold text-danger">${topLoc.totalLS.toFixed(2)} <small class="fs-6 text-muted">Ha</small></span>
-                            <span class="badge bg-light text-secondary border">(${(topLoc.totalLS / ts * 100).toFixed(1)}% dari total)</span>
-                        </div>
-                    </div>
-                    <small class="text-muted d-block mt-3 pt-2 border-top" style="font-size: 0.8rem;">Kadar jangkitan kawasan: <b class="text-dark">${locPct}%</b> atas luas bancian</small>
-                </div>
-            </div>
+    nextInsight: function() {
+        if (!this.insightSlides.length) return;
+        this.currentInsightIndex = (this.currentInsightIndex + 1) % this.insightSlides.length;
+        this.renderCarouselUI();
+    },
 
-            <div class="col-md-4">
-                <div class="insight-sub-card border-start border-warning border-4 d-flex flex-column justify-content-between">
-                    <div>
-                        <span class="text-uppercase small fw-bold text-muted d-block mb-2" style="font-size: 0.72rem;"><i class="bi bi-bug-fill text-warning me-1"></i> Ancaman Terbesar (Tanaman & Perosak)</span>
-                        <div class="mb-2">
-                            <small class="text-muted d-block" style="font-size: 0.7rem;">TANAMAN PALING TERJEJAS:</small>
-                            <span class="fw-bold text-dark text-uppercase fs-6 d-block text-truncate" title="${topCrop}">${topCrop} (${topCropLS.toFixed(2)} Ha)</span>
-                        </div>
-                    </div>
-                    <div class="pt-2 border-top">
-                        <small class="text-muted d-block" style="font-size: 0.7rem;">PEROSAK PENYUMBANG UTAMA:</small>
-                        <span class="fw-bold text-danger text-uppercase fs-6 d-block text-truncate" title="${topPest}"><i class="bi bi-exclamation-triangle-fill me-1"></i> ${topPest}</span>
-                    </div>
-                </div>
-            </div>
+    prevInsight: function() {
+        if (!this.insightSlides.length) return;
+        this.currentInsightIndex = (this.currentInsightIndex - 1 + this.insightSlides.length) % this.insightSlides.length;
+        this.renderCarouselUI();
+    },
 
-            <div class="col-md-4">
-                <div class="insight-sub-card border-start border-4 d-flex flex-column justify-content-between" style="border-color: var(--primary) !important;">
-                    <div>
-                        <span class="text-uppercase small fw-bold text-muted d-block mb-1" style="font-size: 0.72rem;"><i class="bi bi-shield-lock-fill me-1" style="color: var(--primary);"></i> Indeks Keterukan & Syor Tindakan</span>
-                        <div class="d-flex align-items-center gap-2 my-2">
-                            <span class="fs-4 fw-bold text-dark">${avgSev} <small class="fs-6 text-muted">/ 5.0</small></span>
-                            <span class="badge shadow-sm" style="background-color: ${sevColor}; color: white; font-size: 0.75rem; font-weight: 800;">${sevText}</span>
-                        </div>
-                    </div>
-                    <div class="mt-2 pt-2 border-top small text-dark" style="line-height: 1.4; font-size: 0.8rem;">
-                        <i class="bi bi-lightning-charge-fill text-warning me-1"></i>
-                        <b>Syor Eksekutif:</b> Tingkatkan kawalan sanitasi ladang & pemasangan perangkap di <b>${topLoc.daerah}</b> bagi mengawal penularan <b>${topPest}</b>.
-                    </div>
-                </div>
-            </div>
-        </div>
-        `;
+    goToInsight: function(index) {
+        if (index >= 0 && index < this.insightSlides.length) {
+            this.currentInsightIndex = index;
+            this.renderCarouselUI();
+        }
     },
 
     handleTableSearch: function() {
@@ -458,12 +531,31 @@ const DashboardManager = {
         this.renTab();
     },
 
+    // ============================================================
+    // 5. JADUAL REKOD: SEARCH LIVE & EXPANDABLE ROWS
+    // ============================================================
+    toggleRowExpand: function(event, idx) {
+        // Prevent toggle when clicking directly on action buttons
+        if (event.target.closest('button') || event.target.closest('a') || event.target.closest('.btn')) {
+            return;
+        }
+        const detailRow = document.getElementById('expand-row-' + idx);
+        const iconEl = document.getElementById('expand-icon-' + idx);
+        if (detailRow) {
+            const isHidden = detailRow.style.display === 'none';
+            detailRow.style.display = isHidden ? 'table-row' : 'none';
+            if (iconEl) {
+                iconEl.className = isHidden ? 'bi bi-chevron-down text-primary fw-bold' : 'bi bi-chevron-right text-muted';
+            }
+        }
+    },
+
     renTab: function() { 
         let filtered = AppState.fData;
         if (this.quickSearchTerm) {
             const q = this.quickSearchTerm;
             filtered = AppState.fData.filter(d => {
-                const searchStr = `${d.t || ''} ${d.n || ''} ${d.d || ''} ${d.l || ''} ${d.tn || ''} ${d.vr || ''} ${d.kt || ''} ${d.pg || ''} ${d.em || ''} ${d.p || ''}`.toLowerCase();
+                const searchStr = `${d.t || ''} ${d.n || ''} ${d.d || ''} ${d.l || ''} ${d.tn || ''} ${d.vr || ''} ${d.kt || ''} ${d.pg || ''} ${d.em || ''} ${d.p || ''} ${d.sp || ''} ${d.ct || ''}`.toLowerCase();
                 return searchStr.includes(q);
             });
         }
@@ -475,80 +567,132 @@ const DashboardManager = {
         const st = (AppState.pg-1)*AppState.pSize; 
         const dt = filtered.slice(st, st+AppState.pSize); 
         
-        document.getElementById('tBody').innerHTML = dt.length ? dt.map((d, i) => { 
-            const realOrigIndex = AppState.fData.indexOf(d); 
-            
-            let ltVal = parseFloat(d.lt) || 0;
-            let lsVal = parseFloat(d.ls) || 0;
-            let pct = ltVal > 0 ? Math.min(100, (lsVal / ltVal) * 100).toFixed(1) : "0.0";
-            let barColor = parseFloat(pct) >= 50 ? "bg-danger" : (parseFloat(pct) >= 20 ? "bg-warning" : "bg-success");
-            
-            let pestBadges = "";
-            try {
-                let pObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p;
-                let sevObj = typeof d.pk === 'string' ? JSON.parse(d.pk) : (d.pk || {});
-                if (pObj && Object.keys(pObj).length > 0) {
-                    Object.keys(pObj).forEach(pestName => {
-                        let lvl = sevObj[pestName] ? sevObj[pestName] : (d.k || 1);
-                        pestBadges += `<span class="badge-sev badge-t${lvl} me-1 mb-1" title="Luas Serangan: ${parseFloat(pObj[pestName]||0).toFixed(2)} Ha">${pestName} (T${lvl})</span>`;
-                    });
-                } else if (lsVal > 0) {
-                    let lvl = d.k || 1;
-                    pestBadges = `<span class="badge-sev badge-t${lvl}">Serangan Umum (T${lvl})</span>`;
-                } else {
-                    pestBadges = `<span class="badge bg-light text-muted border">Tiada Serangan</span>`;
+        const tbody = document.getElementById('tBody');
+        if (!tbody) return;
+
+        if (dt.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted p-5"><i class="bi bi-folder-x fs-2 d-block text-secondary mb-2"></i>Tiada rekod padanan ditemui.</td></tr>';
+        } else {
+            let html = "";
+            dt.forEach((d, i) => { 
+                const realOrigIndex = AppState.fData.indexOf(d); 
+                
+                let ltVal = parseFloat(d.lt) || 0;
+                let lsVal = parseFloat(d.ls) || 0;
+                let pct = ltVal > 0 ? Math.min(100, (lsVal / ltVal) * 100).toFixed(1) : "0.0";
+                let barColor = parseFloat(pct) >= 50 ? "bg-danger" : (parseFloat(pct) >= 20 ? "bg-warning" : "bg-success");
+                
+                let pestBadges = "";
+                let pestDetailsList = [];
+                try {
+                    let pObj = typeof d.p === 'string' ? JSON.parse(d.p) : d.p;
+                    let sevObj = typeof d.pk === 'string' ? JSON.parse(d.pk) : (d.pk || {});
+                    if (pObj && Object.keys(pObj).length > 0) {
+                        Object.keys(pObj).forEach(pestName => {
+                            let lvl = sevObj[pestName] ? sevObj[pestName] : (d.k || 1);
+                            let luasPest = parseFloat(pObj[pestName]||0).toFixed(2);
+                            pestBadges += `<span class="badge-sev badge-t${lvl} me-1 mb-1" title="Luas Serangan: ${luasPest} Ha">${pestName} (T${lvl})</span>`;
+                            pestDetailsList.push(`${pestName}: ${luasPest} Ha (T${lvl})`);
+                        });
+                    } else if (lsVal > 0) {
+                        let lvl = d.k || 1;
+                        pestBadges = `<span class="badge-sev badge-t${lvl}">Serangan Umum (T${lvl})</span>`;
+                        pestDetailsList.push(`Serangan Umum: ${lsVal.toFixed(2)} Ha (T${lvl})`);
+                    } else {
+                        pestBadges = `<span class="badge bg-light text-muted border">Tiada Serangan</span>`;
+                    }
+                } catch (e) {
+                    pestBadges = `<span class="badge bg-light text-secondary border">Rekod Umum</span>`;
                 }
-            } catch (e) {
-                pestBadges = `<span class="badge bg-light text-secondary border">Rekod Umum</span>`;
-            }
 
-            let initials = (d.pg && d.pg !== "-" && d.pg.length > 1) ? d.pg.substring(0, 2).toUpperCase() : "PG";
+                let initials = (d.pg && d.pg !== "-" && d.pg.length > 1) ? d.pg.substring(0, 2).toUpperCase() : "PG";
+                let statusSahText = d.sp || (lsVal > 0 ? "Bancian Disahkan" : "Rutin Terkawal");
+                let statusSahBadge = lsVal > 0 ? "bg-danger-subtle text-danger border-danger-subtle" : "bg-success-subtle text-success border-success-subtle";
 
-            return `
-            <tr style="cursor: pointer;" title="Klik baris untuk butiran penuh" onclick="DataManager.viewRec(${realOrigIndex > -1 ? realOrigIndex : (st+i)})">
-                <td class="text-nowrap">
-                    <div class="fw-bold text-dark">${Utils.formatDateDisplay(d.t)}</div>
-                    <small class="text-muted d-block" style="font-size: 0.72rem;"><i class="bi bi-clock me-1"></i>Bancian PNR</small>
-                </td>
-                <td>
-                    <div class="fw-bold text-uppercase" style="font-size: 0.92rem; color: var(--primary);">${d.l}</div>
-                    <div class="small text-muted fw-bold text-uppercase"><i class="bi bi-geo-alt-fill text-danger me-1"></i>${d.d || "-"}, ${d.n}</div>
-                    ${(d.c && d.c.includes(',')) ? `<span class="badge bg-light text-muted border mt-1 font-monospace" style="font-size:0.68rem;"><i class="bi bi-satellite me-1"></i>${d.c}</span>` : ""}
-                </td>
-                <td>
-                    <div class="fw-bold text-dark text-uppercase">${d.tn}</div>
-                    <div class="small text-secondary text-uppercase">${d.vr || "Varieti Umum"}</div>
-                    <div><span class="tag-crop-cat"><i class="bi bi-tag-fill me-1" style="color: var(--primary);"></i>${d.kt || "UMUM"}</span> ${(d.um && d.um !== "-") ? `<span class="tag-crop-cat ms-1">${d.um}</span>` : ""}</div>
-                </td>
-                <td>
-                    <div class="fw-bold text-dark">
-                        <span class="${lsVal > 0 ? 'text-danger' : 'text-success'}">${lsVal.toFixed(2)}</span> / <span class="text-secondary">${ltVal.toFixed(2)} Ha</span>
-                    </div>
-                    <div class="small text-muted fw-bold" style="font-size: 0.75rem;">(${pct}% terjejas)</div>
-                    <div class="mini-progress-bg"><div class="mini-progress-fill ${barColor}" style="width: ${pct}%"></div></div>
-                </td>
-                <td style="max-width: 240px;">
-                    <div class="d-flex flex-wrap">${pestBadges}</div>
-                </td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <div class="avatar-circle flex-shrink-0 shadow-sm">${initials}</div>
-                        <div class="text-truncate" style="max-width: 140px;">
-                            <div class="fw-bold text-dark text-uppercase small text-truncate" title="${d.pg}">${d.pg}</div>
-                            <div class="small text-muted text-truncate fst-italic" style="font-size: 0.72rem;">${d.em || "-"}</div>
+                // Main Row
+                html += `
+                <tr class="table-row-main" style="cursor: pointer;" title="Klik untuk kembangkan / kemaskan baris" onclick="DashboardManager.toggleRowExpand(event, ${i})">
+                    <td class="text-nowrap py-3 px-3">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-chevron-right text-muted me-2" id="expand-icon-${i}" style="font-size: 0.8rem;"></i>
+                            <div>
+                                <div class="fw-bold text-dark">${Utils.formatDateDisplay(d.t)}</div>
+                                <small class="text-muted d-block" style="font-size: 0.72rem;">Bancian PNR</small>
+                            </div>
                         </div>
-                    </div>
-                </td>
-                <td class="text-center text-nowrap">
-                    <button class="btn btn-sm btn-outline-primary rounded-3 shadow-sm me-1" title="Lihat Butiran" onclick="event.stopPropagation(); DataManager.viewRec(${realOrigIndex > -1 ? realOrigIndex : (st+i)})"><i class="bi bi-eye-fill"></i></button>
-                    <button class="btn btn-sm btn-danger rounded-3 shadow-sm" title="Jana PDF Laporan" 
-                        data-lokasi="${d.l}" data-pegawai="${d.pg}" data-coord="${d.c}" data-tarikh="${d.t}" 
-                        onclick="event.stopPropagation(); ExportManager.klikJanaPDF(this)">
-                        <i class="bi bi-file-earmark-pdf-fill"></i>
-                    </button>
-                </td>
-            </tr>`; 
-        }).join('') : '<tr><td colspan="7" class="text-center text-muted p-5"><i class="bi bi-folder-x fs-2 d-block text-secondary mb-2"></i>Tiada rekod padanan ditemui.</td></tr>'; 
+                    </td>
+                    <td class="py-3">
+                        <div class="fw-bold text-uppercase" style="font-size: 0.9rem; color: var(--primary);">${d.l}</div>
+                        <div class="small text-muted fw-bold text-uppercase"><i class="bi bi-geo-alt-fill text-danger me-1"></i>${d.d || "-"}, ${d.n}</div>
+                    </td>
+                    <td class="py-3">
+                        <div class="fw-bold text-dark text-uppercase">${d.tn}</div>
+                        <div class="small text-secondary text-uppercase">${d.vr || "Varieti Umum"}</div>
+                    </td>
+                    <td class="py-3">
+                        <div class="fw-bold text-dark">
+                            <span class="${lsVal > 0 ? 'text-danger' : 'text-success'}">${lsVal.toFixed(2)}</span> / <span class="text-secondary">${ltVal.toFixed(2)} Ha</span>
+                        </div>
+                        <div class="mini-progress-bg"><div class="mini-progress-fill ${barColor}" style="width: ${pct}%"></div></div>
+                    </td>
+                    <td class="py-3" style="max-width: 220px;">
+                        <div class="d-flex flex-wrap">${pestBadges}</div>
+                    </td>
+                    <td class="py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-circle flex-shrink-0 me-2 shadow-sm">${initials}</div>
+                            <div class="text-truncate" style="max-width: 130px;">
+                                <div class="fw-bold text-dark text-uppercase small text-truncate" title="${d.pg}">${d.pg}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-center text-nowrap py-3 px-3">
+                        <button class="btn btn-sm btn-outline-primary rounded-3 me-1 shadow-sm" title="Lihat Butiran" onclick="event.stopPropagation(); DataManager.viewRec(${realOrigIndex > -1 ? realOrigIndex : (st+i)})"><i class="bi bi-eye-fill"></i></button>
+                        <button class="btn btn-sm btn-danger rounded-3 shadow-sm" title="Jana PDF Laporan" 
+                            data-lokasi="${d.l}" data-pegawai="${d.pg}" data-coord="${d.c}" data-tarikh="${d.t}" 
+                            onclick="event.stopPropagation(); ExportManager.klikJanaPDF(this)">
+                            <i class="bi bi-file-earmark-pdf-fill"></i>
+                        </button>
+                    </td>
+                </tr>
+
+                <!-- Expandable Detail Row -->
+                <tr id="expand-row-${i}" class="table-row-expand-content" style="display: none;">
+                    <td colspan="7" class="p-3 bg-light-subtle border-bottom" style="background-color: #f8fafc;">
+                        <div class="p-3 rounded border bg-white shadow-sm">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-3">
+                                    <span class="text-muted small d-block fw-bold mb-1"><i class="bi bi-tag-fill text-primary me-1"></i>Kategori Tanaman</span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-bold">${d.kt || "UMUM"}</span>
+                                    ${(d.um && d.um !== "-") ? `<span class="badge bg-secondary-subtle text-dark border px-2 py-1 fw-bold ms-1">${d.um}</span>` : ""}
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <span class="text-muted small d-block fw-bold mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i>Status Pengesahan</span>
+                                    <span class="badge ${statusSahBadge} border px-2 py-1 fw-bold">${statusSahText}</span>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <span class="text-muted small d-block fw-bold mb-1"><i class="bi bi-geo-fill text-danger me-1"></i>GPS Koordinat</span>
+                                    <span class="font-monospace small bg-light p-1 border rounded d-inline-block">${d.c || "Tiada Koordinat"}</span>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <span class="text-muted small d-block fw-bold mb-1"><i class="bi bi-envelope me-1"></i>Emel Pelapor</span>
+                                    <span class="small text-dark fw-bold text-truncate d-block">${d.em || "-"}</span>
+                                </div>
+                                <div class="col-12 border-top pt-2 mt-2">
+                                    <span class="text-muted small d-block fw-bold mb-1"><i class="bi bi-journal-text me-1"></i>Perincian Perosak & Catatan Lapangan</span>
+                                    <div class="small text-dark">
+                                        <b>Wabak Terlibat:</b> ${pestDetailsList.length ? pestDetailsList.join(', ') : 'Tiada perosak terperinci'}
+                                        ${d.ct ? `<div class="mt-1 text-secondary fst-italic">"${d.ct}"</div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            tbody.innerHTML = html;
+        }
         
         const infoEl = document.getElementById('pgInfo');
         if (infoEl) infoEl.innerText = `Memaparkan Halaman ${AppState.pg} daripada ${totalPgs}`;

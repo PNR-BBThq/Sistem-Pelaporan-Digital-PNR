@@ -10,6 +10,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
     <link rel="stylesheet" href="./css/style.css">
 </head>
@@ -185,9 +187,17 @@
                 <!-- Filter dropdowns will be dynamically injected here by filter.js -->
                 <div id="filterDropdownsContainer" class="d-flex flex-wrap align-items-end gap-2" style="flex: 1;"></div>
                 
+                <!-- Filter Bulan -->
+                <div class="filter-group">
+                    <label class="filter-label"><i class="bi bi-calendar-month me-1"></i>Bulan</label>
+                    <select id="selBulan" class="form-select form-select-sm filter-input fw-semibold" style="border-radius: var(--radius-full); font-size: 0.82rem;">
+                        <option value="">- Semua Bulan -</option>
+                    </select>
+                </div>
+                
                 <!-- Date Range -->
                 <div class="filter-group-date">
-                    <label class="filter-label">Julat Tarikh</label>
+                    <label class="filter-label"><i class="bi bi-calendar-range me-1"></i>Julat Tarikh</label>
                     <div class="d-flex gap-1">
                         <input type="date" id="dS" class="form-control form-control-sm filter-input">
                         <input type="date" id="dE" class="form-control form-control-sm filter-input">
@@ -311,9 +321,9 @@
                         <small class="text-muted fw-bold" id="pgInfo">Memuatkan senarai data...</small>
                     </div>
                     <div class="d-flex flex-wrap align-items-center gap-3">
-                        <div class="position-relative flex-grow-1" style="min-width: 240px;">
+                        <div class="position-relative flex-grow-1" style="min-width: 260px;">
                             <i class="bi bi-search position-absolute text-muted" style="left: 14px; top: 50%; transform: translateY(-50%);"></i>
-                            <input type="text" id="tableQuickSearch" class="form-control input-quick-search" placeholder="Cari Daerah, Perosak, Varieti, Pegawai...">
+                            <input type="text" id="tableQuickSearch" class="form-control input-quick-search" placeholder="Cari perosak, negeri, lokasi, tanaman...">
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <label class="small text-muted fw-bold mb-0">Papar:</label>
@@ -590,6 +600,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 
     <script src="./js/config.js"></script>
