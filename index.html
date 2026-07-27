@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem PNR Digital</title>
+    <meta name="description" content="Sistem Pelaporan Digital PNR — Analisis Bancian Tanaman & Perosak Negara">
     
     <link rel="manifest" href="./manifest.json">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -74,6 +75,9 @@
         </div>
     </div>
 
+    <!-- ==========================================
+         SIDEBAR — DARK THEME (Navigasi Sahaja)
+         ========================================== -->
     <div class="sidebar" id="sidebar">
         <div class="brand"><i class="bi bi-flower1"></i> PNR DIGITAL</div>
             
@@ -106,27 +110,8 @@
             
             <hr class="my-4" style="color: #000;">
             
+            <!-- RPW Monitoring Widget (Kekal di sidebar) -->
             <div class="mb-3 px-2" id="filterSection">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <small class="fw-bold text-dark" style="font-size:0.85rem; letter-spacing: 0.5px;"><i class="bi bi-funnel-fill me-1"></i> TAPISAN DATA</small>
-                </div>
-                
-                <div id="filterDropdownsContainer"></div>
-
-                <div class="mb-3 mt-3">
-                    <label class="filter-label">Julat Tarikh</label>
-                    <div class="row g-1">
-                        <div class="col-6"><input type="date" id="dS" class="form-control form-control-sm filter-input"></div>
-                        <div class="col-6"><input type="date" id="dE" class="form-control form-control-sm filter-input"></div>
-                    </div>
-                </div>
-                
-                <button class="btn btn-dark btn-sm w-100" id="btnResetFilter">
-                    <i class="bi bi-arrow-counterclockwise"></i> Reset Tapisan
-                </button>
-
-                <hr class="my-4" style="color:#000">
-
                 <div class="p-3 rounded border shadow-sm bg-white">
                     <div class="d-flex align-items-center mb-2">
                         <div class="bg-danger text-white rounded p-1 me-2"><i class="bi bi-bug-fill"></i></div>
@@ -138,7 +123,9 @@
                     </button>
                 </div>
             </div>
-        </div> <div class="sidebar-footer">
+        </div>
+
+        <div class="sidebar-footer">
             <div class="nav-item mb-3 bg-success text-white shadow-sm" data-view="form" style="cursor: pointer;">
                 <span><i class="bi bi-plus-lg me-2"></i> Tambah Data</span>
             </div>
@@ -147,16 +134,30 @@
                 <button class="btn btn-link text-danger btn-sm p-0" id="btnLogout" title="Log Keluar"><i class="bi bi-box-arrow-right fs-5"></i></button>
             </div>
         </div>
-    </div> <div class="main-content">
+    </div>
+
+    <!-- ==========================================
+         MAIN CONTENT AREA
+         ========================================== -->
+    <div class="main-content">
+        <!-- Mobile Header -->
         <div class="d-md-none mb-3 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm">
-            <span class="fw-bold text-success fs-5"><i class="bi bi-flower1"></i> PNR</span>
+            <span class="fw-bold fs-5" style="color: var(--primary);"><i class="bi bi-flower1"></i> PNR</span>
             <button class="btn btn-light btn-sm border" onclick="document.getElementById('sidebar').classList.toggle('active'); document.getElementById('mobileOverlay').classList.toggle('active');"><i class="bi bi-list fs-5"></i></button>
         </div>
 
+        <!-- ==========================================
+             VIEW: DASHBOARD UTAMA
+             ========================================== -->
         <div id="view-main" class="app-view">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+
+            <!-- Dashboard Header -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 fade-in-section">
                 <div>
-                    <h4 class="fw-bold m-0 text-dark d-flex align-items-center"><i class="bi bi-cpu-fill text-success me-2"></i> Analisis Eksekutif & Bancian Tanaman</h4>
+                    <h4 class="fw-bold m-0 text-dark d-flex align-items-center" style="letter-spacing: -0.3px;">
+                        <span style="background: linear-gradient(135deg, var(--primary), #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"><i class="bi bi-cpu-fill me-2"></i></span>
+                        Analisis Eksekutif & Bancian Tanaman
+                    </h4>
                     <small class="text-muted" id="lastUpdate">Data setakat: Terkini</small>
                 </div>
                 <div class="d-flex flex-wrap gap-2 justify-content-md-end">
@@ -171,8 +172,39 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ==========================================
+                 HORIZONTAL FILTER BAR (BARU)
+                 ========================================== -->
+            <div class="filter-bar fade-in-section" id="filterBar">
+                <div class="d-flex align-items-center gap-2 me-2" style="flex-shrink: 0;">
+                    <i class="bi bi-funnel-fill" style="color: var(--primary); font-size: 1.1rem;"></i>
+                    <span class="fw-bold" style="font-size: 0.82rem; color: var(--text-primary); white-space: nowrap;">Tapisan</span>
+                </div>
+                
+                <!-- Filter dropdowns will be dynamically injected here by filter.js -->
+                <div id="filterDropdownsContainer" class="d-flex flex-wrap align-items-end gap-2" style="flex: 1;"></div>
+                
+                <!-- Date Range -->
+                <div class="filter-group-date">
+                    <label class="filter-label">Julat Tarikh</label>
+                    <div class="d-flex gap-1">
+                        <input type="date" id="dS" class="form-control form-control-sm filter-input">
+                        <input type="date" id="dE" class="form-control form-control-sm filter-input">
+                    </div>
+                </div>
+                
+                <!-- Reset Button -->
+                <button class="btn-reset" id="btnResetFilter">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                </button>
+                
+                <!-- Active filter count -->
+                <div class="filter-count" id="filterActiveCount"></div>
+            </div>
             
-            <div class="insight-hub-card mb-4">
+            <!-- Executive Smart Summary -->
+            <div class="insight-hub-card mb-4 fade-in-section">
                 <div class="insight-accent-line"></div>
                 <div class="p-4">
                     <div id="smartSummary" class="text-dark">
@@ -181,10 +213,11 @@
                 </div>
             </div>
 
-            <div class="row g-3 mb-4" id="kpiCardsContainer"></div>
+            <!-- KPI Cards Row -->
+            <div class="row g-3 mb-4 fade-in-section" id="kpiCardsContainer"></div>
 
-            <!-- WIDGET ANCAMAN PEROSAK UTAMA (WATCHLIST) -->
-            <div class="watchlist-card mb-4">
+            <!-- WATCHLIST WIDGET -->
+            <div class="watchlist-card mb-4 fade-in-section">
                 <div class="watchlist-header">
                     <div>
                         <h6 class="fw-bold m-0 text-danger d-flex align-items-center">
@@ -204,7 +237,8 @@
                 </div>
             </div>
 
-            <div class="row g-3 mb-4">
+            <!-- Charts Row: Bar + Pie -->
+            <div class="row g-3 mb-4 fade-in-section">
                 <div class="col-md-7 col-lg-8">
                     <div class="chart-card-modern h-100 d-flex flex-column">
                         <div class="p-4 pb-0 d-flex justify-content-between align-items-center">
@@ -235,7 +269,8 @@
                 </div>
             </div>
 
-            <div class="row g-3 mb-4">
+            <!-- Map + Hotspot Row -->
+            <div class="row g-3 mb-4 fade-in-section">
                 <div class="col-md-7 col-lg-8">
                     <div class="chart-card-modern h-100">
                         <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
@@ -266,7 +301,8 @@
                 </div>
             </div>
 
-            <div class="table-enhanced mb-4">
+            <!-- Full Data Table -->
+            <div class="table-enhanced mb-4 fade-in-section">
                 <div class="table-filter-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                     <div>
                         <h6 class="fw-bold m-0 text-dark fs-5 d-flex align-items-center">
@@ -316,6 +352,9 @@
             </div>
         </div>
 
+        <!-- ==========================================
+             VIEW: PENGESAHAN DATA
+             ========================================== -->
         <div id="view-verify" class="app-view" style="display:none">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="fw-bold m-0 text-dark">Pengesahan Data</h4>
@@ -331,6 +370,9 @@
             <div id="verifyContainer" class="row g-3"></div>
         </div>
 
+        <!-- ==========================================
+             VIEW: TUGASAN SAYA
+             ========================================== -->
         <div id="view-tasks" class="app-view" style="display:none">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="fw-bold m-0 text-dark">Tugasan Saya</h4>
@@ -339,10 +381,16 @@
             <div id="taskContainer" class="row g-3"></div>
         </div>
 
+        <!-- ==========================================
+             VIEW: BORANG (iFrame)
+             ========================================== -->
         <div id="view-form" class="app-view" style="display:none; height: 100%;">
             <iframe id="frameBorang" src="./form.html" style="width: 100%; height: 85vh; border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" allow="geolocation"></iframe>
         </div>
 
+        <!-- ==========================================
+             VIEW: PENGURUSAN PENGGUNA
+             ========================================== -->
         <div id="view-users" class="app-view" style="display:none">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="fw-bold m-0 text-dark"><i class="bi bi-people-fill me-2"></i>Pengurusan Pengguna</h4>
@@ -361,6 +409,9 @@
             </div>
         </div>
 
+        <!-- ==========================================
+             VIEW: PENCAPAIAN SKU
+             ========================================== -->
         <div id="view-sku" class="app-view" style="display:none">
             <div class="print-header d-none d-print-flex">
                 <div class="print-header-title">
@@ -462,10 +513,11 @@
             </div>
         </div>
         
+    <!-- Detail Modal -->
     <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-success text-white">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: var(--radius-lg);">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, var(--primary), #8b5cf6); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
                     <h6 class="modal-title fw-bold" id="modalTitle"><i class="bi bi-card-heading me-2"></i>BUTIRAN REKOD</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" id="btnCloseModal"></button>
                 </div>
@@ -477,10 +529,13 @@
         </div>
     </div>
 
+    <!-- Mobile Overlay -->
     <div class="mobile-overlay" id="mobileOverlay" onclick="document.getElementById('sidebar').classList.remove('active'); this.classList.remove('active');"></div>
+    
+    <!-- Mobile Bottom Nav -->
     <div class="mobile-bottom-nav d-md-none">
         <div class="nav-bot-item active" data-view="main">
-            <i class="bi bi-grid-1x2-fill text-primary fs-4"></i>
+            <i class="bi bi-grid-1x2-fill fs-4" style="color: var(--primary);"></i>
             <span>Dashboard</span>
         </div>
         <div class="nav-bot-item" id="mobNavTasks" data-view="tasks" style="display:none;">
@@ -496,15 +551,17 @@
             <span class="text-success fw-bold">Borang</span>
         </div>
         <div class="nav-bot-item" id="btnMobileFilter" onclick="document.getElementById('sidebar').classList.toggle('active'); document.getElementById('mobileOverlay').classList.toggle('active');">
-            <i class="bi bi-funnel-fill text-danger fs-4"></i>
-            <span>Tapisan</span>
+            <i class="bi bi-funnel-fill fs-4" style="color: var(--primary);"></i>
+            <span>Menu</span>
         </div>
     </div>
 
+    <!-- Chatbot FAB -->
     <div id="nlp-chatbot-fab" title="Tanya BoT PNR Digital">
         <i class="bi bi-robot"></i>
     </div>
 
+    <!-- Chatbot Window -->
     <div id="nlp-chatbot-window">
         <div class="bot-header">
             <span class="d-flex align-items-center"><i class="bi bi-robot fs-5 me-2"></i> PNR Smart AI</span>
@@ -548,5 +605,6 @@
     <script src="./js/kpi.js"></script>
     <script src="./js/main.js"></script>
     <script src="js/nlp-bot.js"></script>
+
 </body>
 </html>

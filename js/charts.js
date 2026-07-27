@@ -1,6 +1,7 @@
 // ==========================================
 // FAIL: js/charts.js
 // FUNGSI: Menguruskan Carta Bar dan Pie
+// REDESIGN: Gradient fills, smooth animations, premium tooltips
 // ==========================================
 
 const ChartManager = {
@@ -10,8 +11,19 @@ const ChartManager = {
     pilihanPerosak: "",
     pilihanTanaman: "",
 
+    // Create gradient for bar charts
+    createGradient: function(ctx, color1, color2) {
+        const gradient = ctx.createLinearGradient(0, 0, ctx.canvas.width, 0);
+        gradient.addColorStop(0, color1);
+        gradient.addColorStop(1, color2);
+        return gradient;
+    },
+
     updateCharts: function(pm, km) { 
         if (typeof Chart === 'undefined') return;
+        
+        // Set default font family
+        Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
         
         if (this.pieChart) this.pieChart.destroy(); 
         
@@ -25,28 +37,28 @@ const ChartManager = {
         const legendContainer = document.getElementById('legendContainer');
         if (legendContainer) {
             legendContainer.innerHTML = `
-                <div class="text-uppercase text-muted fw-bold mb-2 small d-flex justify-content-between align-items-center" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                <div class="text-uppercase text-muted fw-bold mb-2 small d-flex justify-content-between align-items-center" style="font-size: 0.72rem; letter-spacing: 0.5px;">
                     <span>Tahap & Keterukan</span><span>Rekod & Nisbah</span>
                 </div>
-                <div class="d-flex flex-column gap-2" style="font-size: 0.85rem;">
-                    <div class="d-flex justify-content-between align-items-center p-1 rounded">
-                        <span class="d-flex align-items-center fw-bold"><i class="bi bi-circle-fill text-success me-2"></i> T1: Sangat Rendah</span>
+                <div class="d-flex flex-column gap-2" style="font-size: 0.84rem;">
+                    <div class="d-flex justify-content-between align-items-center p-2 rounded" style="background: rgba(34, 197, 94, 0.06);">
+                        <span class="d-flex align-items-center fw-bold"><span style="width: 10px; height: 10px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 8px;"></span> T1: Sangat Rendah</span>
                         <span class="fw-bold text-dark">${km[1]} <small class="text-muted">(${t1Pct}%)</small></span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center p-1 rounded">
-                        <span class="d-flex align-items-center fw-bold" style="color: #65a30d;"><i class="bi bi-circle-fill me-2" style="color: #84cc16;"></i> T2: Rendah</span>
+                    <div class="d-flex justify-content-between align-items-center p-2 rounded" style="background: rgba(132, 204, 22, 0.06);">
+                        <span class="d-flex align-items-center fw-bold" style="color: #65a30d;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #84cc16; display: inline-block; margin-right: 8px;"></span> T2: Rendah</span>
                         <span class="fw-bold text-dark">${km[2]} <small class="text-muted">(${t2Pct}%)</small></span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center p-1 rounded">
-                        <span class="d-flex align-items-center fw-bold text-warning-emphasis"><i class="bi bi-circle-fill text-warning me-2"></i> T3: Sederhana</span>
+                    <div class="d-flex justify-content-between align-items-center p-2 rounded" style="background: rgba(234, 179, 8, 0.06);">
+                        <span class="d-flex align-items-center fw-bold text-warning-emphasis"><span style="width: 10px; height: 10px; border-radius: 50%; background: #eab308; display: inline-block; margin-right: 8px;"></span> T3: Sederhana</span>
                         <span class="fw-bold text-dark">${km[3]} <small class="text-muted">(${t3Pct}%)</small></span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center p-1 rounded">
-                        <span class="d-flex align-items-center fw-bold" style="color: #ea580c;"><i class="bi bi-circle-fill me-2" style="color: #f97316;"></i> T4: Teruk (Tinggi)</span>
+                    <div class="d-flex justify-content-between align-items-center p-2 rounded" style="background: rgba(249, 115, 22, 0.06);">
+                        <span class="d-flex align-items-center fw-bold" style="color: #ea580c;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #f97316; display: inline-block; margin-right: 8px;"></span> T4: Teruk (Tinggi)</span>
                         <span class="fw-bold text-dark">${km[4]} <small class="text-muted">(${t4Pct}%)</small></span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center p-1 rounded">
-                        <span class="d-flex align-items-center fw-bold text-danger"><i class="bi bi-circle-fill text-danger me-2"></i> T5: Sangat Teruk (Wabak)</span>
+                    <div class="d-flex justify-content-between align-items-center p-2 rounded" style="background: rgba(239, 68, 68, 0.06);">
+                        <span class="d-flex align-items-center fw-bold text-danger"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block; margin-right: 8px;"></span> T5: Sangat Teruk (Wabak)</span>
                         <span class="fw-bold text-dark">${km[5]} <small class="text-muted">(${t5Pct}%)</small></span>
                     </div>
                 </div>
@@ -62,22 +74,30 @@ const ChartManager = {
                     datasets: [{ 
                         data: [km[1], km[2], km[3], km[4], km[5]], 
                         backgroundColor: ['#22c55e','#84cc16','#eab308','#f97316','#ef4444'], 
-                        borderWidth: 2,
+                        borderWidth: 3,
                         borderColor: '#ffffff',
-                        hoverOffset: 6
+                        hoverOffset: 8,
+                        hoverBorderWidth: 0
                     }] 
                 }, 
                 options: { 
                     maintainAspectRatio: false, 
-                    cutout: '74%',
+                    cutout: '72%',
+                    animation: {
+                        animateRotate: true,
+                        duration: 800,
+                        easing: 'easeOutQuart'
+                    },
                     plugins: { 
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                            padding: 12,
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
-                            cornerRadius: 8,
+                            backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                            padding: 14,
+                            titleFont: { size: 13, weight: 'bold', family: "'Inter', sans-serif" },
+                            bodyFont: { size: 12, family: "'Inter', sans-serif" },
+                            cornerRadius: 10,
+                            displayColors: true,
+                            boxPadding: 4,
                             callbacks: {
                                 label: function(context) {
                                     let val = context.parsed || 0;
@@ -108,6 +128,7 @@ const ChartManager = {
         if (this.myPestChart) this.myPestChart.destroy();
 
         let labelX = [], dataY = [], tajuk = "", warna = "", warnaHover = "", sub = "";
+        let gradientColor1 = "", gradientColor2 = "";
 
         if (level === 1) {
             let kiraPerosak = {};
@@ -126,6 +147,7 @@ const ChartManager = {
             let top10 = Object.entries(kiraPerosak).sort((a,b)=>b[1]-a[1]).slice(0,10);
             labelX = top10.map(x => x[0].toUpperCase()); dataY = top10.map(x => x[1]); 
             tajuk = "Top 10 Perosak Tertinggi (Ha)"; sub = "Klik pada bar untuk lihat pecahan tanaman"; 
+            gradientColor1 = "#f43f5e"; gradientColor2 = "#e11d48";
             warna = "#f43f5e"; warnaHover = "#e11d48"; this.chartLevel = 1; 
             const btn = document.getElementById('btnBackPest');
             if(btn) btn.style.display = 'none';
@@ -152,7 +174,8 @@ const ChartManager = {
             let susun = Object.entries(kiraTanaman).sort((a,b)=>b[1]-a[1]).slice(0, 10);
             labelX = susun.map(x=>x[0]); dataY = susun.map(x=>x[1]); 
             tajuk = `Tanaman Diserang: ${namaPest} (Ha)`; sub = "Klik pada bar tanaman untuk lihat pecahan daerah"; 
-            warna = "#3b82f6"; warnaHover = "#2563eb"; this.chartLevel = 2; this.pilihanPerosak = namaPest; 
+            gradientColor1 = "#6366f1"; gradientColor2 = "#8b5cf6";
+            warna = "#6366f1"; warnaHover = "#4f46e5"; this.chartLevel = 2; this.pilihanPerosak = namaPest; 
             const btn = document.getElementById('btnBackPest');
             if(btn) btn.style.display = 'inline-block';
         } 
@@ -180,6 +203,7 @@ const ChartManager = {
             let susun = Object.entries(kiraDaerah).sort((a,b)=>b[1]-a[1]).slice(0, 15);
             labelX = susun.map(x=>x[0]); dataY = susun.map(x=>x[1]); 
             tajuk = `Daerah Terlibat: ${namaTanaman} - ${this.pilihanPerosak} (Ha)`; sub = "Pecahan terperinci mengikut daerah & negeri"; 
+            gradientColor1 = "#10b981"; gradientColor2 = "#059669";
             warna = "#10b981"; warnaHover = "#059669"; this.chartLevel = 3; this.pilihanTanaman = namaTanaman; 
             const btn = document.getElementById('btnBackPest');
             if(btn) btn.style.display = 'inline-block';
@@ -190,6 +214,15 @@ const ChartManager = {
         if (tajukEl) tajukEl.innerText = tajuk;
         if (subEl) subEl.innerHTML = `<i class="bi bi-hand-index-thumb-fill text-primary me-1"></i> ${sub}`;
 
+        // Create gradient
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+        gradient.addColorStop(0, gradientColor1);
+        gradient.addColorStop(1, gradientColor2);
+
+        const hoverGradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+        hoverGradient.addColorStop(0, gradientColor2);
+        hoverGradient.addColorStop(1, gradientColor1);
+
         const self = this;
         this.myPestChart = new Chart(ctx, { 
             type: 'bar', 
@@ -198,26 +231,32 @@ const ChartManager = {
                 datasets: [{ 
                     label: 'Luas Serangan (Ha)', 
                     data: dataY.length ? dataY : [0], 
-                    backgroundColor: warna, 
-                    hoverBackgroundColor: warnaHover,
-                    borderRadius: 6,
+                    backgroundColor: gradient, 
+                    hoverBackgroundColor: hoverGradient,
+                    borderRadius: 8,
                     barThickness: 'flex',
-                    maxBarThickness: 30
+                    maxBarThickness: 28,
+                    borderSkipped: false
                 }] 
             }, 
             options: { 
                 indexAxis: 'y', 
                 responsive: true, 
                 maintainAspectRatio: false, 
+                animation: {
+                    duration: 600,
+                    easing: 'easeOutQuart'
+                },
                 plugins: { 
                     legend: { display: false }, 
                     title: { display: false },
                     tooltip: {
-                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                        padding: 12,
-                        titleFont: { size: 13, weight: 'bold' },
-                        bodyFont: { size: 13 },
-                        cornerRadius: 8,
+                        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                        padding: 14,
+                        titleFont: { size: 13, weight: 'bold', family: "'Inter', sans-serif" },
+                        bodyFont: { size: 13, family: "'Inter', sans-serif" },
+                        cornerRadius: 10,
+                        displayColors: false,
                         callbacks: {
                             label: function(context) {
                                 return ` Luas Serangan: ${parseFloat(context.parsed.x || 0).toFixed(2)} Ha`;
@@ -227,12 +266,14 @@ const ChartManager = {
                 },
                 scales: {
                     x: {
-                        grid: { color: '#f1f5f9', drawBorder: false },
-                        ticks: { font: { size: 11, weight: '600' }, color: '#64748b' }
+                        grid: { color: 'rgba(226, 232, 240, 0.5)', drawBorder: false },
+                        ticks: { font: { size: 11, weight: '600', family: "'Inter', sans-serif" }, color: '#94a3b8' },
+                        border: { display: false }
                     },
                     y: {
                         grid: { display: false },
-                        ticks: { font: { size: 12, weight: 'bold' }, color: '#1e293b' }
+                        ticks: { font: { size: 12, weight: 'bold', family: "'Inter', sans-serif" }, color: '#1e293b' },
+                        border: { display: false }
                     }
                 },
                 onClick: (event, elements) => { 

@@ -1,6 +1,7 @@
 // ==========================================
 // FAIL: js/main.js
 // FUNGSI: Pengawal Utama (Controller) & Event Listeners
+// REDESIGN: Dikemaskini untuk filter bar baru & animasi
 // ==========================================
 
 // 1. Pendaftaran Service Worker & Pemaksa Hard Refresh Otomatik (Kalis Cache Lama)
@@ -76,6 +77,28 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const btnNextPg = document.getElementById('btnNextPg');
         if (btnNextPg) btnNextPg.addEventListener('click', () => DashboardManager.movePg(1));
+
+        // Table Quick Search — Event listener
+        const searchInput = document.getElementById('tableQuickSearch');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    DashboardManager.handleTableSearch();
+                }, 300);
+            });
+        }
+
+        // Table Page Size
+        const pageSizeSelect = document.getElementById('tablePageSize');
+        if (pageSizeSelect) {
+            pageSizeSelect.addEventListener('change', function() {
+                AppState.pSize = parseInt(this.value) || 10;
+                AppState.pg = 1;
+                DashboardManager.renTab();
+            });
+        }
     }
 
     // Export Buttons
@@ -121,6 +144,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Sambungkan fungsi kat sidebar menu
     const navOpenRPW = document.getElementById('navOpenRPW');
     if (navOpenRPW) navOpenRPW.addEventListener('click', function() { bukaRPWSecure(this); });
+
+    // Sambungkan butang RPW di sidebar widget
+    const btnOpenRPW = document.getElementById('btnOpenRPW');
+    if (btnOpenRPW) btnOpenRPW.addEventListener('click', function() { bukaRPWSecure(this); });
     
     // Filtering (Date Inputs & Reset)
     if (typeof FilterManager !== 'undefined') {
@@ -130,6 +157,27 @@ document.addEventListener("DOMContentLoaded", () => {
         const btnResetFilter = document.getElementById('btnResetFilter');
         if (btnResetFilter) btnResetFilter.addEventListener('click', FilterManager.resetFilter);
     }
+
+    // ==========================================
+    // INTERSECTION OBSERVER — Fade-in animasi
+    // ==========================================
+    const observeElements = () => {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+
+        document.querySelectorAll('.fade-in-section').forEach(el => {
+            observer.observe(el);
+        });
+    };
+    
+    // Run observer after a short delay to allow DOM to settle
+    setTimeout(observeElements, 500);
 }); 
 
 // ==========================================
@@ -151,7 +199,19 @@ const ViewManager = {
         });
         
         const targetView = document.getElementById('view-'+t);
-        if(targetView) targetView.style.display = 'block';
+        if(targetView) {
+            targetView.style.display = 'block';
+            // Re-trigger fade-in animations
+            targetView.querySelectorAll('.fade-in-section').forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(16px)';
+                setTimeout(() => {
+                    el.style.transition = 'all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, 50);
+            });
+        }
 
         if(t === 'verify' && typeof VerifyManager !== 'undefined') VerifyManager.loadPend();
         if(t === 'tasks' && typeof TaskManager !== 'undefined') TaskManager.loadMyTasks();

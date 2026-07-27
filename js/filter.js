@@ -1,6 +1,7 @@
 // ==========================================
 // FAIL: js/filter.js
 // FUNGSI: Menguruskan Dropdown Menu & Tapisan Data
+// REDESIGN: Filter kini di horizontal bar atas dashboard
 // ==========================================
 
 const FilterManager = {
@@ -70,8 +71,11 @@ const FilterManager = {
         AppState.pg = 1; 
         DashboardManager.calcUI();
 
+        // 4. KEMASKINI JUMLAH FILTER AKTIF
+        this.updateFilterCount();
+
         // ==========================================
-        // 4. REFRESH DASHBOARD SKU (JIKA SEDANG DIBUKA)
+        // 5. REFRESH DASHBOARD SKU (JIKA SEDANG DIBUKA)
         // ==========================================
         const viewSKU = document.getElementById('view-sku');
         if (viewSKU && viewSKU.style.display !== 'none' && typeof KPIManager !== 'undefined') {
@@ -85,12 +89,13 @@ const FilterManager = {
             const container = document.getElementById('filterDropdownsContainer');
             if(container) {
                 const labelMap = { 'selNegeri': 'Negeri', 'selDaerah': 'Daerah', 'selTanaman': 'Tanaman', 'selPerosak': 'Perosak', 'selKategori': 'Kategori' };
+                const iconMap = { 'selNegeri': 'bi-geo-alt', 'selDaerah': 'bi-pin-map', 'selTanaman': 'bi-flower1', 'selPerosak': 'bi-bug', 'selKategori': 'bi-tag' };
                 const html = `
-                <div class="mb-2">
-                    <label class="filter-label">${labelMap[id]}</label>
+                <div class="filter-group">
+                    <label class="filter-label"><i class="bi ${iconMap[id] || 'bi-funnel'} me-1"></i>${labelMap[id]}</label>
                     <div class="dropdown d-grid">
                         <button class="btn btn-white border text-start text-truncate dropdown-toggle btn-sm bg-white" type="button" id="btn${id}" data-bs-toggle="dropdown" data-bs-auto-close="outside">- Semua -</button>
-                        <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 220px; overflow-y: auto;" id="list${id}"></div>
+                        <div class="dropdown-menu w-100 p-2 shadow-sm" style="max-height: 240px; overflow-y: auto; border-radius: var(--radius-md);" id="list${id}"></div>
                     </div>
                 </div>`;
                 container.insertAdjacentHTML('beforeend', html);
@@ -107,7 +112,7 @@ const FilterManager = {
             const div = document.createElement('div');
             div.className = 'form-check mb-1';
             div.innerHTML = `<input class="form-check-input chk-${id}" type="checkbox" value="${x}" id="${cleanId}" ${isChecked}>
-                             <label class="form-check-label w-100 text-truncate" style="font-size:0.85rem; cursor:pointer;" for="${cleanId}">${x}</label>`;
+                             <label class="form-check-label w-100 text-truncate" style="font-size:0.82rem; cursor:pointer;" for="${cleanId}">${x}</label>`;
             
             div.querySelector('input').addEventListener('change', () => {
                 FilterManager.updateBtnText(id);
@@ -122,9 +127,18 @@ const FilterManager = {
         const btn = document.getElementById('btn' + id);
         if(!btn) return;
         const checked = Array.from(document.querySelectorAll('.chk-' + id + ':checked')).map(cb => cb.value);
-        if (checked.length === 0) { btn.innerText = '- Semua -'; btn.classList.remove('fw-bold','text-primary'); }
-        else if (checked.length === 1) { btn.innerText = checked[0]; btn.classList.add('fw-bold','text-primary'); }
-        else { btn.innerText = checked.length + ' Dipilih'; btn.classList.add('fw-bold','text-primary'); }
+        if (checked.length === 0) { 
+            btn.innerText = '- Semua -'; 
+            btn.classList.remove('fw-bold','text-primary'); 
+        }
+        else if (checked.length === 1) { 
+            btn.innerText = checked[0]; 
+            btn.classList.add('fw-bold','text-primary'); 
+        }
+        else { 
+            btn.innerText = checked.length + ' Dipilih'; 
+            btn.classList.add('fw-bold','text-primary'); 
+        }
     },
 
     fillSel: function(id, arr, srcCode) { 
@@ -136,5 +150,24 @@ const FilterManager = {
         document.querySelectorAll('input[type=date]').forEach(e => e.value=""); 
         ['selNegeri', 'selDaerah', 'selTanaman', 'selPerosak', 'selKategori'].forEach(id => FilterManager.updateBtnText(id));
         FilterManager.runFilter('n'); 
+    },
+
+    // Kira berapa banyak filter yang aktif
+    updateFilterCount: function() {
+        const el = document.getElementById('filterActiveCount');
+        if (!el) return;
+        
+        let activeCount = 0;
+        ['selNegeri', 'selDaerah', 'selTanaman', 'selPerosak', 'selKategori'].forEach(id => {
+            if (this.v(id).length > 0) activeCount++;
+        });
+        if (this.v('dS')) activeCount++;
+        if (this.v('dE')) activeCount++;
+
+        if (activeCount > 0) {
+            el.innerHTML = `<span style="background: var(--primary-subtle); color: var(--primary); padding: 4px 10px; border-radius: var(--radius-full); font-weight: 700; font-size: 0.75rem;"><i class="bi bi-funnel-fill me-1"></i>${activeCount} aktif</span>`;
+        } else {
+            el.innerHTML = '';
+        }
     }
 };

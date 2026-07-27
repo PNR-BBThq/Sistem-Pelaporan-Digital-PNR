@@ -1,6 +1,7 @@
 // ==========================================
 // FAIL: js/dashboard.js
 // FUNGSI: Mengemaskini UI Dashboard, Pengiraan KPI & Analisis Pintar (Berserta Multi-Column Sorting)
+// REDESIGN: Visual upgrade — glassmorphism cards, animated counters, premium styling
 // ==========================================
 
 const DashboardManager = {
@@ -140,25 +141,25 @@ const DashboardManager = {
         if (kpiContainer) {
             kpiContainer.innerHTML = `
                 <div class="col-12 col-sm-6 col-xl-4">
-                    <div class="kpi-modern-card border-primary-card">
+                    <div class="kpi-modern-card border-primary-card kpi-animate">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <span class="kpi-modern-title">Luas Bancian Keseluruhan</span>
-                                <div class="kpi-modern-val text-primary">${tt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <small class="fs-6 text-muted fw-bold">Ha</small></div>
+                                <span class="kpi-modern-title"><i class="bi bi-rulers me-1"></i>Luas Bancian Keseluruhan</span>
+                                <div class="kpi-modern-val" style="color: var(--primary);">${tt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <small class="fs-6 text-muted fw-bold">Ha</small></div>
                             </div>
-                            <div class="kpi-modern-icon bg-primary-subtle text-primary"><i class="bi bi-rulers"></i></div>
+                            <div class="kpi-modern-icon" style="background: var(--primary-subtle); color: var(--primary);"><i class="bi bi-rulers"></i></div>
                         </div>
                         <div class="mt-3 d-flex align-items-center justify-content-between small text-muted border-top pt-2">
-                            <span><i class="bi bi-geo-fill text-primary me-1"></i> Liputan pemantauan aktif</span>
+                            <span><i class="bi bi-geo-fill me-1" style="color: var(--primary);"></i> Liputan pemantauan aktif</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-12 col-sm-6 col-xl-4">
-                    <div class="kpi-modern-card border-danger-card">
+                    <div class="kpi-modern-card border-danger-card kpi-animate" style="animation-delay: 0.08s;">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <span class="kpi-modern-title">Luas Serangan Disahkan</span>
+                                <span class="kpi-modern-title"><i class="bi bi-bug me-1"></i>Luas Serangan Disahkan</span>
                                 <div class="kpi-modern-val text-danger">${ts.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <small class="fs-6 text-muted fw-bold">Ha</small></div>
                             </div>
                             <div class="kpi-modern-icon bg-danger-subtle text-danger"><i class="bi bi-bug-fill"></i></div>
@@ -170,10 +171,10 @@ const DashboardManager = {
                 </div>
 
                 <div class="col-12 col-sm-6 col-xl-4">
-                    <div class="kpi-modern-card border-warning-card">
+                    <div class="kpi-modern-card border-warning-card kpi-animate" style="animation-delay: 0.16s;">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <span class="kpi-modern-title">Kadar Jangkitan Perosak</span>
+                                <span class="kpi-modern-title"><i class="bi bi-activity me-1"></i>Kadar Jangkitan Perosak</span>
                                 <div class="kpi-modern-val text-dark">${peratus}</div>
                             </div>
                             <div class="kpi-modern-icon bg-warning-subtle text-warning-emphasis"><i class="bi bi-activity"></i></div>
@@ -185,10 +186,10 @@ const DashboardManager = {
                 </div>
 
                 <div class="col-12 col-sm-6 col-xl-4">
-                    <div class="kpi-modern-card border-info-card">
+                    <div class="kpi-modern-card border-info-card kpi-animate" style="animation-delay: 0.24s;">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <span class="kpi-modern-title">Indeks Keterukan Purata</span>
+                                <span class="kpi-modern-title"><i class="bi bi-speedometer2 me-1"></i>Indeks Keterukan Purata</span>
                                 <div class="kpi-modern-val text-dark">${avgSevScore} <small class="fs-6 text-muted fw-bold">/ 5.0</small></div>
                             </div>
                             <div class="kpi-modern-icon bg-info-subtle text-info-emphasis"><i class="bi bi-speedometer2"></i></div>
@@ -201,13 +202,13 @@ const DashboardManager = {
                 </div>
 
                 <div class="col-12 col-sm-6 col-xl-4">
-                    <div class="kpi-modern-card border-indigo-card">
+                    <div class="kpi-modern-card border-indigo-card kpi-animate" style="animation-delay: 0.32s;">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <span class="kpi-modern-title">Kategori Paling Terjejas</span>
+                                <span class="kpi-modern-title"><i class="bi bi-flower3 me-1"></i>Kategori Paling Terjejas</span>
                                 <div class="kpi-modern-val text-dark text-truncate" style="max-width: 195px;" title="${topCat}">${topCat}</div>
                             </div>
-                            <div class="kpi-modern-icon bg-indigo-subtle text-primary" style="background: #e0e7ff; color: #4338ca;"><i class="bi bi-flower3"></i></div>
+                            <div class="kpi-modern-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;"><i class="bi bi-flower3"></i></div>
                         </div>
                         <div class="mt-3 d-flex align-items-center justify-content-between small text-muted border-top pt-2">
                             <span><i class="bi bi-fire text-danger me-1"></i> <b>${maxCatLS.toFixed(2)} Ha</b> diserang dalam sektor ini</span>
@@ -216,10 +217,10 @@ const DashboardManager = {
                 </div>
 
                 <div class="col-12 col-sm-6 col-xl-4">
-                    <div class="kpi-modern-card border-rose-card" style="border-left-color: #10b981;">
+                    <div class="kpi-modern-card kpi-animate" style="border-left-color: var(--success); animation-delay: 0.4s;">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <span class="kpi-modern-title">Jumlah Rekod & Pegawai</span>
+                                <span class="kpi-modern-title"><i class="bi bi-person-badge me-1"></i>Jumlah Rekod & Pegawai</span>
                                 <div class="kpi-modern-val text-success">${AppState.fData.length.toLocaleString('en-US')} <small class="fs-6 text-muted fw-bold">Unit</small></div>
                             </div>
                             <div class="kpi-modern-icon bg-success-subtle text-success"><i class="bi bi-person-badge-fill"></i></div>
@@ -291,8 +292,8 @@ const DashboardManager = {
             }
             
             let statusBadge = stats.totalArea > 0 
-                ? `<span class="badge bg-danger text-white fw-bold"><i class="bi bi-exclamation-octagon-fill me-1"></i> AKTIF (${stats.totalArea.toFixed(2)} Ha)</span>`
-                : `<span class="badge bg-success-subtle text-success border border-success-subtle fw-bold"><i class="bi bi-shield-check me-1"></i> TERKAWAL</span>`;
+                ? `<span class="badge bg-danger text-white fw-bold" style="font-size: 0.68rem;"><i class="bi bi-exclamation-octagon-fill me-1"></i> AKTIF (${stats.totalArea.toFixed(2)} Ha)</span>`
+                : `<span class="badge bg-success-subtle text-success border border-success-subtle fw-bold" style="font-size: 0.68rem;"><i class="bi bi-shield-check me-1"></i> TERKAWAL</span>`;
 
             html += `
             <div class="col-12 col-sm-6 col-lg-4 col-xl">
@@ -306,7 +307,7 @@ const DashboardManager = {
                         <div class="small text-muted mb-2" style="font-size: 0.78rem;"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Hotspot #1: <b class="text-dark">${topDist}</b></div>
                     </div>
                     <div class="progress mt-2" style="height: 5px; border-radius: 6px; background-color: #f1f5f9;">
-                        <div class="progress-bar bg-${stats.totalArea > 0 ? 'danger' : 'success'}" role="progressbar" style="width: ${stats.totalArea > 0 ? Math.min(100, Math.max(15, (stats.totalArea / 10) * 100)) : 100}%"></div>
+                        <div class="progress-bar bg-${stats.totalArea > 0 ? 'danger' : 'success'}" role="progressbar" style="width: ${stats.totalArea > 0 ? Math.min(100, Math.max(15, (stats.totalArea / 10) * 100)) : 100}%; transition: width 0.6s ease;"></div>
                     </div>
                 </div>
             </div>`;
@@ -319,12 +320,12 @@ const DashboardManager = {
         const s = Object.entries(hData).sort((a,b)=>b[1]-a[1]).slice(0,5); 
         let maxVal = s.length > 0 ? s[0][1] : 1;
         document.getElementById('hotspotTable').innerHTML = s.length ? s.map((x, idx)=>`
-            <tr>
-                <td><span class="badge bg-light text-secondary border me-2">#${idx+1}</span> <span class="fw-bold text-dark text-uppercase">${x[0]}</span></td>
+            <tr style="transition: all 0.2s ease;">
+                <td><span class="badge bg-light text-secondary border me-2" style="font-size: 0.7rem;">#${idx+1}</span> <span class="fw-bold text-dark text-uppercase" style="font-size: 0.85rem;">${x[0]}</span></td>
                 <td class="text-end">
                     <div class="fw-bold text-danger">${x[1].toFixed(2)} <small class="text-muted">Ha</small></div>
-                    <div class="progress ms-auto mt-1" style="height: 4px; width: 65px; background-color: #e2e8f0;">
-                        <div class="progress-bar bg-danger" style="width: ${Math.min(100, (x[1]/maxVal)*100)}%"></div>
+                    <div class="progress ms-auto mt-1" style="height: 4px; width: 70px; background-color: #e2e8f0; border-radius: 10px;">
+                        <div class="progress-bar bg-danger" style="width: ${Math.min(100, (x[1]/maxVal)*100)}%; border-radius: 10px; transition: width 0.5s ease;"></div>
                     </div>
                 </td>
             </tr>`).join('') : '<tr><td colspan="2" class="text-center text-muted py-5"><i class="bi bi-geo-slash fs-2 d-block text-secondary mb-2"></i>Tiada rekod hotspot serangan dicatatkan.</td></tr>'; 
@@ -339,7 +340,7 @@ const DashboardManager = {
                 <div class="d-flex align-items-center">
                     <div class="bg-success-subtle text-success rounded-circle p-3 me-3 fs-3 d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;"><i class="bi bi-shield-check-fill"></i></div>
                     <div>
-                        <span class="insight-pill mb-1"><i class="bi bi-cpu-fill text-primary"></i> AI Executive Insights</span>
+                        <span class="insight-pill mb-1"><i class="bi bi-cpu-fill" style="color: var(--primary);"></i> AI Executive Insights</span>
                         <h6 class="fw-bold text-dark mb-0">Status Tanaman Terkawal & Aman</h6>
                         <span class="text-muted small">Tiada laporan penularan wabak perosak aktif direkodkan di dalam tempoh mahupun penapis terpilih ini.</span>
                     </div>
@@ -381,23 +382,23 @@ const DashboardManager = {
         let score = parseFloat(avgSev), sevText = "Rendah", sevColor = "#10b981", alertBadge = "AMARAN AWAL", alertBg = "warning";
         if (score >= 4.0) { sevText = "Kritikal (T4 - T5)"; sevColor = "#ef4444"; alertBadge = "AMARAN MERAH"; alertBg = "danger"; } 
         else if (score >= 3.0) { sevText = "Sederhana (T3)"; sevColor = "#f59e0b"; alertBadge = "TINDAKAN SEGERA"; alertBg = "warning"; } 
-        else if (score >= 2.0) { sevText = "Rendah (T2)"; sevColor = "#3b82f6"; alertBadge = "PEMANTAUAN RUTIN"; alertBg = "info"; }
+        else if (score >= 2.0) { sevText = "Rendah (T2)"; sevColor = "#6366f1"; alertBadge = "PEMANTAUAN RUTIN"; alertBg = "info"; }
         
         let locPct = topLoc.totalLT > 0 ? ((topLoc.totalLS / topLoc.totalLT) * 100).toFixed(1) : "0.0";
 
         el.innerHTML = `
         <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-3 gap-2 border-bottom pb-3">
             <div class="d-flex align-items-center">
-                <div class="bg-primary-subtle text-primary rounded-3 p-3 me-3 fs-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 52px; height: 52px;"><i class="bi bi-robot"></i></div>
+                <div class="rounded-3 p-3 me-3 fs-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 52px; height: 52px; background: var(--primary-subtle); color: var(--primary);"><i class="bi bi-robot"></i></div>
                 <div>
                     <div class="d-flex align-items-center gap-2 mb-1">
                         <span class="insight-pill"><i class="bi bi-stars text-warning"></i> AI Executive Insights</span>
                         <span class="badge bg-${alertBg}-subtle text-${alertBg} fw-bold border border-${alertBg}-subtle">${alertBadge}</span>
                     </div>
-                    <h5 class="fw-bold text-dark mb-0">Rumusan Sintesis Bancian & Amaran Risiko</h5>
+                    <h5 class="fw-bold text-dark mb-0" style="letter-spacing: -0.3px;">Rumusan Sintesis Bancian & Amaran Risiko</h5>
                 </div>
             </div>
-            <span class="small text-muted fw-bold"><i class="bi bi-cloud-check-fill text-primary me-1"></i> Dituai secara LIVE dari pangkalan data PNR</span>
+            <span class="small text-muted fw-bold"><i class="bi bi-cloud-check-fill me-1" style="color: var(--primary);"></i> Dituai secara LIVE dari pangkalan data PNR</span>
         </div>
 
         <div class="row g-3">
@@ -432,9 +433,9 @@ const DashboardManager = {
             </div>
 
             <div class="col-md-4">
-                <div class="insight-sub-card border-start border-info border-4 d-flex flex-column justify-content-between">
+                <div class="insight-sub-card border-start border-4 d-flex flex-column justify-content-between" style="border-color: var(--primary) !important;">
                     <div>
-                        <span class="text-uppercase small fw-bold text-muted d-block mb-1" style="font-size: 0.72rem;"><i class="bi bi-shield-lock-fill text-info me-1"></i> Indeks Keterukan & Syor Tindakan</span>
+                        <span class="text-uppercase small fw-bold text-muted d-block mb-1" style="font-size: 0.72rem;"><i class="bi bi-shield-lock-fill me-1" style="color: var(--primary);"></i> Indeks Keterukan & Syor Tindakan</span>
                         <div class="d-flex align-items-center gap-2 my-2">
                             <span class="fs-4 fw-bold text-dark">${avgSev} <small class="fs-6 text-muted">/ 5.0</small></span>
                             <span class="badge shadow-sm" style="background-color: ${sevColor}; color: white; font-size: 0.75rem; font-weight: 800;">${sevText}</span>
@@ -510,14 +511,14 @@ const DashboardManager = {
                     <small class="text-muted d-block" style="font-size: 0.72rem;"><i class="bi bi-clock me-1"></i>Bancian PNR</small>
                 </td>
                 <td>
-                    <div class="fw-bold text-primary text-uppercase" style="font-size: 0.92rem;">${d.l}</div>
+                    <div class="fw-bold text-uppercase" style="font-size: 0.92rem; color: var(--primary);">${d.l}</div>
                     <div class="small text-muted fw-bold text-uppercase"><i class="bi bi-geo-alt-fill text-danger me-1"></i>${d.d || "-"}, ${d.n}</div>
                     ${(d.c && d.c.includes(',')) ? `<span class="badge bg-light text-muted border mt-1 font-monospace" style="font-size:0.68rem;"><i class="bi bi-satellite me-1"></i>${d.c}</span>` : ""}
                 </td>
                 <td>
                     <div class="fw-bold text-dark text-uppercase">${d.tn}</div>
                     <div class="small text-secondary text-uppercase">${d.vr || "Varieti Umum"}</div>
-                    <div><span class="tag-crop-cat"><i class="bi bi-tag-fill text-success me-1"></i>${d.kt || "UMUM"}</span> ${(d.um && d.um !== "-") ? `<span class="tag-crop-cat ms-1">${d.um}</span>` : ""}</div>
+                    <div><span class="tag-crop-cat"><i class="bi bi-tag-fill me-1" style="color: var(--primary);"></i>${d.kt || "UMUM"}</span> ${(d.um && d.um !== "-") ? `<span class="tag-crop-cat ms-1">${d.um}</span>` : ""}</div>
                 </td>
                 <td>
                     <div class="fw-bold text-dark">
@@ -556,7 +557,7 @@ const DashboardManager = {
         if (recCountEl) {
             let startNum = totalRecs === 0 ? 0 : st + 1;
             let endNum = Math.min(st + AppState.pSize, totalRecs);
-            recCountEl.innerHTML = `<i class="bi bi-funnel-fill text-primary me-1"></i> Memaparkan <b>${startNum} - ${endNum}</b> daripada <b>${totalRecs.toLocaleString('en-US')}</b> rekod (Jumlah asal: ${AppState.fData.length.toLocaleString('en-US')})`;
+            recCountEl.innerHTML = `<i class="bi bi-funnel-fill me-1" style="color: var(--primary);"></i> Memaparkan <b>${startNum} - ${endNum}</b> daripada <b>${totalRecs.toLocaleString('en-US')}</b> rekod (Jumlah asal: ${AppState.fData.length.toLocaleString('en-US')})`;
         }
         
         const prevBtn = document.getElementById('btnPrevPg');
@@ -616,9 +617,11 @@ const DashboardManager = {
             if (!iconEl) return;
 
             if (this.currentSortCol === c) {
-                iconEl.className = this.currentSortDir === 'asc' ? 'bi bi-sort-down text-primary fw-bold' : 'bi bi-sort-up text-primary fw-bold';
+                iconEl.className = this.currentSortDir === 'asc' ? 'bi bi-sort-down fw-bold' : 'bi bi-sort-up fw-bold';
+                iconEl.style.color = 'var(--primary)';
             } else {
                 iconEl.className = 'bi bi-arrow-down-up small text-muted';
+                iconEl.style.color = '';
             }
         });
     }
