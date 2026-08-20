@@ -1,4 +1,4 @@
-const CACHE_NAME = "pnr-cache-v3.1"; // ⚡ BUMP VERSION UNTUK COMPULSORY UPDATE
+const CACHE_NAME = "pnr-cache-v4.0"; // ⚡ Network-first strategy
 const ASSETS = [
   './',
   './index.html',
@@ -49,13 +49,37 @@ self.addEventListener('message', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  // Strategi Network-First untuk permintaan navigasi (halaman HTML)
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => {
+          // Berjaya dapat dari server — simpan salinan terkini dalam cache
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          return res;
+        })
+        .catch(() => {
+          // Offline — fallback ke cache
+          return caches.match(e.request).then((cached) => {
+            return cached || caches.match('./index.html');
+          });
+        })
+    );
+    return;
+  }
+
+  // Strategi Cache-First untuk aset statik (CSS, JS, imej, font)
   e.respondWith(
     caches.match(e.request).then((res) => {
-      // Jika ada dalam cache, guna cache. Jika tiada, ambil dari rangkaian internet.
-      return res || fetch(e.request).catch(() => {
-        if (e.request.mode === 'navigate') {
-            return caches.match('./index.html');
-        }
+      return res || fetch(e.request).then((networkRes) => {
+        // Simpan aset baru dalam cache untuk kegunaan offline
+        const clone = networkRes.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        return networkRes;
+      }).catch(() => {
+        // Aset tiada dalam cache DAN offline — tiada apa boleh dibuat
+        console.warn('Gagal fetch:', e.request.url);
       });
     })
   );
@@ -70,6 +94,9 @@ self.addEventListener('activate', (e) => {
           return caches.delete(key);
         }
       }));
+    }).then(() => {
+      // Paksa SW baru terus mengawal semua tab terbuka
+      return self.clients.claim();
     })
   );
 });
